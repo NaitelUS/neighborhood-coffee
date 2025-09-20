@@ -2,9 +2,7 @@ import { useState } from "react";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import type { OrderItem } from "@shared/schema";
 
-// ... el resto de tus imports
-
-let orderCounter = 1000; // puedes empezar desde el número que quieras
+let orderCounter = 1000; // consecutivo inicial
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -39,32 +37,19 @@ export default function OrderPage() {
     setOrderNumber(newOrderNumber);
     setOrderDetails(details);
     setTotal(totalAmount);
-
-    console.log("Order saved:", {
-      orderNumber: newOrderNumber,
-      items: orderItems,
-      customer: customerInfo,
-      total: totalAmount,
-    });
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* ... tus componentes de menú y resumen */}
+      {/* Aquí va tu menú, carrito y resumen */}
 
       <CustomerInfoForm
         onInfoChange={setCustomerInfo}
         orderNumber={orderNumber}
         orderDetails={orderDetails}
         total={total}
+        onSubmitOrder={handleSubmitOrder} // 👈 se ejecuta antes de enviar
       />
-
-      <button
-        onClick={handleSubmitOrder}
-        className="w-full h-12 mt-4 rounded bg-[#1D9099] hover:bg-[#00454E] text-white"
-      >
-        Generate Order & Send
-      </button>
     </div>
   );
 }
