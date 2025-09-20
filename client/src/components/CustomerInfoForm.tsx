@@ -1,7 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,7 +19,6 @@ const customerInfoSchema = z.object({
   preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
 }).refine((data) => {
-  // If delivery is selected, address is required
   if (data.isDelivery && (!data.address || data.address.length < 5)) {
     return false;
   }
@@ -52,10 +50,8 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
     }
   });
 
-  // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
-  
-  // Generate time options
+
   const timeOptions: { value: string; label: string }[] = [];
   for (let hour = 7; hour <= 19; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
@@ -72,7 +68,6 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
   const watchedValues = form.watch();
   const isDeliveryChecked = form.watch('isDelivery');
 
-  // Update parent whenever form values change
   React.useEffect(() => {
     if (form.formState.isValid) {
       onInfoChange(watchedValues);
@@ -92,12 +87,12 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
             data-netlify="true" 
             netlify-honeypot="bot-field"
             className="space-y-4"
-        >
-    {/* Hidden inputs necesarios para Netlify */}
-    <input type="hidden" name="form-name" value="order" />
-    <p hidden>
-      <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
-    </p>
+          >
+            {/* Hidden inputs para Netlify */}
+            <input type="hidden" name="form-name" value="order" />
+            <p hidden>
+              <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
+            </p>
 
             <FormField
               control={form.control}
@@ -107,6 +102,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input 
+                      name="name"
                       placeholder="Enter your full name" 
                       data-testid="input-name"
                       {...field} 
@@ -125,6 +121,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
                     <Input 
+                      name="email"
                       type="email"
                       placeholder="your.email@example.com" 
                       data-testid="input-email"
@@ -144,6 +141,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
                     <Input 
+                      name="phone"
                       type="tel"
                       placeholder="(555) 123-4567" 
                       data-testid="input-phone"
@@ -163,6 +161,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                   <FormLabel>Address {!isDeliveryChecked && "(Enable delivery to enter address)"}</FormLabel>
                   <FormControl>
                     <Input 
+                      name="address"
                       placeholder="123 Main St, City, State 12345" 
                       disabled={!isDeliveryChecked}
                       data-testid="input-address"
@@ -181,6 +180,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
                     <Checkbox
+                      name="isDelivery"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                       data-testid="checkbox-delivery"
@@ -204,6 +204,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                     <FormLabel>Preferred Date</FormLabel>
                     <FormControl>
                       <Input 
+                        name="preferredDate"
                         type="date"
                         min={today}
                         data-testid="input-date"
@@ -221,9 +222,9 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Preferred Time</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} name="preferredTime">
                       <FormControl>
-                        <SelectTrigger data-testid="select-time">
+                        <SelectTrigger data-testid="select-time" name="preferredTime">
                           <SelectValue placeholder="Select time" />
                         </SelectTrigger>
                       </FormControl>
@@ -249,6 +250,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                   <FormLabel>Special Instructions (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
+                      name="specialNotes"
                       placeholder="Any special requests or notes about your order..."
                       className="min-h-[80px]"
                       data-testid="textarea-notes"
@@ -259,6 +261,10 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                 </FormItem>
               )}
             />
+
+            <button type="submit" className="bg-brown-600 text-white px-4 py-2 rounded">
+              Submit Order
+            </button>
           </form>
         </Form>
       </CardContent>
