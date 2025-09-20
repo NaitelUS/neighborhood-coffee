@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,14 @@ const customerInfoSchema = z.object({
   preferredDate: z.string().min(1, "Please select a preferred date"),
   preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
+}).refine((data) => {
+  if (data.isDelivery && (!data.address || data.address.length < 5)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Address is required when delivery is selected",
+  path: ["address"],
 });
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
@@ -27,65 +35,54 @@ interface CustomerInfoFormProps {
   orderNumber: string;
   orderDetails: string;
   total: number;
+  onSubmitOrder: () => void;
+  initialValues?: Partial<CustomerInfo>;
 }
 
-export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetails, total }: CustomerInfoFormProps) {
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
+export default function CustomerInfoForm({
+  onInfoChange,
+  orderNumber,
+  orderDetails,
+  total,
+  onSubmitOrder,
+  initialValues,
+}: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      isDelivery: false,
-      preferredDate: new Date().toISOString().split("T")[0], // hoy por default
-      preferredTime: "",
-      specialNotes: "",
-    }
+      name: initialValues?.name || "",
+      email: initialValues?.email || "",
+      phone: initialValues?.phone || "",
+      address: initialValues?.address || "",
+      isDelivery: initialValues?.isDelivery ?? false,
+      preferredDate: initialValues?.preferredDate || "",
+      preferredTime: initialValues?.preferredTime || "",
+      specialNotes: initialValues?.specialNotes || "",
+    },
   });
 
   const today = new Date().toISOString().split("T")[0];
-
-  // Horarios de 6am a 11am (sin domingos)
   const timeOptions: { value: string; label: string }[] = [];
   for (let hour = 6; hour <= 11; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       const displayTime = new Date(`2000-01-01 ${time}`).toLocaleTimeString([], {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
       });
       timeOptions.push({ value: time, label: displayTime });
     }
   }
 
   const watchedValues = form.watch();
+  const isDeliveryChecked = form.watch("isDelivery");
 
   React.useEffect(() => {
     if (form.formState.isValid) {
       onInfoChange(watchedValues);
     }
   }, [watchedValues, form.formState.isValid, onInfoChange]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitted(true); // cambia a Thank You en UI
-  };
-
-  if (isSubmitted) {
-    return (
-      <div className="p-6 bg-green-50 rounded shadow">
-        <h2 className="text-2xl font-bold mb-3">Thank you!</h2>
-        <p className="mb-2">Your order submission has been received ✅</p>
-        <p><strong>Order Number:</strong> {orderNumber}</p>
-        <p><strong>Total:</strong> ${total.toFixed(2)}</p>
-        <pre className="bg-gray-100 p-3 rounded mt-3 whitespace-pre-wrap">{orderDetails}</pre>
-      </div>
-    );
-  }
 
   return (
     <Card>
@@ -99,20 +96,21 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
             method="POST"
             data-netlify="true"
             netlify-honeypot="bot-field"
-            onSubmit={handleSubmit}
             className="space-y-4"
+            onSubmit={() => onSubmitOrder()} // 👈 Genera datos antes de enviar
           >
-            {/* Hidden Netlify inputs */}
+            {/* Hidden inputs */}
             <input type="hidden" name="form-name" value="order" />
             <input type="hidden" name="orderNumber" value={orderNumber} />
             <input type="hidden" name="orderDetails" value={orderDetails} />
             <input type="hidden" name="total" value={total.toFixed(2)} />
 
             <p hidden>
-              <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
+              <label>
+                Don’t fill this out if you’re human: <input name="bot-field" />
+              </label>
             </p>
 
-            {/* Nombre */}
             <FormField
               control={form.control}
               name="name"
@@ -127,7 +125,6 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
               )}
             />
 
-            {/* Email */}
             <FormField
               control={form.control}
               name="email"
@@ -142,7 +139,6 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
               )}
             />
 
-            {/* Teléfono */}
             <FormField
               control={form.control}
               name="phone"
@@ -157,22 +153,26 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
               )}
             />
 
-            {/* Dirección */}
             <FormField
               control={form.control}
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel>
+                    Address {!isDeliveryChecked && "(Enable delivery to enter address)"}
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="123 Main St, City, State 12345" {...field} />
+                    <Input
+                      placeholder="123 Main St, City, State 12345"
+                      disabled={!isDeliveryChecked}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Delivery checkbox */}
             <FormField
               control={form.control}
               name="isDelivery"
@@ -184,18 +184,19 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <div>
-                    <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                      <span>12821 Little Misty Ln, El Paso, Texas 79938</span> ☕
-                      <br />(915) 401-5547
-                    </p>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Delivery (otherwise pickup at store)
+                      <br />
+                      12821 Little Misty Ln <br />
+                      El Paso, Texas 79938 <br />
+                      (915) 401-5547 ☕
+                    </FormLabel>
                   </div>
                 </FormItem>
               )}
             />
 
-            {/* Fecha y hora */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -204,12 +205,13 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
                   <FormItem>
                     <FormLabel>Preferred Date</FormLabel>
                     <FormControl>
-                      <Input type="date" min={today} {...field} />
+                      <Input type="date" min={today} defaultValue={today} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="preferredTime"
@@ -236,7 +238,6 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
               />
             </div>
 
-            {/* Notas */}
             <FormField
               control={form.control}
               name="specialNotes"
@@ -251,12 +252,11 @@ export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetai
               )}
             />
 
-            {/* Botón Submit */}
             <button
               type="submit"
-              className="w-full h-12 text-lg rounded bg-[#1D9099] hover:bg-[#00454E] text-white"
+              className="bg-[#1D9099] hover:bg-[#00454E] text-white px-4 py-2 rounded w-full"
             >
-              Submit Order
+              Submit Order - ${total.toFixed(2)}
             </button>
           </form>
         </Form>
