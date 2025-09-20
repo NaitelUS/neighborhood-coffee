@@ -23,6 +23,10 @@ const customerInfoSchema = z.object({
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
 
+<input type="hidden" name="orderNumber" value={orderNumber} />
+<input type="hidden" name="orderDetails" value={orderDetails} />
+<input type="hidden" name="total" value={calculateTotal().toFixed(2)} />
+
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
   orderDetails: string;         // nuevo campo para enviar al correo
