@@ -192,3 +192,4 @@
     Submit Order
   </button>
 </form>
+export default CustomerInfoForm;
