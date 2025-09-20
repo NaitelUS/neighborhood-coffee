@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,43 +18,37 @@ const customerInfoSchema = z.object({
   preferredDate: z.string().min(1, "Please select a preferred date"),
   preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
-  coupon: z.string().optional(),
 });
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
 
-<input type="hidden" name="orderNumber" value={orderNumber} />
-<input type="hidden" name="orderDetails" value={orderDetails} />
-<input type="hidden" name="total" value={calculateTotal().toFixed(2)} />
-
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
-  orderDetails: string;         // nuevo campo para enviar al correo
-  orderNumber: number;          // numero de orden generado
-  initialValues?: Partial<CustomerInfo>;
+  orderNumber: string;
+  orderDetails: string;
+  total: number;
 }
 
-export default function CustomerInfoForm({ onInfoChange, orderDetails, orderNumber, initialValues }: CustomerInfoFormProps) {
+export default function CustomerInfoForm({ onInfoChange, orderNumber, orderDetails, total }: CustomerInfoFormProps) {
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
-      name: initialValues?.name || "",
-      email: initialValues?.email || "",
-      phone: initialValues?.phone || "",
-      address: initialValues?.address || "",
-      isDelivery: initialValues?.isDelivery ?? false,
-      preferredDate: initialValues?.preferredDate || "",
-      preferredTime: initialValues?.preferredTime || "",
-      specialNotes: initialValues?.specialNotes || "",
-      coupon: "",
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      isDelivery: false,
+      preferredDate: new Date().toISOString().split("T")[0], // hoy por default
+      preferredTime: "",
+      specialNotes: "",
     }
   });
 
-  // 🔹 Fecha de hoy
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
 
-  // 🔹 Generar opciones de tiempo (6:00 AM – 11:00 AM)
+  // Horarios de 6am a 11am (sin domingos)
   const timeOptions: { value: string; label: string }[] = [];
   for (let hour = 6; hour <= 11; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
@@ -69,20 +63,29 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails, orderNumb
   }
 
   const watchedValues = form.watch();
-  const isDeliveryChecked = form.watch('isDelivery');
 
-  // 🔹 Filtrar domingos
-  const isSunday = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.getDay() === 0;
-  };
-
-  // 🔹 Pasar valores al padre
   React.useEffect(() => {
     if (form.formState.isValid) {
       onInfoChange(watchedValues);
     }
   }, [watchedValues, form.formState.isValid, onInfoChange]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitted(true); // cambia a Thank You en UI
+  };
+
+  if (isSubmitted) {
+    return (
+      <div className="p-6 bg-green-50 rounded shadow">
+        <h2 className="text-2xl font-bold mb-3">Thank you!</h2>
+        <p className="mb-2">Your order submission has been received ✅</p>
+        <p><strong>Order Number:</strong> {orderNumber}</p>
+        <p><strong>Total:</strong> ${total.toFixed(2)}</p>
+        <pre className="bg-gray-100 p-3 rounded mt-3 whitespace-pre-wrap">{orderDetails}</pre>
+      </div>
+    );
+  }
 
   return (
     <Card>
@@ -91,206 +94,171 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails, orderNumb
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form 
-            name="order" 
-            method="POST" 
-            data-netlify="true" 
+          <form
+            name="order"
+            method="POST"
+            data-netlify="true"
             netlify-honeypot="bot-field"
+            onSubmit={handleSubmit}
             className="space-y-4"
-        >
-          {/* Hidden inputs para Netlify */}
-          <input type="hidden" name="form-name" value="order" />
-          <input type="hidden" name="orderDetails" value={orderDetails} />
-          <input type="hidden" name="orderNumber" value={orderNumber} />
-          <p hidden>
-            <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
-          </p>
+          >
+            {/* Hidden Netlify inputs */}
+            <input type="hidden" name="form-name" value="order" />
+            <input type="hidden" name="orderNumber" value={orderNumber} />
+            <input type="hidden" name="orderDetails" value={orderDetails} />
+            <input type="hidden" name="total" value={total.toFixed(2)} />
 
-          {/* Full Name */}
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input name="name" placeholder="Enter your full name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <p hidden>
+              <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
+            </p>
 
-          {/* Email */}
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email Address</FormLabel>
-                <FormControl>
-                  <Input type="email" name="email" placeholder="your.email@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            {/* Nombre */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your full name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Phone */}
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input type="tel" name="phone" placeholder="(555) 123-4567" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            {/* Email */}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="your.email@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Address */}
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Address {!isDeliveryChecked && "(Enable delivery to enter address)"}</FormLabel>
-                <FormControl>
-                  <Input 
-                    name="address"
-                    placeholder="123 Main St, City, State 12345" 
-                    disabled={!isDeliveryChecked}
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            {/* Teléfono */}
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="(555) 123-4567" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Delivery Checkbox + Store Info */}
-          <FormField
-            control={form.control}
-            name="isDelivery"
-            render={({ field }) => (
-              <FormItem className="flex flex-col space-y-2">
-                <div className="flex flex-row items-start space-x-3">
+            {/* Dirección */}
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123 Main St, City, State 12345" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Delivery checkbox */}
+            <FormField
+              control={form.control}
+              name="isDelivery"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
                     <Checkbox
-                      name="isDelivery"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
-                </div>
-                {/* Store Info */}
-                <div className="text-sm text-muted-foreground flex items-center gap-2 pl-6">
-                  ☕ 12821 Little Misty Ln, El Paso, TX 79938 – (915) 401-5547
-                </div>
-              </FormItem>
-            )}
-          />
+                  <div>
+                    <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
+                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                      <span>12821 Little Misty Ln, El Paso, Texas 79938</span> ☕
+                      <br />(915) 401-5547
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
 
-          {/* Date + Time */}
-          <div className="grid grid-cols-2 gap-4">
+            {/* Fecha y hora */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="preferredDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" min={today} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="preferredTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Time</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select time" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {timeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Notas */}
             <FormField
               control={form.control}
-              name="preferredDate"
+              name="specialNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preferred Date</FormLabel>
+                  <FormLabel>Special Instructions (Optional)</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="date"
-                      name="preferredDate"
-                      min={todayStr}
-                      value={field.value || todayStr}
-                      onChange={(e) => {
-                        if (!isSunday(e.target.value)) {
-                          field.onChange(e);
-                        }
-                      }}
-                    />
+                    <Textarea placeholder="Any special requests or notes..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="preferredTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Time</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={timeOptions[0].value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {timeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* Notes */}
-          <FormField
-            control={form.control}
-            name="specialNotes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Special Instructions (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea name="specialNotes" placeholder="Any special requests..." {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Coupon */}
-          <FormField
-            control={form.control}
-            name="coupon"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Coupon Code</FormLabel>
-                <div className="flex gap-2">
-                  <Input name="coupon" placeholder="Enter coupon" {...field} />
-                  <button
-                    type="button"
-                    className="bg-[#1D9099] hover:bg-[#00454E] text-white px-3 py-2 rounded"
-                    onClick={() => alert("Coupon not valid")}
-                  >
-                    Apply
-                  </button>
-                </div>
-              </FormItem>
-            )}
-          />
-
-          {/* Submit */}
-          <button 
-            type="submit" 
-            className="w-full h-12 text-lg bg-[#1D9099] hover:bg-[#00454E] text-white rounded"
-          >
-            Submit Order
-          </button>
-        </form>
+            {/* Botón Submit */}
+            <button
+              type="submit"
+              className="w-full h-12 text-lg rounded bg-[#1D9099] hover:bg-[#00454E] text-white"
+            >
+              Submit Order
+            </button>
+          </form>
         </Form>
       </CardContent>
     </Card>
