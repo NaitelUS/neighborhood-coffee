@@ -86,7 +86,19 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form className="space-y-4">
+          <form 
+            name="order" 
+            method="POST" 
+            data-netlify="true" 
+            netlify-honeypot="bot-field"
+            className="space-y-4"
+        >
+    {/* Hidden inputs necesarios para Netlify */}
+    <input type="hidden" name="form-name" value="order" />
+    <p hidden>
+      <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
+    </p>
+
             <FormField
               control={form.control}
               name="name"
