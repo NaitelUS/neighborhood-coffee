@@ -1,51 +1,58 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import type { AddOn } from "@shared/schema";
+import { Label } from "@/components/ui/label";
+import { addOnOptions } from "@/data/menuData";
 
 interface AddOnSelectorProps {
-  addOns: AddOn[];
   selectedAddOns: string[];
-  onAddOnChange: (addOnId: string, checked: boolean) => void;
+  onChange: (addOns: string[]) => void;
 }
 
-export default function AddOnSelector({ addOns, selectedAddOns, onAddOnChange }: AddOnSelectorProps) {
-  if (!addOns || addOns.length === 0) {
-    return null;
-  }
+export default function AddOnSelector({
+  selectedAddOns,
+  onChange,
+}: AddOnSelectorProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleAddOn = (id: string) => {
+    if (selectedAddOns.includes(id)) {
+      onChange(selectedAddOns.filter((a) => a !== id));
+    } else {
+      onChange([...selectedAddOns, id]);
+    }
+  };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-serif">Customize Your Drink</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {addOns.map((addOn) => (
-          <div
-            key={addOn.id}
-            className="flex items-center justify-between p-3 rounded-lg hover-elevate"
-            data-testid={`addon-${addOn.id}`}
-          >
-            <div className="flex items-center space-x-3">
+    <div className="border rounded-lg p-3">
+      {/* Toggle */}
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center justify-between w-full font-medium text-sm text-left"
+      >
+        <span>☑ Customize your drink</span>
+        <span>{expanded ? "−" : "+"}</span>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          {addOnOptions.map((addOn) => (
+            <div key={addOn.id} className="flex items-center space-x-2">
               <Checkbox
                 id={addOn.id}
                 checked={selectedAddOns.includes(addOn.id)}
-                onCheckedChange={(checked) => onAddOnChange(addOn.id, !!checked)}
-                data-testid={`checkbox-${addOn.id}`}
+                onCheckedChange={() => toggleAddOn(addOn.id)}
               />
-              <label
-                htmlFor={addOn.id}
-                className="text-sm font-medium leading-none cursor-pointer"
-              >
+              <Label htmlFor={addOn.id} className="flex-1">
                 {addOn.name}
-              </label>
+              </Label>
+              <span className="text-sm text-muted-foreground">
+                +${addOn.price.toFixed(2)}
+              </span>
             </div>
-            <Badge variant="outline" data-testid={`price-${addOn.id}`}>
-              +${addOn.price.toFixed(2)}
-            </Badge>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
