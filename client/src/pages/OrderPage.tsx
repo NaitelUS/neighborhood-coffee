@@ -17,6 +17,8 @@ export default function OrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponMessage, setCouponMessage] = useState("");
 
   const addToOrder = (
     drinkId: string,
@@ -57,6 +59,10 @@ export default function OrderPage() {
 
   const calculateTotal = () => {
     return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  };
+
+  const handleApplyCoupon = () => {
+    setCouponMessage("Coupon not valid");
   };
 
   const handleSubmitOrder = async () => {
@@ -192,6 +198,26 @@ TOTAL: $${calculateTotal().toFixed(2)}
             />
 
             <CustomerInfoForm onInfoChange={setCustomerInfo} />
+
+            {/* Coupon */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter coupon"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                className="border p-2 flex-1 rounded"
+              />
+              <Button
+                onClick={handleApplyCoupon}
+                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
+              >
+                Apply
+              </Button>
+            </div>
+            {couponMessage && (
+              <p className="text-sm text-red-500">{couponMessage}</p>
+            )}
 
             <Button
               onClick={handleSubmitOrder}
