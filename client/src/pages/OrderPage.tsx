@@ -87,7 +87,6 @@ export default function OrderPage() {
 
     const orderNumber = globalOrderCounter++;
 
-    // Crear string con detalles
     const orderDetails = `
 Order No: ${orderNumber}
 Name: ${info.name}
@@ -112,7 +111,6 @@ ${orderItems
 TOTAL: $${calculateTotal().toFixed(2)}
 `;
 
-    // Crear form invisible para Netlify
     const form = document.createElement("form");
     form.method = "POST";
     form.setAttribute("data-netlify", "true");
@@ -149,7 +147,9 @@ TOTAL: $${calculateTotal().toFixed(2)}
 
           <button
             className="relative"
-            onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+            onClick={() =>
+              formRef.current?.scrollIntoView({ behavior: "smooth" })
+            }
           >
             <ShoppingCart className="h-8 w-8 text-primary" />
             {orderItems.length > 0 && (
@@ -198,7 +198,9 @@ TOTAL: $${calculateTotal().toFixed(2)}
               disabled={isSubmitting || orderItems.length === 0}
               className="w-full h-12 text-lg bg-[#1D9099] hover:bg-[#00454E] text-white"
             >
-              {isSubmitting ? "Placing Order..." : `Place Order - $${calculateTotal().toFixed(2)}`}
+              {isSubmitting
+                ? "Placing Order..."
+                : `Place Order - $${calculateTotal().toFixed(2)}`}
             </Button>
           </div>
         </div>
