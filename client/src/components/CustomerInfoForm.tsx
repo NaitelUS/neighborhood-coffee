@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Coffee } from "lucide-react";
 
 const customerInfoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,11 +26,9 @@ type CustomerInfo = z.infer<typeof customerInfoSchema>;
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
   initialValues?: Partial<CustomerInfo>;
-  orderDetails: string;
-  orderNumber: number;
 }
 
-export default function CustomerInfoForm({ onInfoChange, initialValues, orderDetails, orderNumber }: CustomerInfoFormProps) {
+export default function CustomerInfoForm({ onInfoChange, initialValues }: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
@@ -38,36 +37,40 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderDet
       phone: initialValues?.phone || "",
       address: initialValues?.address || "",
       isDelivery: initialValues?.isDelivery ?? false,
-      preferredDate: initialValues?.preferredDate || new Date().toISOString().split('T')[0],
-      preferredTime: initialValues?.preferredTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      preferredDate: initialValues?.preferredDate || new Date().toISOString().split("T")[0],
+      preferredTime: initialValues?.preferredTime || new Date().toTimeString().slice(0, 5),
       specialNotes: initialValues?.specialNotes || "",
-    }
+    },
   });
 
-  const today = new Date().toISOString().split('T')[0];
-  const dayOfWeek = new Date().getDay();
+  const today = new Date().toISOString().split("T")[0];
 
+  // Horarios de 6am a 11am
   const timeOptions: { value: string; label: string }[] = [];
   for (let hour = 6; hour <= 11; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       const displayTime = new Date(`2000-01-01 ${time}`).toLocaleTimeString([], {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
       });
       timeOptions.push({ value: time, label: displayTime });
     }
   }
 
   const watchedValues = form.watch();
-  const isDeliveryChecked = form.watch('isDelivery');
+  const isDeliveryChecked = form.watch("isDelivery");
 
   React.useEffect(() => {
     if (form.formState.isValid) {
       onInfoChange(watchedValues);
     }
   }, [watchedValues, form.formState.isValid, onInfoChange]);
+
+  const isSunday = (date: string) => {
+    return new Date(date).getDay() === 0;
+  };
 
   return (
     <Card>
@@ -76,20 +79,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderDet
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form 
-            name="order" 
-            method="POST" 
-            data-netlify="true" 
-            netlify-honeypot="bot-field"
-            className="space-y-4"
-          >
-            <input type="hidden" name="form-name" value="order" />
-            <input type="hidden" name="orderDetails" value={orderDetails} />
-            <input type="hidden" name="orderNumber" value={`ORD-${orderNumber}`} />
-            <p hidden>
-              <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
-            </p>
-
+          <form className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -139,9 +129,20 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderDet
                 <FormItem>
                   <FormLabel>Address {!isDeliveryChecked && "(Enable delivery to enter address)"}</FormLabel>
                   <FormControl>
-                    <Input placeholder="123 Main St, City, State 12345" disabled={!isDeliveryChecked} {...field} />
+                    <Input
+                      placeholder="123 Main St, City, State 12345"
+                      disabled={!isDeliveryChecked}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
+                  <div className="text-sm mt-1 flex items-center gap-2">
+                    <Coffee className="h-4 w-4" />
+                    <span>
+                      12821 Little Misty Ln, El Paso, Texas 79938<br />
+                      (915) 401-5547
+                    </span>
+                  </div>
                 </FormItem>
               )}
             />
@@ -150,17 +151,12 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderDet
               control={form.control}
               name="isDelivery"
               render={({ field }) => (
-                <FormItem className="flex flex-col items-start space-y-1">
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
-                  <FormLabel>
-                    Delivery (otherwise pickup at store)
-                  </FormLabel>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>12821 Little Misty Ln, El Paso TX 79938</span>
-                    <span>(915) 401-5547</span>
-                    <span>☕</span>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
                   </div>
                 </FormItem>
               )}
@@ -174,12 +170,17 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderDet
                   <FormItem>
                     <FormLabel>Preferred Date</FormLabel>
                     <FormControl>
-                      <Input 
+                      <Input
                         type="date"
                         min={today}
                         value={field.value}
-                        disabled={new Date(field.value).getDay() === 0}
-                        {...field}
+                        onChange={(e) => {
+                          if (isSunday(e.target.value)) {
+                            alert("Sundays are not available.");
+                            return;
+                          }
+                          field.onChange(e);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -220,7 +221,11 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderDet
                 <FormItem>
                   <FormLabel>Special Instructions (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Any special requests or notes about your order..." className="min-h-[80px]" {...field} />
+                    <Textarea
+                      placeholder="Any special requests or notes about your order..."
+                      className="min-h-[80px]"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
