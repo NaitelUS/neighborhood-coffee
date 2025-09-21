@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import DrinkCard from "@/components/DrinkCard";
-import AddOnSelector from "@/components/AddOnSelector";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { drinkOptions, addOnOptions } from "@/data/menuData";
@@ -17,8 +16,6 @@ export default function OrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
-  const [couponCode, setCouponCode] = useState("");
-  const [couponMessage, setCouponMessage] = useState("");
 
   const addToOrder = (
     drinkId: string,
@@ -59,10 +56,6 @@ export default function OrderPage() {
 
   const calculateTotal = () => {
     return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  };
-
-  const handleApplyCoupon = () => {
-    setCouponMessage("Coupon not valid");
   };
 
   const handleSubmitOrder = async () => {
@@ -137,9 +130,7 @@ TOTAL: $${calculateTotal().toFixed(2)}
     document.body.appendChild(form);
     form.submit();
 
-    localStorage.setItem("lastOrderDetails", orderDetails);
     window.location.href = `/thank-you?orderNo=${orderNumber}`;
-
   };
 
   return (
@@ -200,26 +191,6 @@ TOTAL: $${calculateTotal().toFixed(2)}
             />
 
             <CustomerInfoForm onInfoChange={setCustomerInfo} />
-
-            {/* Coupon */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Enter coupon"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="border p-2 flex-1 rounded"
-              />
-              <Button
-                onClick={handleApplyCoupon}
-                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
-              >
-                Apply
-              </Button>
-            </div>
-            {couponMessage && (
-              <p className="text-sm text-red-500">{couponMessage}</p>
-            )}
 
             <Button
               onClick={handleSubmitOrder}
