@@ -3,9 +3,10 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
 import OrderPage from "@/pages/OrderPage";
-import ThankYou from "@/pages/ThankYou";   // nueva página
-import AdminOrders from "@/pages/AdminOrders"; // nueva página
+import ThankYou from "@/pages/ThankYou";
+import OrderStatus from "@/pages/OrderStatus";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -13,8 +14,8 @@ function Router() {
     <Switch>
       <Route path="/" component={OrderPage} />
       <Route path="/thank-you" component={ThankYou} />
-      <Route path="/admin/orders" component={AdminOrders} />
-      {/* Fallback to 404 */}
+      <Route path="/order-status/:id" component={OrderStatus} />
+      {/* Fallback 404 */}
       <Route component={NotFound} />
     </Switch>
   );
