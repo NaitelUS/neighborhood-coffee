@@ -8,21 +8,10 @@ import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 import { ShoppingCart } from "lucide-react";
 
-// contador persistente en localStorage
-let globalOrderCounter = parseInt(localStorage.getItem("orderCounter") || "1", 10);
-const nextOrderNumber = () => {
-  const current = globalOrderCounter++;
-  localStorage.setItem("orderCounter", globalOrderCounter.toString());
-  return current;
-};
-
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [coupon, setCoupon] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<number | null>(null);
-  const [couponLocked, setCouponLocked] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -64,28 +53,7 @@ export default function OrderPage() {
   };
 
   const calculateTotal = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    if (appliedDiscount) {
-      return subtotal - subtotal * appliedDiscount;
-    }
-    return subtotal;
-  };
-
-  const handleApplyCoupon = () => {
-    if (coupon.toUpperCase() === "BREW15") {
-      setAppliedDiscount(0.15);
-      setCouponLocked(true);
-      toast({
-        title: "Coupon applied",
-        description: "15% discount has been applied.",
-      });
-    } else {
-      toast({
-        title: "Coupon not valid",
-        description: "Please try another code.",
-        variant: "destructive",
-      });
-    }
+    return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
   const handleSubmitOrder = async () => {
@@ -115,22 +83,35 @@ export default function OrderPage() {
     }
 
     setIsSubmitting(true);
-    const orderNumber = nextOrderNumber();
 
-    const orderDetails = {
-      orderNo: orderNumber,
-      customer: info,
-      items: orderItems,
-      subtotal: orderItems.reduce((sum, i) => sum + i.totalPrice, 0),
-      discount: appliedDiscount ? `${appliedDiscount * 100}%` : null,
-      total: calculateTotal(),
-    };
+    try {
+      // Obtener las órdenes previas
+      const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]");
 
-    // guardar en localStorage para mostrar luego en ThankYou y OrderStatus
-    localStorage.setItem(`order-${orderNumber}`, JSON.stringify(orderDetails));
+      // Calcular número de orden
+      const orderNumber = savedOrders.length + 1;
 
-    window.location.href = `/thank-you?orderNo=${orderNumber}`;
-    setIsSubmitting(false);
+      const newOrder = {
+        orderNumber,
+        customer: info,
+        items: orderItems,
+        total: calculateTotal(),
+        status: "Received",
+      };
+
+      savedOrders.push(newOrder);
+      localStorage.setItem("orders", JSON.stringify(savedOrders));
+
+      window.location.href = `/thank-you?orderNo=${orderNumber}`;
+    } catch (error) {
+      toast({
+        title: "Order failed",
+        description: "There was an error submitting your order.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -188,26 +169,7 @@ export default function OrderPage() {
               items={orderItems}
               addOns={addOnOptions}
               onRemoveItem={removeFromOrder}
-              discount={appliedDiscount}
             />
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Coupon Code"
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
-                disabled={couponLocked}
-                className="border p-2 flex-1 rounded"
-              />
-              <Button
-                onClick={handleApplyCoupon}
-                disabled={couponLocked}
-                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
-              >
-                Apply
-              </Button>
-            </div>
 
             <CustomerInfoForm onInfoChange={setCustomerInfo} />
 
