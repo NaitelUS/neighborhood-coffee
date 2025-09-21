@@ -217,7 +217,6 @@ TOTAL: $${calculateTotal().toFixed(2)}
                 discount={discount}
             />
 
-
             {/* Coupon Section */}
             <div className="flex gap-2">
               <input
