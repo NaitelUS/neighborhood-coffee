@@ -7,6 +7,9 @@ import OrderPage from "@/pages/OrderPage";
 import ThankYou from "@/pages/ThankYou";
 import OrderStatus from "@/pages/OrderStatus";
 import NotFound from "@/pages/not-found";
+import AdminOrders from "@/pages/AdminOrders";
+
+<Route path="/admin/orders" component={AdminOrders} />
 
 function Router() {
   return (
