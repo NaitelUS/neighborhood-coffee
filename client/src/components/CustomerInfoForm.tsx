@@ -1,99 +1,50 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-const customerInfoSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email address"),
-    phone: z.string().min(10, "Please enter a valid phone number"),
-    address: z.string().optional(),
-    isDelivery: z.boolean(),
-    preferredDate: z.string().min(1, "Please select a preferred date"),
-    preferredTime: z.string().min(1, "Please select a preferred time"),
-    specialNotes: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.isDelivery && (!data.address || data.address.length < 5)) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Address is required when delivery is selected",
-      path: ["address"],
-    }
-  );
+const customerInfoSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().min(10),
+  address: z.string().optional(),
+  isDelivery: z.boolean(),
+  preferredDate: z.string().min(1),
+  preferredTime: z.string().min(1),
+  specialNotes: z.string().optional(),
+});
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
 
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
-  initialValues?: Partial<CustomerInfo>;
-  orderDetails?: any;
+  orderDetails: string;
 }
 
-export default function CustomerInfoForm({
-  onInfoChange,
-  initialValues,
-  orderDetails,
-}: CustomerInfoFormProps) {
+export default function CustomerInfoForm({ onInfoChange, orderDetails }: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
-      name: initialValues?.name || "",
-      email: initialValues?.email || "",
-      phone: initialValues?.phone || "",
-      address: initialValues?.address || "",
-      isDelivery: initialValues?.isDelivery ?? false,
-      preferredDate: initialValues?.preferredDate || new Date().toISOString().split("T")[0],
-      preferredTime: initialValues?.preferredTime || "",
-      specialNotes: initialValues?.specialNotes || "",
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      isDelivery: false,
+      preferredDate: new Date().toISOString().split("T")[0],
+      preferredTime: "",
+      specialNotes: "",
     },
   });
 
   const today = new Date().toISOString().split("T")[0];
 
-  const timeOptions: { value: string; label: string }[] = [];
-  for (let hour = 6; hour <= 11; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, "0")}:${minute
-        .toString()
-        .padStart(2, "0")}`;
-      const displayTime = new Date(`2000-01-01 ${time}`).toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-      timeOptions.push({ value: time, label: displayTime });
-    }
-  }
-
   const watchedValues = form.watch();
-  const isDeliveryChecked = form.watch("isDelivery");
-
   React.useEffect(() => {
     if (form.formState.isValid) {
       onInfoChange(watchedValues);
@@ -107,19 +58,9 @@ export default function CustomerInfoForm({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form
-            name="order"
-            method="POST"
-            data-netlify="true"
-            netlify-honeypot="bot-field"
-            className="space-y-4"
-          >
+          <form name="order" method="POST" data-netlify="true" netlify-honeypot="bot-field" className="space-y-4">
             <input type="hidden" name="form-name" value="order" />
-            <input
-              type="hidden"
-              name="orderDetails"
-              value={JSON.stringify(orderDetails)}
-            />
+            <input type="hidden" name="orderDetails" value={orderDetails} />
             <p hidden>
               <label>
                 Don’t fill this out if you’re human: <input name="bot-field" />
@@ -132,9 +73,7 @@ export default function CustomerInfoForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter your full name" {...field} />
-                  </FormControl>
+                  <FormControl><Input {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -146,9 +85,7 @@ export default function CustomerInfoForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="your.email@example.com" {...field} />
-                  </FormControl>
+                  <FormControl><Input type="email" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -160,9 +97,7 @@ export default function CustomerInfoForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input type="tel" placeholder="(555) 123-4567" {...field} />
-                  </FormControl>
+                  <FormControl><Input type="tel" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -173,16 +108,8 @@ export default function CustomerInfoForm({
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Address {!isDeliveryChecked && "(Enable delivery to enter address)"}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="123 Main St, City, State 12345"
-                      disabled={!isDeliveryChecked}
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -196,84 +123,65 @@ export default function CustomerInfoForm({
                   <FormControl>
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Delivery (otherwise pickup at store)
-                      <br />
-                      12821 Little Misty Ln
-                      <br />
-                      El Paso, Texas 79938
-                      <br />
+                  <div>
+                    <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      12821 Little Misty ln, El Paso, Texas 79938<br />
                       (915) 401-5547 ☕
-                    </FormLabel>
+                    </p>
                   </div>
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="preferredDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preferred Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" min={today} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="preferredDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Date</FormLabel>
+                  <FormControl><Input type="date" min={today} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="preferredTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preferred Time</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select time" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {timeOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="preferredTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Time</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {["06:00", "07:00", "08:00", "09:00", "10:00", "11:00"].map((t) => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
               name="specialNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Special Instructions (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Any special requests or notes about your order..."
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>Special Instructions</FormLabel>
+                  <FormControl><Textarea {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Métodos de pago */}
-            <div className="mt-4 text-sm text-gray-600">
-              We accept <strong>Cash App</strong>, <strong>Zelle</strong>, and <strong>Cash</strong>.
-            </div>
+            <p className="text-sm text-muted-foreground">
+              We accept CashApp, Zelle and Cash.
+            </p>
           </form>
         </Form>
       </CardContent>
