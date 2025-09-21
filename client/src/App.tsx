@@ -9,8 +9,7 @@ import OrderStatus from "@/pages/OrderStatus";
 import NotFound from "@/pages/not-found";
 import AdminOrders from "@/pages/AdminOrders";
 
-<Route path="/admin/orders" component={AdminOrders} />
-<Route path="/order-status" component={OrderStatus} />
+
 
 
 function Router() {
@@ -19,6 +18,8 @@ function Router() {
       <Route path="/" component={OrderPage} />
       <Route path="/thank-you" component={ThankYou} />
       <Route path="/order-status/:id" component={OrderStatus} />
+      <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/order-status" component={OrderStatus} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
