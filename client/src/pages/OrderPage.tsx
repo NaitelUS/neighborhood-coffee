@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import DrinkCard from "@/components/DrinkCard";
+import AddOnSelector from "@/components/AddOnSelector";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { drinkOptions, addOnOptions } from "@/data/menuData";
@@ -15,9 +16,8 @@ export default function OrderPage() {
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coupon, setCoupon] = useState("");
-  const [discount, setDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
-
+  const [discount, setDiscount] = useState(0);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -60,20 +60,21 @@ export default function OrderPage() {
 
   const calculateTotal = () => {
     const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    return subtotal - discount;
+    if (discount > 0) {
+      return subtotal - subtotal * discount;
+    }
+    return subtotal;
   };
 
   const handleApplyCoupon = () => {
     if (couponApplied) return;
 
-    if (coupon.trim().toUpperCase() === "FALL2025") {
-      const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      const discountValue = subtotal * 0.15;
-      setDiscount(discountValue);
+    if (coupon.toLowerCase() === "brew15") {
+      setDiscount(0.15);
       setCouponApplied(true);
       toast({
-        title: "Coupon applied",
-        description: "15% discount has been applied to your order!",
+        title: "Coupon applied!",
+        description: "15% discount has been applied to your order.",
       });
     } else {
       toast({
@@ -133,10 +134,6 @@ ${orderItems
   )
   .join("\n")}
 
-Subtotal: $${orderItems
-      .reduce((sum, item) => sum + item.totalPrice, 0)
-      .toFixed(2)}
-Discount: -$${discount.toFixed(2)}
 TOTAL: $${calculateTotal().toFixed(2)}
 `;
 
@@ -220,15 +217,14 @@ TOTAL: $${calculateTotal().toFixed(2)}
               onRemoveItem={removeFromOrder}
             />
 
-            {/* Coupon Section */}
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Enter coupon"
+                placeholder="Coupon code"
                 value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
                 disabled={couponApplied}
-                className="flex-1 border rounded px-3 py-2"
+                onChange={(e) => setCoupon(e.target.value)}
+                className="flex-1 border px-2 py-1 rounded"
               />
               <Button
                 onClick={handleApplyCoupon}
