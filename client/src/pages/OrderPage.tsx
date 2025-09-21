@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import DrinkCard from "@/components/DrinkCard";
-import AddOnSelector from "@/components/AddOnSelector";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { drinkOptions, addOnOptions } from "@/data/menuData";
@@ -16,8 +15,8 @@ export default function OrderPage() {
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coupon, setCoupon] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
   const [discount, setDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -66,10 +65,10 @@ export default function OrderPage() {
     return subtotal;
   };
 
-  const handleApplyCoupon = () => {
+  const applyCoupon = () => {
     if (couponApplied) return;
 
-    if (coupon.toLowerCase() === "brew15") {
+    if (coupon.trim().toUpperCase() === "FALLBREW15") {
       setDiscount(0.15);
       setCouponApplied(true);
       toast({
@@ -217,17 +216,18 @@ TOTAL: $${calculateTotal().toFixed(2)}
               onRemoveItem={removeFromOrder}
             />
 
+            {/* Coupon Section */}
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Coupon code"
                 value={coupon}
-                disabled={couponApplied}
                 onChange={(e) => setCoupon(e.target.value)}
-                className="flex-1 border px-2 py-1 rounded"
+                placeholder="Enter coupon code"
+                disabled={couponApplied}
+                className="flex-1 border rounded px-3 py-2"
               />
               <Button
-                onClick={handleApplyCoupon}
+                onClick={applyCoupon}
                 disabled={couponApplied}
                 className="bg-[#1D9099] hover:bg-[#00454E] text-white"
               >
