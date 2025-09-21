@@ -1,16 +1,16 @@
 import type { DrinkOption, AddOn } from "@shared/schema";
 
 // Import all coffee images
-import hotAmericanoImg from '@assets/generated_images/Hot_Americano_Coffee_511b6324.png';
-import icedAmericanoImg from '@assets/generated_images/Iced_Americano_Coffee_57bcec89.png';
-import hotLatteImg from '@assets/generated_images/Hot_Latte_Coffee_c0cec515.png';
-import icedLatteImg from '@assets/generated_images/Iced_Latte_Coffee_ebf0391f.png';
-import hotMochaImg from '@assets/generated_images/Hot_Mocha_Coffee_0428bb6d.png';
-import icedMochaImg from '@assets/generated_images/Iced_Mocha_Coffee_8dea2fdb.png';
-import hotGoldenImg from '@assets/generated_images/Hot_Golden_Coffee_d91f826e.png';
-import icedGoldenImg from '@assets/generated_images/Iced_Golden_Coffee_159e1f49.png';
-import hotCafeLaitImg from '@assets/generated_images/Hot_Café_au_Lait_8c8a1ed2.png';
-import icedCafeLaitImg from '@assets/generated_images/Iced_Café_au_Lait_60f2c4d8.png';
+import hotAmericanoImg from '/attached_assets/Hot_Americano_Coffee_511b6324.png';
+import icedAmericanoImg from '/attached_assets/Iced_Americano_Coffee_57bcec89.png';
+import hotLatteImg from '/attached_assets/Hot_Latte_Coffee_c0cec515.png';
+import icedLatteImg from '/attached_assets/Iced_Latte_Coffee_ebf0391f.png';
+import hotMochaImg from '/attached_assets/Hot_Mocha_Coffee_0428bb6d.png';
+import icedMochaImg from '/attached_assets/Iced_Mocha_Coffee_8dea2fdb.png';
+import hotGoldenImg from '/attached_assets/Hot_Golden_Coffee_d91f826e.png';
+import icedGoldenImg from '/attached_assets/Iced_Golden_Coffee_159e1f49.png';
+import hotCafeLaitImg from '/attached_assets/Hot_Café_au_Lait_8c8a1ed2.png';
+import icedCafeLaitImg from '/attached_assets/Iced_Café_au_Lait_60f2c4d8.png';
 
 export const drinkOptions: DrinkOption[] = [
   {
