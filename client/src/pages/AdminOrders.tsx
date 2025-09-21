@@ -1,100 +1,122 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-type Order = {
+interface Order {
   orderNo: number;
-  name: string;
-  email: string;
+  customer: {
+    name: string;
+    email: string;
+    phone: string;
+    address?: string;
+  };
+  items: string[];
   total: number;
   status: string;
-};
+}
 
-const sampleOrders: Order[] = [
-  { orderNo: 1, name: "Julio Mendez", email: "jcmendez@naitel.com", total: 12.5, status: "Received" },
-  { orderNo: 2, name: "Ana Lopez", email: "ana@example.com", total: 8.0, status: "In Process" },
-];
+const PASSWORD = "barista123"; // ⚠️ cambiar cuando gustes
 
 export default function AdminOrders() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [orders, setOrders] = useState<Order[]>(sampleOrders);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [inputPassword, setInputPassword] = useState("");
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    const savedOrders = localStorage.getItem("orders");
+    if (savedOrders) {
+      setOrders(JSON.parse(savedOrders));
+    }
+  }, []);
 
   const handleLogin = () => {
-    if (password === "coffeeadmin") {
-      setIsAuthenticated(true);
+    if (inputPassword === PASSWORD) {
+      setIsAuthorized(true);
     } else {
       alert("Incorrect password");
     }
   };
 
   const updateStatus = (orderNo: number, newStatus: string) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.orderNo === orderNo ? { ...order, status: newStatus } : order
-      )
+    const updated = orders.map((o) =>
+      o.orderNo === orderNo ? { ...o, status: newStatus } : o
     );
+    setOrders(updated);
+    localStorage.setItem("orders", JSON.stringify(updated));
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-8 rounded shadow-md w-80">
-          <h2 className="text-xl font-bold mb-4">Admin Login</h2>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded mb-4"
-          />
-          <button
-            onClick={handleLogin}
-            className="w-full bg-[#1D9099] hover:bg-[#00454E] text-white py-2 rounded"
-          >
-            Login
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center h-screen space-y-4">
+        <h1 className="text-xl font-bold">Admin Login</h1>
+        <input
+          type="password"
+          value={inputPassword}
+          onChange={(e) => setInputPassword(e.target.value)}
+          placeholder="Enter password"
+          className="border p-2 rounded"
+        />
+        <button
+          onClick={handleLogin}
+          className="bg-[#1D9099] hover:bg-[#00454E] text-white px-4 py-2 rounded"
+        >
+          Login
+        </button>
       </div>
     );
   }
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Orders</h1>
-      <table className="min-w-full border">
-        <thead>
-          <tr className="bg-gray-200 text-left">
-            <th className="p-2 border">Order No</th>
-            <th className="p-2 border">Customer</th>
-            <th className="p-2 border">Email</th>
-            <th className="p-2 border">Total</th>
-            <th className="p-2 border">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.orderNo} className="hover:bg-gray-50">
-              <td className="p-2 border">{order.orderNo}</td>
-              <td className="p-2 border">{order.name}</td>
-              <td className="p-2 border">{order.email}</td>
-              <td className="p-2 border">${order.total.toFixed(2)}</td>
-              <td className="p-2 border">
-                <select
-                  value={order.status}
-                  onChange={(e) => updateStatus(order.orderNo, e.target.value)}
-                  className="border rounded px-2 py-1"
-                >
-                  <option>Received</option>
-                  <option>In Process</option>
-                  <option>Ready for Pickup</option>
-                  <option>Delivering</option>
-                  <option>Completed</option>
-                  <option>Canceled</option>
-                </select>
-              </td>
+      <h1 className="text-2xl font-bold mb-6">Admin Orders</h1>
+      {orders.length === 0 ? (
+        <p>No orders found.</p>
+      ) : (
+        <table className="w-full border-collapse border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border p-2">Order No</th>
+              <th className="border p-2">Customer</th>
+              <th className="border p-2">Items</th>
+              <th className="border p-2">Total</th>
+              <th className="border p-2">Status</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.orderNo}>
+                <td className="border p-2">{order.orderNo}</td>
+                <td className="border p-2">
+                  <div>{order.customer.name}</div>
+                  <div>{order.customer.email}</div>
+                  <div>{order.customer.phone}</div>
+                  {order.customer.address && <div>{order.customer.address}</div>}
+                </td>
+                <td className="border p-2">
+                  <ul>
+                    {order.items.map((i, idx) => (
+                      <li key={idx}>{i}</li>
+                    ))}
+                  </ul>
+                </td>
+                <td className="border p-2">${order.total.toFixed(2)}</td>
+                <td className="border p-2">
+                  <select
+                    value={order.status}
+                    onChange={(e) => updateStatus(order.orderNo, e.target.value)}
+                    className="border p-1 rounded"
+                  >
+                    <option value="Received">Received</option>
+                    <option value="In Process">In Process</option>
+                    <option value="Ready for Pickup">Ready for Pickup</option>
+                    <option value="On the Way">On the Way</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Canceled">Canceled</option>
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
