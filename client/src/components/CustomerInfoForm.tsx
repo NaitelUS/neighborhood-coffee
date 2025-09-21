@@ -2,7 +2,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,23 +13,20 @@ const customerInfoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
-  orderType: z.enum(["pickup", "delivery"]),
   address: z.string().optional(),
+  isDelivery: z.boolean(),
   preferredDate: z.string().min(1, "Please select a preferred date"),
   preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
-}).refine(
-  (data) => {
-    if (data.orderType === "delivery" && (!data.address || data.address.length < 5)) {
-      return false;
-    }
-    return true;
-  },
-  {
-    message: "Address is required when delivery is selected",
-    path: ["address"],
+}).refine((data) => {
+  if (data.isDelivery && (!data.address || data.address.length < 5)) {
+    return false;
   }
-);
+  return true;
+}, {
+  message: "Address is required when delivery is selected",
+  path: ["address"],
+});
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
 
@@ -38,27 +36,32 @@ interface CustomerInfoFormProps {
 }
 
 export default function CustomerInfoForm({ onInfoChange, initialValues }: CustomerInfoFormProps) {
+  const today = new Date();
+  const todayDate = today.toISOString().split("T")[0];
+  const currentTime = today.toTimeString().slice(0, 5);
+
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
       name: initialValues?.name || "",
       email: initialValues?.email || "",
       phone: initialValues?.phone || "",
-      orderType: initialValues?.orderType || "pickup",
       address: initialValues?.address || "",
-      preferredDate: initialValues?.preferredDate || "",
-      preferredTime: initialValues?.preferredTime || "",
+      isDelivery: initialValues?.isDelivery ?? false,
+      preferredDate: todayDate,
+      preferredTime: currentTime,
       specialNotes: initialValues?.specialNotes || "",
-    },
+    }
   });
 
-  const today = new Date().toISOString().split("T")[0];
+  const watchedValues = form.watch();
+  const isDeliveryChecked = form.watch("isDelivery");
 
   React.useEffect(() => {
     if (form.formState.isValid) {
-      onInfoChange(form.getValues());
+      onInfoChange(watchedValues);
     }
-  }, [form.watch(), form.formState.isValid]);
+  }, [watchedValues, form.formState.isValid, onInfoChange]);
 
   return (
     <Card>
@@ -68,7 +71,6 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
       <CardContent>
         <Form {...form}>
           <form className="space-y-4">
-            {/* Name */}
             <FormField
               control={form.control}
               name="name"
@@ -83,7 +85,6 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
               )}
             />
 
-            {/* Email */}
             <FormField
               control={form.control}
               name="email"
@@ -98,7 +99,6 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
               )}
             />
 
-            {/* Phone */}
             <FormField
               control={form.control}
               name="phone"
@@ -113,36 +113,24 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
               )}
             />
 
-            {/* Pickup / Delivery */}
             <FormField
               control={form.control}
-              name="orderType"
+              name="isDelivery"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Order Type</FormLabel>
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex flex-col space-y-2"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="pickup" id="pickup" />
-                        <FormLabel htmlFor="pickup">Pickup</FormLabel>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="delivery" id="delivery" />
-                        <FormLabel htmlFor="delivery">Delivery</FormLabel>
-                      </div>
-                    </RadioGroup>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
-                  <FormMessage />
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Delivery (otherwise pickup at store)
+                    </FormLabel>
+                  </div>
                 </FormItem>
               )}
             />
 
-            {/* Address (only if Delivery) */}
-            {form.watch("orderType") === "delivery" && (
+            {isDeliveryChecked && (
               <FormField
                 control={form.control}
                 name="address"
@@ -158,45 +146,36 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
               />
             )}
 
-            {/* Café Address */}
-            <div className="text-sm text-muted-foreground mt-2">
-              <p className="font-semibold">The Neighborhood Coffee</p>
-              <p>12821 Little Misty Ln</p>
-              <p>El Paso, Texas 79938</p>
-              <p>(915) 401-5547 ☕</p>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="preferredDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferredTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Time</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {/* Preferred Date */}
-            <FormField
-              control={form.control}
-              name="preferredDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" min={today} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Preferred Time */}
-            <FormField
-              control={form.control}
-              name="preferredTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Notes */}
             <FormField
               control={form.control}
               name="specialNotes"
@@ -214,6 +193,14 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                 </FormItem>
               )}
             />
+
+            <p className="text-sm text-muted-foreground mt-2">
+              ☕ Orders are served daily from 6 AM to 11 AM. We rest on Sundays!
+            </p>
+
+            <p className="text-sm text-muted-foreground mt-1">
+              Payment accepted: CashApp, Zelle, or Cash.
+            </p>
           </form>
         </Form>
       </CardContent>
