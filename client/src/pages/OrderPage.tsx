@@ -137,7 +137,9 @@ TOTAL: $${calculateTotal().toFixed(2)}
     document.body.appendChild(form);
     form.submit();
 
+    localStorage.setItem("lastOrderDetails", orderDetails);
     window.location.href = `/thank-you?orderNo=${orderNumber}`;
+
   };
 
   return (
