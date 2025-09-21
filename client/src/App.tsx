@@ -14,14 +14,13 @@ function Router() {
     <Switch>
       <Route path="/" component={OrderPage} />
       <Route path="/thank-you" component={ThankYou} />
-      <Route path="/order-status/:id" component={OrderStatus} />
+      <Route path="/order-status/:orderNo" component={OrderStatus} />
       <Route path="/admin/orders" component={AdminOrders} />
-      <Route path="/order-status" component={OrderStatus} />
-      {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
   );
 }
+
 
 function App() {
   return (
