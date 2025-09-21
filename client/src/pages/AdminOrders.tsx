@@ -1,110 +1,83 @@
+// client/src/pages/AdminOrders.tsx
 import { useState, useEffect } from "react";
 
+type Order = {
+  orderNo: number;
+  customer: string;
+  status: string;
+};
+
 const statusOptions = [
-  "received",
-  "preparing",
-  "ready",
-  "delivering",
-  "completed",
-  "canceled",
+  { id: "received", label: "☕ Received" },
+  { id: "inProcess", label: "👨‍🍳 In Process" },
+  { id: "pickup", label: "🛍️ Ready for Pickup" },
+  { id: "delivering", label: "🚗 On the Way" },
+  { id: "completed", label: "✅ Completed" },
+  { id: "canceled", label: "❌ Canceled" },
 ];
 
 export default function AdminOrders() {
-  const [isAuth, setIsAuth] = useState(false);
-  const [password, setPassword] = useState("");
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
+  // Cargar del LocalStorage al iniciar
   useEffect(() => {
-    if (isAuth) {
-      const stored = JSON.parse(localStorage.getItem("orders") || "[]");
-      setOrders(stored);
-    }
-  }, [isAuth]);
-
-  const handleLogin = () => {
-    if (password === "coffeeAdmin123") {
-      setIsAuth(true);
+    const storedOrders = localStorage.getItem("orders");
+    if (storedOrders) {
+      setOrders(JSON.parse(storedOrders));
     } else {
-      alert("Wrong password");
+      // mock inicial
+      setOrders([
+        { orderNo: 1, customer: "Julio", status: "received" },
+        { orderNo: 2, customer: "Ana", status: "inProcess" },
+      ]);
     }
-  };
+  }, []);
 
-  const updateStatus = (orderNo: number, status: string) => {
-    const updated = orders.map((o) =>
-      o.orderNo === orderNo ? { ...o, status } : o
-    );
-    setOrders(updated);
-    localStorage.setItem("orders", JSON.stringify(updated));
-  };
+  // Guardar en LocalStorage cada vez que cambien
+  useEffect(() => {
+    localStorage.setItem("orders", JSON.stringify(orders));
+  }, [orders]);
 
-  if (!isAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="bg-card p-6 rounded-lg shadow-md space-y-4">
-          <h1 className="text-xl font-bold text-center">Admin Login</h1>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
-          />
-          <button
-            onClick={handleLogin}
-            className="bg-[#1D9099] hover:bg-[#00454E] text-white px-4 py-2 rounded w-full"
-          >
-            Login
-          </button>
-        </div>
-      </div>
+  const updateStatus = (orderNo: number, newStatus: string) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.orderNo === orderNo ? { ...o, status: newStatus } : o
+      )
     );
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
-      <h1 className="text-2xl font-serif font-bold mb-6 text-center">
-        Admin Orders
-      </h1>
-      {orders.length === 0 ? (
-        <p className="text-center">No orders yet.</p>
-      ) : (
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="p-2 border">Order No</th>
-              <th className="p-2 border">Customer</th>
-              <th className="p-2 border">Total</th>
-              <th className="p-2 border">Status</th>
-              <th className="p-2 border">Update</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.orderNo} className="text-center">
-                <td className="border p-2">{order.orderNo}</td>
-                <td className="border p-2">{order.name}</td>
-                <td className="border p-2">${order.total.toFixed(2)}</td>
-                <td className="border p-2 capitalize">{order.status}</td>
-                <td className="border p-2">
-                  <select
-                    value={order.status}
-                    onChange={(e) =>
-                      updateStatus(order.orderNo, e.target.value)
-                    }
-                    className="border rounded px-2 py-1"
-                  >
-                    {statusOptions.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="p-6 min-h-screen bg-gray-50">
+      <h1 className="text-2xl font-bold mb-6">Admin - Orders</h1>
+
+      <div className="space-y-4">
+        {orders.map((order) => (
+          <div
+            key={order.orderNo}
+            className="border p-4 rounded-lg bg-white shadow"
+          >
+            <h2 className="font-semibold">
+              Order #{order.orderNo} - {order.customer}
+            </h2>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              {statusOptions.map((status) => (
+                <button
+                  key={status.id}
+                  onClick={() => updateStatus(order.orderNo, status.id)}
+                  className={`px-3 py-2 rounded ${
+                    order.status === status.id
+                      ? "bg-[#1D9099] text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  }`}
+                >
+                  {status.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
