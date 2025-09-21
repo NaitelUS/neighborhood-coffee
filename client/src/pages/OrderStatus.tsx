@@ -8,7 +8,12 @@ type Order = {
     email: string;
     phone: string;
   };
-  items: { drinkName: string; temperature: string; quantity: number; totalPrice: number }[];
+  items: {
+    drinkName: string;
+    temperature: string;
+    quantity: number;
+    totalPrice: number;
+  }[];
   total: number;
   status: string;
 };
@@ -18,7 +23,6 @@ export default function OrderStatus() {
   const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    // 🔧 Simulación de fetch (cuando tengamos backend se cambia aquí)
     const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]") as Order[];
     const found = savedOrders.find((o) => o.orderNumber === Number(id));
     setOrder(found || null);
