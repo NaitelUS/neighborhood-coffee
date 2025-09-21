@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import DrinkCard from "@/components/DrinkCard";
 import OrderSummary from "@/components/OrderSummary";
@@ -14,6 +15,8 @@ export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [discount, setDiscount] = useState(0); // 0.15 = 15%
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -54,8 +57,30 @@ export default function OrderPage() {
     setOrderItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleApplyCoupon = () => {
+    const code = couponCode.trim().toUpperCase();
+    if (code === "FALLBREW15") {
+      setDiscount(0.15);
+      toast({
+        title: "Coupon applied!",
+        description: "Enjoy 15% off your order 🎉",
+      });
+    } else {
+      setDiscount(0);
+      toast({
+        title: "Coupon not valid",
+        description: "Please try another code.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const calculateSubtotal = () =>
+    orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
   const calculateTotal = () => {
-    return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const subtotal = calculateSubtotal();
+    return +(subtotal - subtotal * discount).toFixed(2);
   };
 
   const handleSubmitOrder = async () => {
@@ -84,52 +109,75 @@ export default function OrderPage() {
       return;
     }
 
+    // Generate order number (simple in-memory, reinicia con cada deploy)
     const orderNumber = globalOrderCounter++;
+
+    // Build plain-text summary
+    const itemsBlock = orderItems
+      .map(
+        (item) =>
+          `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(
+            2
+          )}`
+      )
+      .join("\n");
 
     const orderDetails = `
 Order No: ${orderNumber}
 Name: ${info.name}
 Email: ${info.email}
 Phone: ${info.phone}
-Delivery: ${info.isDelivery ? "Yes" : "Pickup"}
-Address: ${info.address || "N/A"}
+Method: ${info.deliveryMethod === "delivery" ? "Delivery" : "Pickup"}
+Address: ${info.deliveryMethod === "delivery" ? info.address || "N/A" : "Pickup"}
 Preferred Date: ${info.preferredDate}
 Preferred Time: ${info.preferredTime}
 Notes: ${info.specialNotes || "N/A"}
 
 Items:
-${orderItems
-  .map(
-    (item) =>
-      `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(
-        2
-      )}`
-  )
-  .join("\n")}
+${itemsBlock}
 
+Subtotal: $${calculateSubtotal().toFixed(2)}
+Discount: ${discount > 0 ? `${(discount * 100).toFixed(0)}% (code: ${couponCode.toUpperCase()})` : "No discount"}
 TOTAL: $${calculateTotal().toFixed(2)}
 `;
 
+    // Send to Netlify Forms to guardar (sin emails)
     const form = document.createElement("form");
     form.method = "POST";
     form.setAttribute("data-netlify", "true");
     form.style.display = "none";
 
-    const formName = document.createElement("input");
-    formName.type = "hidden";
-    formName.name = "form-name";
-    formName.value = "order";
-    form.appendChild(formName);
+    const fields: Record<string, string> = {
+      "form-name": "order",
+      orderNumber: String(orderNumber),
+      name: info.name,
+      email: info.email,
+      phone: info.phone,
+      deliveryMethod: info.deliveryMethod,
+      address:
+        info.deliveryMethod === "delivery" ? info.address || "" : "Pickup",
+      preferredDate: info.preferredDate,
+      preferredTime: info.preferredTime,
+      couponCode: couponCode.trim().toUpperCase(),
+      discountPercent: String(discount * 100),
+      subtotal: calculateSubtotal().toFixed(2),
+      total: calculateTotal().toFixed(2),
+      orderDetails: orderDetails.trim(),
+      itemsJSON: JSON.stringify(orderItems),
+    };
 
-    const orderField = document.createElement("input");
-    orderField.type = "hidden";
-    orderField.name = "orderDetails";
-    orderField.value = orderDetails;
-    form.appendChild(orderField);
+    for (const [name, value] of Object.entries(fields)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    }
 
     document.body.appendChild(form);
     form.submit();
 
+    // Redirige al Thank You con número de orden
     window.location.href = `/thank-you?orderNo=${orderNumber}`;
   };
 
@@ -189,6 +237,24 @@ TOTAL: $${calculateTotal().toFixed(2)}
               addOns={addOnOptions}
               onRemoveItem={removeFromOrder}
             />
+
+            {/* Coupon */}
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Enter coupon"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={handleApplyCoupon}
+                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
+              >
+                Apply
+              </Button>
+            </div>
 
             <CustomerInfoForm onInfoChange={setCustomerInfo} />
 
