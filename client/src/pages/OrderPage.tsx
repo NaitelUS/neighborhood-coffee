@@ -7,14 +7,15 @@ import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
-import { Coffee, ShoppingCart } from "lucide-react";
-import tnclogo from "@/assets/tnclogo.png";
+import { Coffee } from "lucide-react";
+
+let orderCounter = 1000; // contador inicial de órdenes
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderNumber, setOrderNumber] = useState(1);
+  const [orderNumber, setOrderNumber] = useState("");
   const { toast } = useToast();
 
   const addToOrder = (drinkId: string, temperature: "hot" | "iced", quantity: number, addOns: string[]) => {
@@ -58,6 +59,32 @@ export default function OrderPage() {
     return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
+  // Construir el cuerpo de la orden para el correo
+  const buildOrderDetails = () => {
+    const itemsList = orderItems
+      .map(
+        (item, i) =>
+          `${i + 1}. ${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(2)}`
+      )
+      .join("\n");
+
+    return `
+Order Number: ${orderNumber}
+Customer: ${(customerInfo as any).name || ""}
+Email: ${(customerInfo as any).email || ""}
+Phone: ${(customerInfo as any).phone || ""}
+Address: ${(customerInfo as any).address || "N/A"}
+Pickup/Delivery: ${(customerInfo as any).isDelivery ? "Delivery" : "Pickup"}
+Date: ${(customerInfo as any).preferredDate || ""}
+Time: ${(customerInfo as any).preferredTime || ""}
+
+Items:
+${itemsList}
+
+Total: $${calculateTotal().toFixed(2)}
+    `;
+  };
+
   const handleSubmitOrder = async () => {
     if (orderItems.length === 0) {
       toast({
@@ -90,21 +117,16 @@ export default function OrderPage() {
     setIsSubmitting(true);
 
     try {
-      const currentOrderNumber = orderNumber;
-      setOrderNumber((prev) => prev + 1);
+      // Generar número de orden consecutivo
+      const newOrderNumber = `ORD-${orderCounter++}`;
+      setOrderNumber(newOrderNumber);
 
       toast({
-        title: "Thank you! Your order has been received. Enjoy!",
-        description: `Order #${currentOrderNumber} • Total: $${calculateTotal().toFixed(2)}`,
+        title: "Order submitted successfully!",
+        description: `Your order number is ${newOrderNumber}. Total: $${calculateTotal().toFixed(2)}. Enjoy your coffee! ☕`,
       });
 
       setOrderItems([]);
-      console.log("Order submitted:", {
-        orderNumber: currentOrderNumber,
-        items: orderItems,
-        customer: customerInfo,
-        total: calculateTotal(),
-      });
     } catch (error) {
       toast({
         title: "Order failed",
@@ -122,17 +144,20 @@ export default function OrderPage() {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={tnclogo} alt="Logo" className="h-10" />
+            <img src="/assets/tnclogo.png" alt="Logo" className="h-10 w-auto" />
           </div>
-          <button
-            onClick={() =>
-              document.getElementById("customer-info-section")?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="relative flex items-center gap-2"
+
+          {/* Carrito */}
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => {
+              const element = document.getElementById("customer-info-form");
+              if (element) element.scrollIntoView({ behavior: "smooth" });
+            }}
           >
-            <ShoppingCart className="h-6 w-6 text-primary" />
-            <span className="text-sm">{orderItems.length} items</span>
-          </button>
+            <Coffee className="h-6 w-6 text-primary" />
+            <span className="text-sm font-medium">Cart ({orderItems.length})</span>
+          </div>
         </div>
       </header>
 
@@ -141,30 +166,44 @@ export default function OrderPage() {
           {/* Left Column - Menu */}
           <div className="lg:col-span-2 space-y-8">
             <section>
-              <h2 className="text-2xl font-serif font-semibold mb-6">Our Coffee Menu</h2>
+              <h2 className="text-2xl font-serif font-semibold mb-6" data-testid="menu-title">
+                Our Coffee Menu
+              </h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {drinkOptions.map((drink) => (
-                  <DrinkCard key={drink.id} drink={drink} addOns={addOnOptions} onAddToOrder={addToOrder} />
+                  <DrinkCard
+                    key={drink.id}
+                    drink={drink}
+                    addOns={addOnOptions}
+                    onAddToOrder={addToOrder}
+                    buttonClassName="bg-[#1D9099] hover:bg-[#00454E] text-white"
+                  />
                 ))}
               </div>
             </section>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6" id="customer-info-section">
-            <OrderSummary items={orderItems} addOns={addOnOptions} onRemoveItem={removeFromOrder} />
-
-            <CustomerInfoForm
-              onInfoChange={setCustomerInfo}
-              orderItems={orderItems}
-              total={calculateTotal()}
-              orderNumber={orderNumber}
+          {/* Right Column - Order Summary & Customer Info */}
+          <div className="space-y-6">
+            <OrderSummary
+              items={orderItems}
+              addOns={addOnOptions}
+              onRemoveItem={removeFromOrder}
             />
+
+            <div id="customer-info-form">
+              <CustomerInfoForm
+                onInfoChange={setCustomerInfo}
+                orderNumber={orderNumber}
+                orderDetails={buildOrderDetails()}
+              />
+            </div>
 
             <Button
               onClick={handleSubmitOrder}
               disabled={isSubmitting || orderItems.length === 0}
               className="w-full h-12 text-lg bg-[#1D9099] hover:bg-[#00454E] text-white"
+              data-testid="button-submit-order"
             >
               {isSubmitting ? "Submitting Order..." : `Submit Order - $${calculateTotal().toFixed(2)}`}
             </Button>
