@@ -9,9 +9,6 @@ import OrderStatus from "@/pages/OrderStatus";
 import NotFound from "@/pages/not-found";
 import AdminOrders from "@/pages/AdminOrders";
 
-
-
-
 function Router() {
   return (
     <Switch>
