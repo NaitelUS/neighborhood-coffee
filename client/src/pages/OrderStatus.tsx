@@ -1,67 +1,51 @@
-import { useLocation } from "wouter";
+import { useParams } from "wouter";
 import { useEffect, useState } from "react";
 
-const statusMap: Record<string, string> = {
-  received: "☕ Order Received – we got it!",
-  preparing: "👨‍🍳 In Process – barista is preparing your drink.",
-  ready: "📦 Ready for Pickup – come grab it!",
-  delivering: "🚗 On the Way – your coffee is being delivered.",
-  completed: "✅ Completed – enjoy your drink!",
-  canceled: "❌ Canceled – this order is no longer active.",
-};
+interface Order {
+  orderNo: number;
+  details: string;
+  status: string;
+}
 
 export default function OrderStatus() {
-  const [location] = useLocation();
-  const [orderNo, setOrderNo] = useState<string | null>(null);
-  const [order, setOrder] = useState<any>(null);
+  const { orderNo } = useParams<{ orderNo: string }>();
+  const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const no = params.get("orderNo");
-    if (no) {
-      setOrderNo(no);
-      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-      const found = orders.find((o: any) => String(o.orderNo) === no);
-      if (found) setOrder(found);
-    }
-  }, [location]);
-
-  if (!orderNo) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>No order number provided.</p>
-      </div>
-    );
-  }
+    const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]");
+    const found = savedOrders.find((o: Order) => o.orderNo === Number(orderNo));
+    setOrder(found || null);
+  }, [orderNo]);
 
   if (!order) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>No order found with number {orderNo}.</p>
+      <div className="container mx-auto px-4 py-10 text-center">
+        <h1 className="text-2xl font-bold">Order Not Found ❌</h1>
+        <p className="mt-2 text-muted-foreground">
+          Please check your order number and try again.
+        </p>
       </div>
     );
   }
 
+  const statusMessages: Record<string, string> = {
+    received: "We got your order 📩",
+    preparing: "Your coffee is being made ☕",
+    ready: "Your drink is ready for pickup 🏠",
+    delivering: "Your order is on the way 🚗",
+    completed: "Enjoy your coffee! ✅",
+    canceled: "This order was canceled ❌",
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="max-w-lg w-full bg-card shadow-md rounded-lg p-6 text-center">
-        <h1 className="text-2xl font-serif font-bold text-primary mb-4">
-          Order Status
-        </h1>
-        <p className="text-lg font-semibold mb-2">Order No: {orderNo}</p>
-
-        <p className="mb-4">
-          {statusMap[order.status] || "⏳ Status not available"}
-        </p>
-
-        <h2 className="font-bold mb-2">Order Summary</h2>
-        <ul className="list-disc list-inside text-sm text-left space-y-1">
-          {order.items.map((item: string, idx: number) => (
-            <li key={idx}>{item}</li>
-          ))}
-        </ul>
-
-        <p className="font-semibold mt-2">Total: ${order.total.toFixed(2)}</p>
+    <div className="container mx-auto px-4 py-10">
+      <h1 className="text-3xl font-serif font-bold mb-4">
+        Order Status for #{order.orderNo}
+      </h1>
+      <p className="mb-4 whitespace-pre-line">{order.details}</p>
+      <div className="p-4 bg-card rounded-lg shadow">
+        <h2 className="text-xl font-semibold">Current Status:</h2>
+        <p className="mt-2 text-lg">{statusMessages[order.status]}</p>
       </div>
     </div>
   );
