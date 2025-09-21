@@ -8,15 +8,21 @@ import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 import { ShoppingCart } from "lucide-react";
 
-let globalOrderCounter = 1;
+// contador persistente en localStorage
+let globalOrderCounter = parseInt(localStorage.getItem("orderCounter") || "1", 10);
+const nextOrderNumber = () => {
+  const current = globalOrderCounter++;
+  localStorage.setItem("orderCounter", globalOrderCounter.toString());
+  return current;
+};
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coupon, setCoupon] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [couponApplied, setCouponApplied] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<number | null>(null);
+  const [couponLocked, setCouponLocked] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -59,21 +65,19 @@ export default function OrderPage() {
 
   const calculateTotal = () => {
     const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    if (discount > 0) {
-      return subtotal - subtotal * discount;
+    if (appliedDiscount) {
+      return subtotal - subtotal * appliedDiscount;
     }
     return subtotal;
   };
 
-  const applyCoupon = () => {
-    if (couponApplied) return;
-
-    if (coupon.trim().toUpperCase() === "FALLBREW15") {
-      setDiscount(0.15);
-      setCouponApplied(true);
+  const handleApplyCoupon = () => {
+    if (coupon.toUpperCase() === "BREW15") {
+      setAppliedDiscount(0.15);
+      setCouponLocked(true);
       toast({
-        title: "Coupon applied!",
-        description: "15% discount has been applied to your order.",
+        title: "Coupon applied",
+        description: "15% discount has been applied.",
       });
     } else {
       toast({
@@ -110,53 +114,23 @@ export default function OrderPage() {
       return;
     }
 
-    const orderNumber = globalOrderCounter++;
+    setIsSubmitting(true);
+    const orderNumber = nextOrderNumber();
 
-    const orderDetails = `
-Order No: ${orderNumber}
-Name: ${info.name}
-Email: ${info.email}
-Phone: ${info.phone}
-Delivery: ${info.isDelivery ? "Yes" : "Pickup"}
-Address: ${info.address || "N/A"}
-Preferred Date: ${info.preferredDate}
-Preferred Time: ${info.preferredTime}
-Notes: ${info.specialNotes || "N/A"}
+    const orderDetails = {
+      orderNo: orderNumber,
+      customer: info,
+      items: orderItems,
+      subtotal: orderItems.reduce((sum, i) => sum + i.totalPrice, 0),
+      discount: appliedDiscount ? `${appliedDiscount * 100}%` : null,
+      total: calculateTotal(),
+    };
 
-Items:
-${orderItems
-  .map(
-    (item) =>
-      `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(
-        2
-      )}`
-  )
-  .join("\n")}
-
-TOTAL: $${calculateTotal().toFixed(2)}
-`;
-
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.setAttribute("data-netlify", "true");
-    form.style.display = "none";
-
-    const formName = document.createElement("input");
-    formName.type = "hidden";
-    formName.name = "form-name";
-    formName.value = "order";
-    form.appendChild(formName);
-
-    const orderField = document.createElement("input");
-    orderField.type = "hidden";
-    orderField.name = "orderDetails";
-    orderField.value = orderDetails;
-    form.appendChild(orderField);
-
-    document.body.appendChild(form);
-    form.submit();
+    // guardar en localStorage para mostrar luego en ThankYou y OrderStatus
+    localStorage.setItem(`order-${orderNumber}`, JSON.stringify(orderDetails));
 
     window.location.href = `/thank-you?orderNo=${orderNumber}`;
+    setIsSubmitting(false);
   };
 
   return (
@@ -211,25 +185,24 @@ TOTAL: $${calculateTotal().toFixed(2)}
           {/* Right - Order + Form */}
           <div className="space-y-6" ref={formRef}>
             <OrderSummary
-                items={orderItems}
-                addOns={addOnOptions}
-                onRemoveItem={removeFromOrder}
-                discount={discount}
+              items={orderItems}
+              addOns={addOnOptions}
+              onRemoveItem={removeFromOrder}
+              discount={appliedDiscount}
             />
 
-            {/* Coupon Section */}
             <div className="flex gap-2">
               <input
                 type="text"
+                placeholder="Coupon Code"
                 value={coupon}
                 onChange={(e) => setCoupon(e.target.value)}
-                placeholder="Enter coupon code"
-                disabled={couponApplied}
-                className="flex-1 border rounded px-3 py-2"
+                disabled={couponLocked}
+                className="border p-2 flex-1 rounded"
               />
               <Button
-                onClick={applyCoupon}
-                disabled={couponApplied}
+                onClick={handleApplyCoupon}
+                disabled={couponLocked}
                 className="bg-[#1D9099] hover:bg-[#00454E] text-white"
               >
                 Apply
