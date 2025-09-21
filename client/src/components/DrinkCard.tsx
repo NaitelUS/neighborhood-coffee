@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import AddOnSelector from "@/components/AddOnSelector";
 import type { OrderItem } from "@shared/schema";
 
 interface Drink {
@@ -7,19 +8,14 @@ interface Drink {
   name: string;
   description: string;
   basePrice: number;
-  hotImg: string;
-  icedImg?: string;
-}
-
-interface AddOn {
-  id: string;
-  name: string;
-  price: number;
+  imageHot: string;
+  imageIced?: string;
+  addOns: { id: string; name: string; price: number }[];
 }
 
 interface DrinkCardProps {
   drink: Drink;
-  addOns: AddOn[];
+  addOns: { id: string; name: string; price: number }[];
   onAddToOrder: (
     drinkId: string,
     temperature: "hot" | "iced",
@@ -36,87 +32,98 @@ export default function DrinkCard({
   const [temperature, setTemperature] = useState<"hot" | "iced">("hot");
   const [quantity, setQuantity] = useState(1);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+  const [showAddOns, setShowAddOns] = useState(false);
 
-  const toggleAddOn = (addOnId: string) => {
-    setSelectedAddOns((prev) =>
-      prev.includes(addOnId)
-        ? prev.filter((id) => id !== addOnId)
-        : [...prev, addOnId]
-    );
+  const handleAdd = () => {
+    onAddToOrder(drink.id, temperature, quantity, selectedAddOns);
+    setQuantity(1);
+    setSelectedAddOns([]);
+    setShowAddOns(false);
   };
 
   return (
-    <div className="border rounded-lg shadow p-4 flex flex-col gap-3 bg-white">
+    <div className="border rounded-lg shadow-md p-4 flex flex-col">
       {/* Imagen */}
       <img
-        src={temperature === "hot" ? drink.hotImg : drink.icedImg || drink.hotImg}
+        src={
+          temperature === "hot"
+            ? `/attached_assets/${drink.imageHot}`
+            : `/attached_assets/${drink.imageIced || drink.imageHot}`
+        }
         alt={drink.name}
-        className="w-full h-40 object-cover rounded"
+        className="w-full h-40 object-cover rounded-md mb-3"
       />
 
       {/* Nombre y descripción */}
-      <h3 className="text-lg font-serif font-semibold">{drink.name}</h3>
-      <p className="text-sm text-gray-600">{drink.description}</p>
-      <p className="font-medium">Base Price: ${drink.basePrice.toFixed(2)}</p>
+      <h3 className="text-xl font-serif font-semibold">{drink.name}</h3>
+      <p className="text-sm text-gray-600 mb-2">{drink.description}</p>
+      <p className="text-md font-bold mb-4">${drink.basePrice.toFixed(2)}</p>
 
-      {/* Selector Hot/Iced */}
-      <div className="flex gap-2">
+      {/* Hot / Iced selector */}
+      <div className="flex gap-2 mb-3">
         <Button
           type="button"
           onClick={() => setTemperature("hot")}
-          className={`flex-1 ${
+          className={
             temperature === "hot"
               ? "bg-[#1D9099] hover:bg-[#00454E] text-white"
-              : "bg-gray-200 text-gray-700"
-          }`}
+              : "bg-gray-200 text-black"
+          }
         >
           Hot
         </Button>
-        <Button
-          type="button"
-          disabled={!drink.icedImg}
-          onClick={() => setTemperature("iced")}
-          className={`flex-1 ${
-            temperature === "iced"
-              ? "bg-[#1D9099] hover:bg-[#00454E] text-white"
-              : "bg-gray-200 text-gray-700"
-          }`}
-        >
-          Iced
-        </Button>
+        {drink.imageIced && (
+          <Button
+            type="button"
+            onClick={() => setTemperature("iced")}
+            className={
+              temperature === "iced"
+                ? "bg-[#1D9099] hover:bg-[#00454E] text-white"
+                : "bg-gray-200 text-black"
+            }
+          >
+            Iced
+          </Button>
+        )}
       </div>
 
-      {/* Add-ons */}
-      <div className="space-y-1">
-        <h4 className="font-medium">Customize your drink:</h4>
-        {addOns.map((addOn) => (
-          <label key={addOn.id} className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={selectedAddOns.includes(addOn.id)}
-              onChange={() => toggleAddOn(addOn.id)}
+      {/* Customize Add-ons */}
+      <div className="mb-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showAddOns}
+            onChange={(e) => setShowAddOns(e.target.checked)}
+          />
+          <span>Customize your drink</span>
+        </label>
+        {showAddOns && (
+          <div className="mt-2">
+            <AddOnSelector
+              addOns={addOns}
+              selected={selectedAddOns}
+              onChange={setSelectedAddOns}
             />
-            {addOn.name} (+${addOn.price.toFixed(2)})
-          </label>
-        ))}
+          </div>
+        )}
       </div>
 
-      {/* Quantity */}
-      <div className="flex items-center gap-2">
+      {/* Quantity selector */}
+      <div className="flex items-center gap-2 mb-3">
         <label className="text-sm">Qty:</label>
         <input
           type="number"
+          min="1"
           value={quantity}
-          min={1}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          className="border w-16 rounded px-2 py-1 text-center"
+          onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+          className="w-16 border rounded px-2 py-1"
         />
       </div>
 
       {/* Add to order */}
       <Button
-        onClick={() => onAddToOrder(drink.id, temperature, quantity, selectedAddOns)}
-        className="bg-[#1D9099] hover:bg-[#00454E] text-white w-full"
+        onClick={handleAdd}
+        className="w-full bg-[#1D9099] hover:bg-[#00454E] text-white"
       >
         Add to Order
       </Button>
