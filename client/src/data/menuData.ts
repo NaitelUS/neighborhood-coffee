@@ -60,9 +60,7 @@ export const drinkOptions = [
 
 export const addOnOptions = [
   { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
-  { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
-  { id: "almondMilk", name: "Almond Milk", price: 0.5 },
-  { id: "soyMilk", name: "Soy Milk", price: 0.5 },
+  { id: "oatMilk", name: "Oatmilk", price: 0.5 },
   { id: "vanillaSyrup", name: "Vanilla Syrup", price: 0.5 },
   { id: "caramelSyrup", name: "Caramel Syrup", price: 0.5 },
 ];
