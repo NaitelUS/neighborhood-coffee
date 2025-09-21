@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import DrinkCard from "@/components/DrinkCard";
 import OrderSummary from "@/components/OrderSummary";
@@ -15,8 +14,10 @@ export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
-  const [discount, setDiscount] = useState(0); // 0.15 = 15%
+  const [coupon, setCoupon] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState(false);
+
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -57,30 +58,30 @@ export default function OrderPage() {
     setOrderItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const calculateTotal = () => {
+    const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    return subtotal - discount;
+  };
+
   const handleApplyCoupon = () => {
-    const code = couponCode.trim().toUpperCase();
-    if (code === "FALLBREW15") {
-      setDiscount(0.15);
+    if (couponApplied) return;
+
+    if (coupon.trim().toUpperCase() === "FALL2025") {
+      const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      const discountValue = subtotal * 0.15;
+      setDiscount(discountValue);
+      setCouponApplied(true);
       toast({
-        title: "Coupon applied!",
-        description: "Enjoy 15% off your order 🎉",
+        title: "Coupon applied",
+        description: "15% discount has been applied to your order!",
       });
     } else {
-      setDiscount(0);
       toast({
         title: "Coupon not valid",
         description: "Please try another code.",
         variant: "destructive",
       });
     }
-  };
-
-  const calculateSubtotal = () =>
-    orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    return +(subtotal - subtotal * discount).toFixed(2);
   };
 
   const handleSubmitOrder = async () => {
@@ -109,75 +110,56 @@ export default function OrderPage() {
       return;
     }
 
-    // Generate order number (simple in-memory, reinicia con cada deploy)
     const orderNumber = globalOrderCounter++;
-
-    // Build plain-text summary
-    const itemsBlock = orderItems
-      .map(
-        (item) =>
-          `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(
-            2
-          )}`
-      )
-      .join("\n");
 
     const orderDetails = `
 Order No: ${orderNumber}
 Name: ${info.name}
 Email: ${info.email}
 Phone: ${info.phone}
-Method: ${info.deliveryMethod === "delivery" ? "Delivery" : "Pickup"}
-Address: ${info.deliveryMethod === "delivery" ? info.address || "N/A" : "Pickup"}
+Delivery: ${info.isDelivery ? "Yes" : "Pickup"}
+Address: ${info.address || "N/A"}
 Preferred Date: ${info.preferredDate}
 Preferred Time: ${info.preferredTime}
 Notes: ${info.specialNotes || "N/A"}
 
 Items:
-${itemsBlock}
+${orderItems
+  .map(
+    (item) =>
+      `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(
+        2
+      )}`
+  )
+  .join("\n")}
 
-Subtotal: $${calculateSubtotal().toFixed(2)}
-Discount: ${discount > 0 ? `${(discount * 100).toFixed(0)}% (code: ${couponCode.toUpperCase()})` : "No discount"}
+Subtotal: $${orderItems
+      .reduce((sum, item) => sum + item.totalPrice, 0)
+      .toFixed(2)}
+Discount: -$${discount.toFixed(2)}
 TOTAL: $${calculateTotal().toFixed(2)}
 `;
 
-    // Send to Netlify Forms to guardar (sin emails)
     const form = document.createElement("form");
     form.method = "POST";
     form.setAttribute("data-netlify", "true");
     form.style.display = "none";
 
-    const fields: Record<string, string> = {
-      "form-name": "order",
-      orderNumber: String(orderNumber),
-      name: info.name,
-      email: info.email,
-      phone: info.phone,
-      deliveryMethod: info.deliveryMethod,
-      address:
-        info.deliveryMethod === "delivery" ? info.address || "" : "Pickup",
-      preferredDate: info.preferredDate,
-      preferredTime: info.preferredTime,
-      couponCode: couponCode.trim().toUpperCase(),
-      discountPercent: String(discount * 100),
-      subtotal: calculateSubtotal().toFixed(2),
-      total: calculateTotal().toFixed(2),
-      orderDetails: orderDetails.trim(),
-      itemsJSON: JSON.stringify(orderItems),
-    };
+    const formName = document.createElement("input");
+    formName.type = "hidden";
+    formName.name = "form-name";
+    formName.value = "order";
+    form.appendChild(formName);
 
-    for (const [name, value] of Object.entries(fields)) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = name;
-      input.value = value;
-      form.appendChild(input);
-    }
+    const orderField = document.createElement("input");
+    orderField.type = "hidden";
+    orderField.name = "orderDetails";
+    orderField.value = orderDetails;
+    form.appendChild(orderField);
 
     document.body.appendChild(form);
     form.submit();
 
-    // Redirige al Thank You con número de orden
     window.location.href = `/thank-you?orderNo=${orderNumber}`;
   };
 
@@ -238,18 +220,19 @@ TOTAL: $${calculateTotal().toFixed(2)}
               onRemoveItem={removeFromOrder}
             />
 
-            {/* Coupon */}
-            <div className="flex gap-2">
-              <Input
+            {/* Coupon Section */}
+            <div className="flex gap-2 items-center">
+              <input
                 type="text"
                 placeholder="Enter coupon"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="flex-1"
+                value={coupon}
+                onChange={(e) => setCoupon(e.target.value)}
+                disabled={couponApplied}
+                className="flex-1 border rounded px-3 py-2"
               />
               <Button
-                type="button"
                 onClick={handleApplyCoupon}
+                disabled={couponApplied}
                 className="bg-[#1D9099] hover:bg-[#00454E] text-white"
               >
                 Apply
