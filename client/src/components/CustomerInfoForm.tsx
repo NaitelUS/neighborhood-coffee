@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,10 +25,10 @@ type CustomerInfo = z.infer<typeof customerInfoSchema>;
 
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
-  orderDetails: string;
+  initialValues?: Partial<CustomerInfo>;
 }
 
-export default function CustomerInfoForm({ onInfoChange, orderDetails }: CustomerInfoFormProps) {
+export default function CustomerInfoForm({ onInfoChange, initialValues }: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
@@ -37,14 +38,14 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails }: Custome
       address: "",
       isDelivery: false,
       preferredDate: new Date().toISOString().split("T")[0],
-      preferredTime: "",
+      preferredTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       specialNotes: "",
     },
   });
 
-  const today = new Date().toISOString().split("T")[0];
-
   const watchedValues = form.watch();
+  const isDeliveryChecked = form.watch("isDelivery");
+
   React.useEffect(() => {
     if (form.formState.isValid) {
       onInfoChange(watchedValues);
@@ -58,14 +59,8 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails }: Custome
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form name="order" method="POST" data-netlify="true" netlify-honeypot="bot-field" className="space-y-4">
+          <form className="space-y-4">
             <input type="hidden" name="form-name" value="order" />
-            <input type="hidden" name="orderDetails" value={orderDetails} />
-            <p hidden>
-              <label>
-                Don’t fill this out if you’re human: <input name="bot-field" />
-              </label>
-            </p>
 
             <FormField
               control={form.control}
@@ -84,7 +79,7 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails }: Custome
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Address</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl><Input type="email" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -96,7 +91,7 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails }: Custome
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel>Phone</FormLabel>
                   <FormControl><Input type="tel" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -109,7 +104,9 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails }: Custome
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Address</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
+                  <FormControl>
+                    <Input disabled={!isDeliveryChecked} {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -119,53 +116,60 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails }: Custome
               control={form.control}
               name="isDelivery"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormItem className="flex items-center gap-2">
                   <FormControl>
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
-                  <div>
-                    <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      12821 Little Misty ln, El Paso, Texas 79938<br />
-                      (915) 401-5547 ☕
-                    </p>
-                  </div>
+                  <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
                 </FormItem>
               )}
             />
+            <p className="text-sm text-gray-600 flex items-center gap-1">
+              12821 Little Misty Ln, El Paso, TX 79938 – (915) 401-5547 ☕
+            </p>
 
-            <FormField
-              control={form.control}
-              name="preferredDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Date</FormLabel>
-                  <FormControl><Input type="date" min={today} {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="preferredTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Time</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="preferredDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
+                      <Input
+                        type="date"
+                        min={new Date().toISOString().split("T")[0]}
+                        {...field}
+                        onChange={(e) => {
+                          const day = new Date(e.target.value).getDay();
+                          if (day === 0) return; // Block Sundays
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {["06:00", "07:00", "08:00", "09:00", "10:00", "11:00"].map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferredTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Time</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="time"
+                        min="06:00"
+                        max="11:00"
+                        step="300"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -174,13 +178,24 @@ export default function CustomerInfoForm({ onInfoChange, orderDetails }: Custome
                 <FormItem>
                   <FormLabel>Special Instructions</FormLabel>
                   <FormControl><Textarea {...field} /></FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            <p className="text-sm text-muted-foreground">
-              We accept CashApp, Zelle and Cash.
+            {/* Coupon */}
+            <div className="flex gap-2 items-center">
+              <Input placeholder="Coupon code" />
+              <Button
+                type="button"
+                onClick={() => alert("Coupon not valid")}
+                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
+              >
+                Apply
+              </Button>
+            </div>
+
+            <p className="text-sm text-gray-600 mt-2">
+              We accept Cash App, Zelle, and Cash
             </p>
           </form>
         </Form>
