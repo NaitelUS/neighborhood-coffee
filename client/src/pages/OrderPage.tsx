@@ -7,21 +7,25 @@ import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
-import { Coffee, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
+import logo from "@/assets/tnclogo.png";
+
+let orderCounter = 1;
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [customerInfo, setCustomerInfo] = useState({});
+  const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderNumber, setOrderNumber] = useState<number>(1000);
+  const [coupon, setCoupon] = useState("");
+  const [discount, setDiscount] = useState(0);
   const { toast } = useToast();
 
-  const addToOrder = (drinkId: string, temperature: 'hot' | 'iced', quantity: number, addOns: string[]) => {
-    const drink = drinkOptions.find(d => d.id === drinkId);
+  const addToOrder = (drinkId: string, temperature: "hot" | "iced", quantity: number, addOns: string[]) => {
+    const drink = drinkOptions.find((d) => d.id === drinkId);
     if (!drink) return;
 
     const addOnCost = addOns.reduce((total, addOnId) => {
-      const addOn = addOnOptions.find(a => a.id === addOnId);
+      const addOn = addOnOptions.find((a) => a.id === addOnId);
       return total + (addOn?.price || 0);
     }, 0);
 
@@ -37,8 +41,7 @@ export default function OrderPage() {
       totalPrice,
     };
 
-    setOrderItems(prev => [...prev, newItem]);
-
+    setOrderItems((prev) => [...prev, newItem]);
     toast({
       title: "Added to order!",
       description: `${quantity}x ${temperature} ${drink.name} added to your order.`,
@@ -46,7 +49,7 @@ export default function OrderPage() {
   };
 
   const removeFromOrder = (index: number) => {
-    setOrderItems(prev => prev.filter((_, i) => i !== index));
+    setOrderItems((prev) => prev.filter((_, i) => i !== index));
     toast({
       title: "Item removed",
       description: "Item has been removed from your order.",
@@ -54,55 +57,17 @@ export default function OrderPage() {
   };
 
   const calculateTotal = () => {
-    return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    return subtotal - discount;
   };
 
-  const buildOrderDetails = () => {
-    const rows = orderItems
-      .map(
-        (item) => `
-          <tr>
-            <td>${item.quantity}</td>
-            <td>${item.drinkName}</td>
-            <td>${item.temperature}</td>
-            <td>$${item.totalPrice.toFixed(2)}</td>
-          </tr>`
-      )
-      .join("");
-
-    return `
-      <div style="font-family:sans-serif; padding:10px;">
-        <img src="https://raw.githubusercontent.com/tu-repo/assets/tnclogo.png" alt="Logo" style="max-width:150px; margin-bottom:10px;" />
-        <h2>Your Neighborhood Coffee Order Confirmation ☕</h2>
-        <p><strong>Order Number:</strong> ORD-${orderNumber}</p>
-
-        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">
-          <thead style="background:#f4f4f4;">
-            <tr>
-              <th align="left">Qty</th>
-              <th align="left">Item</th>
-              <th align="left">Temp</th>
-              <th align="left">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-
-        <p><strong>Total:</strong> $${calculateTotal().toFixed(2)}</p>
-
-        <p>
-          <strong>Customer:</strong> ${(customerInfo as any).name || ""}<br/>
-          <strong>Email:</strong> ${(customerInfo as any).email || ""}<br/>
-          <strong>Phone:</strong> ${(customerInfo as any).phone || ""}<br/>
-          <strong>Address:</strong> ${(customerInfo as any).address || "N/A"}<br/>
-          <strong>Pickup/Delivery:</strong> ${(customerInfo as any).isDelivery ? "Delivery" : "Pickup"}<br/>
-          <strong>Date:</strong> ${(customerInfo as any).preferredDate || ""}<br/>
-          <strong>Time:</strong> ${(customerInfo as any).preferredTime || ""}
-        </p>
-      </div>
-    `;
+  const applyCoupon = () => {
+    setDiscount(0);
+    toast({
+      title: "Coupon not valid",
+      description: "Please try another code.",
+      variant: "destructive",
+    });
   };
 
   const handleSubmitOrder = async () => {
@@ -115,7 +80,7 @@ export default function OrderPage() {
       return;
     }
 
-    const info = customerInfo as any;
+    const info = customerInfo;
     if (!info.name || !info.email || !info.phone || !info.preferredDate || !info.preferredTime) {
       toast({
         title: "Missing information",
@@ -125,27 +90,68 @@ export default function OrderPage() {
       return;
     }
 
-    if (info.isDelivery && !info.address) {
-      toast({
-        title: "Missing address",
-        description: "Please provide a delivery address since delivery is selected.",
-        variant: "destructive",
-      });
-      return;
-    }
+    const orderNumber = orderCounter++;
+    const orderDetails = `
+Order No: ${orderNumber}
+Customer: ${info.name}
+Email: ${info.email}
+Phone: ${info.phone}
+Address: ${info.isDelivery ? info.address : "Pickup"}
+Date: ${info.preferredDate}
+Time: ${info.preferredTime}
+Notes: ${info.specialNotes || "None"}
+
+Items:
+${orderItems
+  .map(
+    (item) =>
+      `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(2)}`
+  )
+  .join("\n")}
+
+Total: $${calculateTotal().toFixed(2)}
+`;
 
     setIsSubmitting(true);
-    setOrderNumber(prev => prev + 1);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/";
+      form.setAttribute("data-netlify", "true");
+
+      const fields: Record<string, string> = {
+        "form-name": "order",
+        name: info.name,
+        email: info.email,
+        phone: info.phone,
+        address: info.isDelivery ? info.address : "Pickup",
+        preferredDate: info.preferredDate,
+        preferredTime: info.preferredTime,
+        specialNotes: info.specialNotes || "",
+        orderDetails,
+      };
+
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
 
       toast({
-        title: "Thank you! Your order has been received 🎉",
-        description: `Your order number is ORD-${orderNumber}. We'll send confirmation details to ${info.email}.`,
+        title: "Thank you! Your order has been received. Enjoy! ☕",
+        description: `Order No: ${orderNumber} | Total: $${calculateTotal().toFixed(2)}`,
       });
 
       setOrderItems([]);
+      setCustomerInfo({});
+      setDiscount(0);
+      setCoupon("");
     } catch (error) {
       toast({
         title: "Order failed",
@@ -162,12 +168,14 @@ export default function OrderPage() {
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src="/assets/tnclogo.png" alt="TNC Logo" className="h-10" />
-          </div>
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
-            document.getElementById("customer-info")?.scrollIntoView({ behavior: "smooth" });
-          }}>
+          <img src={logo} alt="Logo" className="h-12" />
+
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() =>
+              document.getElementById("order-form")?.scrollIntoView({ behavior: "smooth" })
+            }
+          >
             <ShoppingCart className="h-6 w-6 text-primary" />
             <span>{orderItems.length} items</span>
           </div>
@@ -176,11 +184,10 @@ export default function OrderPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column */}
           <div className="lg:col-span-2 space-y-8">
             <section>
-              <h2 className="text-2xl font-serif font-semibold mb-6" data-testid="menu-title">
-                Our Coffee Menu
-              </h2>
+              <h2 className="text-2xl font-serif font-semibold mb-6">Our Coffee Menu</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {drinkOptions.map((drink) => (
                   <DrinkCard
@@ -194,26 +201,35 @@ export default function OrderPage() {
             </section>
           </div>
 
-          <div className="space-y-6" id="customer-info">
-            <OrderSummary
-              items={orderItems}
-              addOns={addOnOptions}
-              onRemoveItem={removeFromOrder}
-            />
+          {/* Right Column */}
+          <div className="space-y-6" id="order-form">
+            <OrderSummary items={orderItems} addOns={addOnOptions} onRemoveItem={removeFromOrder} />
 
-            <CustomerInfoForm
-              onInfoChange={setCustomerInfo}
-              orderDetails={buildOrderDetails()}
-              orderNumber={orderNumber}
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={coupon}
+                onChange={(e) => setCoupon(e.target.value)}
+                placeholder="Enter coupon code"
+                className="flex-1 border px-3 py-2 rounded"
+              />
+              <Button
+                type="button"
+                onClick={applyCoupon}
+                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
+              >
+                Apply
+              </Button>
+            </div>
+
+            <CustomerInfoForm onInfoChange={setCustomerInfo} />
 
             <Button
               onClick={handleSubmitOrder}
               disabled={isSubmitting || orderItems.length === 0}
               className="w-full h-12 text-lg bg-[#1D9099] hover:bg-[#00454E] text-white"
-              data-testid="button-submit-order"
             >
-              {isSubmitting ? 'Submitting Order...' : `Submit Order - $${calculateTotal().toFixed(2)}`}
+              {isSubmitting ? "Submitting Order..." : `Submit Order - $${calculateTotal().toFixed(2)}`}
             </Button>
           </div>
         </div>
