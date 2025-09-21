@@ -1,74 +1,56 @@
 import React from "react";
-import { X } from "lucide-react";
-
-interface OrderItem {
-  drinkId: string;
-  drinkName: string;
-  temperature: "hot" | "iced";
-  quantity: number;
-  basePrice: number;
-  addOns: string[];
-  totalPrice: number;
-}
-
-interface AddOn {
-  id: string;
-  name: string;
-  price: number;
-}
+import type { OrderItem } from "@shared/schema";
 
 interface OrderSummaryProps {
   items: OrderItem[];
-  addOns: AddOn[];
+  addOns: { id: string; name: string; price: number }[];
   onRemoveItem: (index: number) => void;
+  discount: number; // porcentaje aplicado (ej. 0.15 para 15%)
 }
 
 export default function OrderSummary({
   items,
   addOns,
   onRemoveItem,
+  discount,
 }: OrderSummaryProps) {
-  const getAddOnName = (id: string) => {
-    const addOn = addOns.find((a) => a.id === id);
-    return addOn ? `${addOn.name} (+$${addOn.price.toFixed(2)})` : id;
-  };
-
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+  const discountAmount = subtotal * discount;
+  const total = subtotal - discountAmount;
 
   return (
-    <div className="border rounded-lg p-4 shadow-sm">
-      <h2 className="text-xl font-serif font-semibold mb-4">Your Order</h2>
+    <div className="border rounded-lg p-4 bg-card">
+      <h3 className="text-lg font-serif mb-3">Your Order</h3>
 
       {items.length === 0 ? (
-        <p className="text-muted-foreground">No items added yet.</p>
+        <p className="text-muted-foreground">No items yet.</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-2">
           {items.map((item, index) => (
-            <li key={index} className="border-b pb-3 last:border-none">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium">
-                    {item.quantity}x {item.temperature} {item.drinkName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    ${item.totalPrice.toFixed(2)}
-                  </p>
-
-                  {/* Mostrar Add-ons si hay */}
-                  {item.addOns.length > 0 && (
-                    <ul className="mt-1 text-sm text-muted-foreground list-disc list-inside">
-                      {item.addOns.map((addOnId) => (
-                        <li key={addOnId}>{getAddOnName(addOnId)}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
+            <li
+              key={index}
+              className="flex justify-between items-start border-b pb-2"
+            >
+              <div>
+                <p className="font-medium">
+                  {item.quantity}x {item.temperature} {item.drinkName}
+                </p>
+                {item.addOns.length > 0 && (
+                  <ul className="text-sm text-muted-foreground list-disc pl-4">
+                    {item.addOns.map((id) => {
+                      const addOn = addOns.find((a) => a.id === id);
+                      return <li key={id}>{addOn?.name}</li>;
+                    })}
+                  </ul>
+                )}
+              </div>
+              <div className="text-right">
+                <p>${item.totalPrice.toFixed(2)}</p>
                 <button
+                  className="text-xs text-red-500 hover:underline"
                   onClick={() => onRemoveItem(index)}
-                  className="text-red-500 hover:text-red-700"
                 >
-                  <X className="h-5 w-5" />
+                  Remove
                 </button>
               </div>
             </li>
@@ -76,11 +58,20 @@ export default function OrderSummary({
         </ul>
       )}
 
-      {/* Total */}
-      <div className="mt-4 flex justify-between font-semibold">
-        <span>Total</span>
-        <span>${subtotal.toFixed(2)}</span>
-      </div>
+      {/* Subtotal */}
+      {items.length > 0 && (
+        <div className="mt-4 space-y-1 text-right">
+          <p className="font-medium">Subtotal: ${subtotal.toFixed(2)}</p>
+
+          {discount > 0 && (
+            <p className="text-green-600 font-medium">
+              Promotional Discount: -${discountAmount.toFixed(2)}
+            </p>
+          )}
+
+          <p className="text-xl font-bold mt-2">TOTAL: ${total.toFixed(2)}</p>
+        </div>
+      )}
     </div>
   );
 }
