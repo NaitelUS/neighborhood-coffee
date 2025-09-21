@@ -42,7 +42,7 @@ export const drinkOptions = [
       "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
-      // Golden Coffee is HOT only
+      // Golden Coffee es solo HOT
     },
   },
   {
@@ -55,6 +55,37 @@ export const drinkOptions = [
       hot: "/attached_assets/Hot_Café_au_Lait_8c8a1ed2.png",
       iced: "/attached_assets/Iced_Café_au_Lait_60f2c4d8.png",
     },
+  },
+  {
+    id: "empanadas",
+    name: "Handcrafted Empanadas",
+    basePrice: 2.75,
+    description:
+      "Enjoy our artisan empanadas, handcrafted with a golden, flaky crust and filled with natural fruit jam. Choose Apple or Pineapple.",
+    images: {
+      apple: "/attached_assets/Apple-Soon.png",
+      pineapple: "/attached_assets/Pineapple-Soon.png",
+    },
+    variants: [
+      {
+        id: "apple",
+        name: "Apple",
+        description:
+          "A delicious, homemade turnover filled with a warm, natural apple filling.",
+        price: 2.75,
+        image: "/attached_assets/Apple-Soon.png",
+        disabled: true, // 🚫 aún no disponible
+      },
+      {
+        id: "pineapple",
+        name: "Pineapple",
+        description:
+          "A flaky, handcrafted pastry filled with a sweet and tangy pineapple jam.",
+        price: 2.75,
+        image: "/attached_assets/Pineapple-Soon.png",
+        disabled: true, // 🚫 aún no disponible
+      },
+    ],
   },
 ];
 
