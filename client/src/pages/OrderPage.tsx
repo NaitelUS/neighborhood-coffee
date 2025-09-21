@@ -8,6 +8,8 @@ import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 import { ShoppingCart } from "lucide-react";
 
+let globalOrderCounter = Number(localStorage.getItem("lastOrderNo") || "1");
+
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState<any>({});
@@ -82,36 +84,34 @@ export default function OrderPage() {
       return;
     }
 
-    setIsSubmitting(true);
+    // Generar número de orden consecutivo
+    const orderNumber = globalOrderCounter++;
+    localStorage.setItem("lastOrderNo", String(globalOrderCounter));
 
-    try {
-      // Obtener las órdenes previas
-      const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]");
+    const newOrder = {
+      orderNo: orderNumber,
+      customer: {
+        name: info.name,
+        email: info.email,
+        phone: info.phone,
+        address: info.isDelivery ? info.address : undefined,
+      },
+      items: orderItems.map(
+        (item) =>
+          `${item.quantity}x ${item.temperature} ${item.drinkName} ($${item.totalPrice.toFixed(
+            2
+          )})`
+      ),
+      total: calculateTotal(),
+      status: "Received",
+    };
 
-      // Calcular número de orden
-      const orderNumber = savedOrders.length + 1;
+    // Guardar en localStorage
+    const existing = JSON.parse(localStorage.getItem("orders") || "[]");
+    localStorage.setItem("orders", JSON.stringify([...existing, newOrder]));
 
-      const newOrder = {
-        orderNumber,
-        customer: info,
-        items: orderItems,
-        total: calculateTotal(),
-        status: "Received",
-      };
-
-      savedOrders.push(newOrder);
-      localStorage.setItem("orders", JSON.stringify(savedOrders));
-
-      window.location.href = `/thank-you?orderNo=${orderNumber}`;
-    } catch (error) {
-      toast({
-        title: "Order failed",
-        description: "There was an error submitting your order.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Redirigir a Thank You
+    window.location.href = `/thank-you?orderNo=${orderNumber}`;
   };
 
   return (
