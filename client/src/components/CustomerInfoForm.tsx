@@ -2,7 +2,6 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,13 +13,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const customerInfoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   address: z.string().optional(),
-  isDelivery: z.boolean(),
+  deliveryMethod: z.enum(["pickup", "delivery"]),
   preferredDate: z.string().min(1, "Please select a preferred date"),
   preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
@@ -44,27 +44,25 @@ export default function CustomerInfoForm({
       email: initialValues?.email || "",
       phone: initialValues?.phone || "",
       address: initialValues?.address || "",
-      isDelivery: initialValues?.isDelivery ?? false,
+      deliveryMethod: initialValues?.deliveryMethod ?? "pickup",
       preferredDate: initialValues?.preferredDate || "",
       preferredTime: initialValues?.preferredTime || "",
       specialNotes: initialValues?.specialNotes || "",
     },
   });
 
+  // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split("T")[0];
-  const isDeliveryChecked = form.watch("isDelivery");
 
+  // Watch delivery method
+  const deliveryMethod = form.watch("deliveryMethod");
+
+  // Notify parent on valid change
   React.useEffect(() => {
     if (form.formState.isValid) {
       onInfoChange(form.getValues());
     }
-  }, [form.watch(), form.formState.isValid]);
-
-  // Block Sundays
-  const isSunday = (date: string) => {
-    const d = new Date(date);
-    return d.getDay() === 0;
-  };
+  }, [form.watch(), form.formState.isValid, onInfoChange]);
 
   return (
     <Card>
@@ -82,10 +80,7 @@ export default function CustomerInfoForm({
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Enter your full name"
-                      {...field}
-                    />
+                    <Input placeholder="Enter your full name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -100,7 +95,11 @@ export default function CustomerInfoForm({
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="your@email.com" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="your.email@example.com"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -122,52 +121,63 @@ export default function CustomerInfoForm({
               )}
             />
 
-            {/* Address */}
+            {/* Pickup / Delivery */}
             <FormField
               control={form.control}
-              name="address"
+              name="deliveryMethod"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Address {isDeliveryChecked ? "" : "(Enable delivery to enter address)"}
-                  </FormLabel>
+                  <FormLabel>Order Method</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="123 Main St"
-                      disabled={!isDeliveryChecked}
-                      {...field}
-                    />
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="pickup" id="pickup" />
+                        <FormLabel htmlFor="pickup">Pick up</FormLabel>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="delivery" id="delivery" />
+                        <FormLabel htmlFor="delivery">Delivery</FormLabel>
+                      </div>
+                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Delivery */}
-            <FormField
-              control={form.control}
-              name="isDelivery"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div>
-                    <FormLabel>
-                      Delivery (otherwise pickup at store)
-                    </FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      12821 Little Misty ln, El Paso, Texas 79938 (915) 401-5547 ☕
-                    </p>
-                  </div>
-                </FormItem>
-              )}
-            />
+            {/* Address (only if Delivery) */}
+            {deliveryMethod === "delivery" && (
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Delivery Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="123 Main St, City, State 12345"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            {/* Date & Time */}
+            {/* Store Info */}
+            <div className="text-sm mt-2">
+              <p className="font-bold">The Neighborhood Coffee</p>
+              <p>12821 Little Misty ln</p>
+              <p>El Paso, Texas 79938</p>
+              <p>(915) 401-5547 ☕</p>
+            </div>
+
+            {/* Preferred Date + Time */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -176,23 +186,12 @@ export default function CustomerInfoForm({
                   <FormItem>
                     <FormLabel>Preferred Date</FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        min={today}
-                        value={field.value}
-                        onChange={(e) => {
-                          if (isSunday(e.target.value)) {
-                            alert("Sundays not allowed");
-                            return;
-                          }
-                          field.onChange(e);
-                        }}
-                      />
+                      <Input type="date" min={today} {...field} />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="preferredTime"
@@ -202,13 +201,11 @@ export default function CustomerInfoForm({
                     <FormControl>
                       <Input
                         type="time"
-                        min="06:00"
-                        max="11:00"
-                        step="900"
-                        value={field.value}
-                        onChange={field.onChange}
+                        step="900" // 15 min increments
+                        {...field}
                       />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -220,21 +217,18 @@ export default function CustomerInfoForm({
               name="specialNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Special Instructions</FormLabel>
+                  <FormLabel>Special Instructions (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Any special requests..."
+                      placeholder="Any special requests or notes about your order..."
+                      className="min-h-[80px]"
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
-
-            {/* Payment Info */}
-            <p className="text-sm text-muted-foreground">
-              We accept Cash App, Zelle and Cash.
-            </p>
           </form>
         </Form>
       </CardContent>
