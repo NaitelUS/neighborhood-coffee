@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 import AdminOrders from "@/pages/AdminOrders";
 
 <Route path="/admin/orders" component={AdminOrders} />
+<Route path="/order-status" component={OrderStatus} />
+
 
 function Router() {
   return (
