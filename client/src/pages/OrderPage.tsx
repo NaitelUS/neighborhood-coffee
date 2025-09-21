@@ -7,28 +7,23 @@ import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
-import { ShoppingCart } from "lucide-react";
+import { Coffee } from "lucide-react";
+
+let orderCounter = 1000; // contador simple para generar ordenes
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [customerInfo, setCustomerInfo] = useState({});
+  const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [coupon, setCoupon] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [orderNumber, setOrderNumber] = useState(1000);
+  const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const { toast } = useToast();
 
-  const addToOrder = (
-    drinkId: string,
-    temperature: "hot" | "iced",
-    quantity: number,
-    addOns: string[]
-  ) => {
-    const drink = drinkOptions.find((d) => d.id === drinkId);
+  const addToOrder = (drinkId: string, temperature: 'hot' | 'iced', quantity: number, addOns: string[]) => {
+    const drink = drinkOptions.find(d => d.id === drinkId);
     if (!drink) return;
 
     const addOnCost = addOns.reduce((total, addOnId) => {
-      const addOn = addOnOptions.find((a) => a.id === addOnId);
+      const addOn = addOnOptions.find(a => a.id === addOnId);
       return total + (addOn?.price || 0);
     }, 0);
 
@@ -44,7 +39,8 @@ export default function OrderPage() {
       totalPrice,
     };
 
-    setOrderItems((prev) => [...prev, newItem]);
+    setOrderItems(prev => [...prev, newItem]);
+
     toast({
       title: "Added to order!",
       description: `${quantity}x ${temperature} ${drink.name} added to your order.`,
@@ -52,7 +48,7 @@ export default function OrderPage() {
   };
 
   const removeFromOrder = (index: number) => {
-    setOrderItems((prev) => prev.filter((_, i) => i !== index));
+    setOrderItems(prev => prev.filter((_, i) => i !== index));
     toast({
       title: "Item removed",
       description: "Item has been removed from your order.",
@@ -60,22 +56,33 @@ export default function OrderPage() {
   };
 
   const calculateTotal = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    return subtotal - subtotal * discount;
+    return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
-  const applyCoupon = () => {
-    if (coupon.toLowerCase() === "coffee10") {
-      setDiscount(0.1);
-      toast({ title: "Coupon applied!", description: "10% discount applied." });
-    } else {
-      setDiscount(0);
-      toast({
-        title: "Coupon not valid",
-        description: "Please try another code.",
-        variant: "destructive",
-      });
-    }
+  const generateOrderDetails = (info: any, newOrderNumber: number) => {
+    let itemsText = orderItems
+      .map(
+        (item) =>
+          `- ${item.quantity}x ${item.temperature} ${item.drinkName} — $${item.totalPrice.toFixed(2)}`
+      )
+      .join("\n");
+
+    return `
+Order No: ${newOrderNumber}
+Customer: ${info.name}
+Email: ${info.email}
+Phone: ${info.phone}
+Address: ${info.address || "Pickup at store"}
+Pickup Date: ${info.preferredDate}
+Pickup Time: ${info.preferredTime}
+Delivery: ${info.isDelivery ? "Yes" : "No"}
+
+Items:
+${itemsText}
+
+Total: $${calculateTotal().toFixed(2)}
+Payment: CashApp / Zelle / Cash
+    `.trim();
   };
 
   const handleSubmitOrder = async () => {
@@ -88,14 +95,8 @@ export default function OrderPage() {
       return;
     }
 
-    const info = customerInfo as any;
-    if (
-      !info.name ||
-      !info.email ||
-      !info.phone ||
-      !info.preferredDate ||
-      !info.preferredTime
-    ) {
+    const info = customerInfo;
+    if (!info.name || !info.email || !info.phone || !info.preferredDate || !info.preferredTime) {
       toast({
         title: "Missing information",
         description: "Please fill in all required customer information.",
@@ -104,22 +105,30 @@ export default function OrderPage() {
       return;
     }
 
-    setIsSubmitting(true);
+    if (info.isDelivery && !info.address) {
+      toast({
+        title: "Missing address",
+        description: "Please provide a delivery address since delivery is selected.",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    setIsSubmitting(true);
     try {
-      const nextOrderNumber = orderNumber + 1;
-      setOrderNumber(nextOrderNumber);
+      const newOrderNumber = orderCounter++;
+      setOrderNumber(newOrderNumber);
+
+      const details = generateOrderDetails(info, newOrderNumber);
+
+      console.log("Order submitted:", { items: orderItems, customer: customerInfo, orderNumber: newOrderNumber, details });
 
       toast({
         title: "Order submitted successfully!",
-        description: `Your order number is ${nextOrderNumber}. Total: $${calculateTotal().toFixed(
-          2
-        )}. Enjoy!`,
+        description: `Your order number is ${newOrderNumber}. We'll send confirmation details to ${info.email}.`,
       });
 
       setOrderItems([]);
-      setCoupon("");
-      setDiscount(0);
     } catch (error) {
       toast({
         title: "Order failed",
@@ -135,16 +144,12 @@ export default function OrderPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img
-              src="/attached_assets/tnclogo.png"
-              alt="The Neighborhood Coffee"
-              className="h-10"
-            />
+            <img src="/attached_assets/tnclogo.png" alt="Logo" className="h-10" />
           </div>
-          <div className="flex items-center gap-2 cursor-pointer">
-            <ShoppingCart className="h-6 w-6 text-primary" />
+          <div className="flex items-center gap-2">
+            <Coffee className="h-6 w-6 text-primary" />
             <span>{orderItems.length} items</span>
           </div>
         </div>
@@ -152,12 +157,10 @@ export default function OrderPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column */}
+          {/* Menu */}
           <div className="lg:col-span-2 space-y-8">
             <section>
-              <h2 className="text-2xl font-serif font-semibold mb-6">
-                Our Coffee Menu
-              </h2>
+              <h2 className="text-2xl font-serif font-semibold mb-6">Our Coffee Menu</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {drinkOptions.map((drink) => (
                   <DrinkCard
@@ -171,7 +174,7 @@ export default function OrderPage() {
             </section>
           </div>
 
-          {/* Right Column */}
+          {/* Summary + Info */}
           <div className="space-y-6">
             <OrderSummary
               items={orderItems}
@@ -179,27 +182,9 @@ export default function OrderPage() {
               onRemoveItem={removeFromOrder}
             />
 
-            {/* Coupon */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
-                placeholder="Enter coupon code"
-                className="border px-2 py-1 rounded w-full"
-              />
-              <Button onClick={applyCoupon} className="bg-[#1D9099] hover:bg-[#00454E] text-white">
-                Apply
-              </Button>
-            </div>
-
             <CustomerInfoForm
               onInfoChange={setCustomerInfo}
-              orderDetails={{
-                items: orderItems,
-                total: calculateTotal().toFixed(2),
-                orderNumber,
-              }}
+              orderDetails={orderNumber ? generateOrderDetails(customerInfo, orderNumber) : ""}
             />
 
             <Button
@@ -207,9 +192,7 @@ export default function OrderPage() {
               disabled={isSubmitting || orderItems.length === 0}
               className="w-full h-12 text-lg bg-[#1D9099] hover:bg-[#00454E] text-white"
             >
-              {isSubmitting
-                ? "Submitting Order..."
-                : `Submit Order - $${calculateTotal().toFixed(2)}`}
+              {isSubmitting ? "Submitting Order..." : `Submit Order - $${calculateTotal().toFixed(2)}`}
             </Button>
           </div>
         </div>
