@@ -1,23 +1,28 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 const customerInfoSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(10),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
   address: z.string().optional(),
   isDelivery: z.boolean(),
-  preferredDate: z.string().min(1),
-  preferredTime: z.string().min(1),
+  preferredDate: z.string().min(1, "Please select a preferred date"),
+  preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
 });
 
@@ -28,29 +33,38 @@ interface CustomerInfoFormProps {
   initialValues?: Partial<CustomerInfo>;
 }
 
-export default function CustomerInfoForm({ onInfoChange, initialValues }: CustomerInfoFormProps) {
+export default function CustomerInfoForm({
+  onInfoChange,
+  initialValues,
+}: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      isDelivery: false,
-      preferredDate: new Date().toISOString().split("T")[0],
-      preferredTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      specialNotes: "",
+      name: initialValues?.name || "",
+      email: initialValues?.email || "",
+      phone: initialValues?.phone || "",
+      address: initialValues?.address || "",
+      isDelivery: initialValues?.isDelivery ?? false,
+      preferredDate: initialValues?.preferredDate || "",
+      preferredTime: initialValues?.preferredTime || "",
+      specialNotes: initialValues?.specialNotes || "",
     },
   });
 
-  const watchedValues = form.watch();
+  const today = new Date().toISOString().split("T")[0];
   const isDeliveryChecked = form.watch("isDelivery");
 
   React.useEffect(() => {
     if (form.formState.isValid) {
-      onInfoChange(watchedValues);
+      onInfoChange(form.getValues());
     }
-  }, [watchedValues, form.formState.isValid, onInfoChange]);
+  }, [form.watch(), form.formState.isValid]);
+
+  // Block Sundays
+  const isSunday = (date: string) => {
+    const d = new Date(date);
+    return d.getDay() === 0;
+  };
 
   return (
     <Card>
@@ -60,89 +74,117 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
       <CardContent>
         <Form {...form}>
           <form className="space-y-4">
-            <input type="hidden" name="form-name" value="order" />
-
+            {/* Name */}
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter your full name"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Email */}
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl><Input type="email" {...field} /></FormControl>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="your@email.com" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Phone */}
             <FormField
               control={form.control}
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl><Input type="tel" {...field} /></FormControl>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="(555) 123-4567" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Address */}
             <FormField
               control={form.control}
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel>
+                    Address {isDeliveryChecked ? "" : "(Enable delivery to enter address)"}
+                  </FormLabel>
                   <FormControl>
-                    <Input disabled={!isDeliveryChecked} {...field} />
+                    <Input
+                      placeholder="123 Main St"
+                      disabled={!isDeliveryChecked}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Delivery */}
             <FormField
               control={form.control}
               name="isDelivery"
               render={({ field }) => (
-                <FormItem className="flex items-center gap-2">
+                <FormItem className="flex flex-row items-start space-x-3">
                   <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
-                  <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
+                  <div>
+                    <FormLabel>
+                      Delivery (otherwise pickup at store)
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      12821 Little Misty ln, El Paso, Texas 79938 (915) 401-5547 ☕
+                    </p>
+                  </div>
                 </FormItem>
               )}
             />
-            <p className="text-sm text-gray-600 flex items-center gap-1">
-              12821 Little Misty Ln, El Paso, TX 79938 – (915) 401-5547 ☕
-            </p>
 
+            {/* Date & Time */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="preferredDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>Preferred Date</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
-                        min={new Date().toISOString().split("T")[0]}
-                        {...field}
+                        min={today}
+                        value={field.value}
                         onChange={(e) => {
-                          const day = new Date(e.target.value).getDay();
-                          if (day === 0) return; // Block Sundays
+                          if (isSunday(e.target.value)) {
+                            alert("Sundays not allowed");
+                            return;
+                          }
                           field.onChange(e);
                         }}
                       />
@@ -156,14 +198,15 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                 name="preferredTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Time</FormLabel>
+                    <FormLabel>Preferred Time</FormLabel>
                     <FormControl>
                       <Input
                         type="time"
                         min="06:00"
                         max="11:00"
-                        step="300"
-                        {...field}
+                        step="900"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                   </FormItem>
@@ -171,31 +214,26 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
               />
             </div>
 
+            {/* Notes */}
             <FormField
               control={form.control}
               name="specialNotes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Special Instructions</FormLabel>
-                  <FormControl><Textarea {...field} /></FormControl>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Any special requests..."
+                      {...field}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />
 
-            {/* Coupon */}
-            <div className="flex gap-2 items-center">
-              <Input placeholder="Coupon code" />
-              <Button
-                type="button"
-                onClick={() => alert("Coupon not valid")}
-                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
-              >
-                Apply
-              </Button>
-            </div>
-
-            <p className="text-sm text-gray-600 mt-2">
-              We accept Cash App, Zelle, and Cash
+            {/* Payment Info */}
+            <p className="text-sm text-muted-foreground">
+              We accept Cash App, Zelle and Cash.
             </p>
           </form>
         </Form>
