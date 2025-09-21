@@ -42,7 +42,7 @@ export const drinkOptions = [
       "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
-      // Golden Coffee es solo HOT
+      // Golden Coffee solo está disponible en HOT
     },
   },
   {
@@ -61,37 +61,20 @@ export const drinkOptions = [
     name: "Handcrafted Empanadas",
     basePrice: 2.75,
     description:
-      "Enjoy our artisan empanadas, handcrafted with a golden, flaky crust and filled with natural fruit jam. Choose Apple or Pineapple.",
+      "Enjoy our artisan empanadas, handcrafted with a golden, flaky crust. Choose from Apple or Pineapple, both filled with natural, homemade fruit jam.",
     images: {
       apple: "/attached_assets/Apple-Soon.png",
       pineapple: "/attached_assets/Pineapple-Soon.png",
     },
-    variants: [
-      {
-        id: "apple",
-        name: "Apple",
-        description:
-          "A delicious, homemade turnover filled with a warm, natural apple filling.",
-        price: 2.75,
-        image: "/attached_assets/Apple-Soon.png",
-        disabled: true, // 🚫 aún no disponible
-      },
-      {
-        id: "pineapple",
-        name: "Pineapple",
-        description:
-          "A flaky, handcrafted pastry filled with a sweet and tangy pineapple jam.",
-        price: 2.75,
-        image: "/attached_assets/Pineapple-Soon.png",
-        disabled: true, // 🚫 aún no disponible
-      },
-    ],
   },
 ];
 
 export const addOnOptions = [
   { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
-  { id: "oatMilk", name: "Oatmilk", price: 0.5 },
+  { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
+  { id: "almondMilk", name: "Almond Milk", price: 0.5 },
+  { id: "soyMilk", name: "Soy Milk", price: 0.5 },
+  { id: "oatMilk", name: "Oat Milk", price: 0.5 },
   { id: "vanillaSyrup", name: "Vanilla Syrup", price: 0.5 },
   { id: "caramelSyrup", name: "Caramel Syrup", price: 0.5 },
 ];
