@@ -1,53 +1,67 @@
 import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
 
 export default function ThankYou() {
   const [location] = useLocation();
-  const [orderNo, setOrderNo] = useState<string | null>(null);
-  const [orderDetails, setOrderDetails] = useState<string | null>(null);
+  const params = new URLSearchParams(location.split("?")[1]);
+  const orderNo = params.get("orderNo");
 
-  useEffect(() => {
-    // Parse query string ?orderNo=123
-    const params = new URLSearchParams(window.location.search);
-    const orderNumber = params.get("orderNo");
-    setOrderNo(orderNumber);
-
-    // Si guardamos detalles en localStorage antes de enviar el form
-    const savedDetails = localStorage.getItem("lastOrderDetails");
-    if (savedDetails) {
-      setOrderDetails(savedDetails);
-    }
-  }, [location]);
+  const orderData = orderNo
+    ? JSON.parse(localStorage.getItem(`order-${orderNo}`) || "{}")
+    : null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-      <div className="max-w-lg w-full bg-card shadow rounded-lg p-6 text-center">
-        <h1 className="text-2xl font-serif font-semibold text-primary mb-4">
-          Thank you! Your order has been received. ☕
-        </h1>
-        {orderNo && (
-          <p className="text-lg font-medium text-muted-foreground mb-4">
-            Your order number is: <span className="font-bold">#{orderNo}</span>
-          </p>
-        )}
+    <div className="min-h-screen flex flex-col items-center justify-center p-8">
+      <h1 className="text-2xl font-bold text-brown-700 mb-4">
+        Thank you! Your order has been received.
+      </h1>
+      <p className="mb-6">Your order number is: #{orderNo}</p>
 
-        {orderDetails ? (
-          <pre className="text-left bg-gray-100 p-4 rounded text-sm overflow-x-auto whitespace-pre-wrap">
-            {orderDetails}
-          </pre>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Your order summary will appear here.
-          </p>
-        )}
+      {orderData && (
+        <div className="bg-gray-50 p-4 rounded border max-w-lg w-full whitespace-pre-wrap">
+          <strong>Order No:</strong> {orderData.orderNo}{"\n"}
+          <strong>Name:</strong> {orderData.customer.name}{"\n"}
+          <strong>Email:</strong> {orderData.customer.email}{"\n"}
+          <strong>Phone:</strong> {orderData.customer.phone}{"\n"}
+          <strong>Delivery:</strong>{" "}
+          {orderData.customer.isDelivery ? "Delivery" : "Pickup"}{"\n"}
+          <strong>Address:</strong> {orderData.customer.address || "N/A"}{"\n"}
+          <strong>Preferred Date:</strong> {orderData.customer.preferredDate}{"\n"}
+          <strong>Preferred Time:</strong> {orderData.customer.preferredTime}{"\n"}
+          <strong>Notes:</strong> {orderData.customer.specialNotes || "N/A"}{"\n\n"}
+          Items:
+          {"\n"}
+          {orderData.items
+            .map(
+              (i: any) =>
+                `${i.quantity}x ${i.temperature} ${i.drinkName} - $${i.totalPrice.toFixed(
+                  2
+                )}`
+            )
+            .join("\n")}
+          {"\n\n"}
+          {orderData.discount && (
+            <div>Promotional Discount: -{orderData.discount}</div>
+          )}
+          <strong>TOTAL: ${orderData.total.toFixed(2)}</strong>
+        </div>
+      )}
 
+      <p className="mt-4">
+        Track your order status here:{" "}
         <a
-          href="/"
-          className="mt-6 inline-block bg-[#1D9099] hover:bg-[#00454E] text-white px-6 py-2 rounded"
+          href={`/order-status/${orderNo}`}
+          className="text-blue-600 underline"
         >
-          Back to Menu
+          View Status
         </a>
-      </div>
+      </p>
+
+      <a
+        href="/"
+        className="mt-6 inline-block bg-[#1D9099] hover:bg-[#00454E] text-white px-4 py-2 rounded"
+      >
+        Back to Menu
+      </a>
     </div>
   );
 }
