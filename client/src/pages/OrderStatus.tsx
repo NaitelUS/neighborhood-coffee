@@ -1,37 +1,60 @@
-import { useRoute } from "wouter";
+import { useParams } from "wouter";
+import { useEffect, useState } from "react";
+
+type Order = {
+  orderNumber: number;
+  customer: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  items: { drinkName: string; temperature: string; quantity: number; totalPrice: number }[];
+  total: number;
+  status: string;
+};
 
 export default function OrderStatus() {
-  const [, params] = useRoute("/order-status/:id");
-  const orderNo = params?.id;
-  const orderData = orderNo
-    ? JSON.parse(localStorage.getItem(`order-${orderNo}`) || "{}")
-    : null;
+  const { id } = useParams<{ id: string }>();
+  const [order, setOrder] = useState<Order | null>(null);
 
-  // Simulación de status (en real, esto vendría de la BD)
-  const statusFlow = ["Received", "In Process", "On the Way", "Completed"];
-  const randomStatus = statusFlow[Math.floor(Math.random() * statusFlow.length)];
+  useEffect(() => {
+    // 🔧 Simulación de fetch (cuando tengamos backend se cambia aquí)
+    const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]") as Order[];
+    const found = savedOrders.find((o) => o.orderNumber === Number(id));
+    setOrder(found || null);
+  }, [id]);
+
+  if (!order) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-4">Order not found</h1>
+        <p>Please check your order number and try again.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <h1 className="text-2xl font-bold mb-4">
-        Order Status for #{orderNo}
-      </h1>
-      {orderData ? (
-        <div className="bg-gray-50 p-4 rounded border max-w-lg w-full">
-          <p><strong>Name:</strong> {orderData.customer.name}</p>
-          <p><strong>Total:</strong> ${orderData.total.toFixed(2)}</p>
-          <p className="mt-2"><strong>Current Status:</strong> {randomStatus}</p>
-        </div>
-      ) : (
-        <p>Order not found.</p>
-      )}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-4">Order Status</h1>
+      <div className="bg-white shadow rounded p-6">
+        <p className="mb-2"><strong>Order No:</strong> {order.orderNumber}</p>
+        <p className="mb-2"><strong>Name:</strong> {order.customer.name}</p>
+        <p className="mb-2"><strong>Email:</strong> {order.customer.email}</p>
+        <p className="mb-2"><strong>Phone:</strong> {order.customer.phone}</p>
+        <p className="mb-4"><strong>Status:</strong> {order.status}</p>
 
-      <a
-        href="/"
-        className="mt-6 inline-block bg-[#1D9099] hover:bg-[#00454E] text-white px-4 py-2 rounded"
-      >
-        Back to Menu
-      </a>
+        <h2 className="font-semibold mb-2">Items</h2>
+        <ul className="list-disc ml-6 mb-4">
+          {order.items.map((item, index) => (
+            <li key={index}>
+              {item.quantity}x {item.temperature} {item.drinkName} - $
+              {item.totalPrice.toFixed(2)}
+            </li>
+          ))}
+        </ul>
+
+        <p className="font-bold">TOTAL: ${order.total.toFixed(2)}</p>
+      </div>
     </div>
   );
 }
