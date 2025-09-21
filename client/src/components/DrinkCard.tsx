@@ -1,110 +1,140 @@
-import React, { useState } from "react";
+// src/components/DrinkCard.tsx
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import AddOnSelector from "@/components/AddOnSelector";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { drinkOptions } from "@/data/menuData";
 
 interface DrinkCardProps {
-  drink: {
-    id: string;
-    name: string;
-    basePrice: number;
-    description: string;
-    images: {
-      hot: string;
-      iced?: string;
-    };
-  };
+  drink: any;
   addOns: { id: string; name: string; price: number }[];
   onAddToOrder: (
     drinkId: string,
-    temperature: "hot" | "iced",
+    variant: string,
     quantity: number,
     addOns: string[]
   ) => void;
 }
 
-export default function DrinkCard({
-  drink,
-  addOns,
-  onAddToOrder,
-}: DrinkCardProps) {
-  const [temperature, setTemperature] = useState<"hot" | "iced">("hot");
+export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProps) {
+  const [variant, setVariant] = useState(
+    drink.variants ? drink.variants[0].id : "hot"
+  );
   const [quantity, setQuantity] = useState(1);
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+
+  const selectedVariant =
+    drink.variants?.find((v: any) => v.id === variant) || null;
 
   const handleAdd = () => {
-    onAddToOrder(drink.id, temperature, quantity, selectedAddOns);
-    setQuantity(1);
-    setSelectedAddOns([]);
+    if (selectedVariant?.disabled) return; // 🚫 bloquea si está disabled
+    onAddToOrder(drink.id, variant, quantity, []);
   };
 
   return (
-    <div className="border rounded-lg p-4 shadow-sm flex flex-col">
-      {/* Imagen */}
-      <img
-        src={temperature === "hot" ? drink.images.hot : drink.images.iced || drink.images.hot}
-        alt={drink.name}
-        className="w-full h-40 object-cover rounded-md mb-3"
-      />
+    <Card className="shadow-md">
+      <CardHeader>
+        <CardTitle className="font-serif">{drink.name}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Imagen */}
+        {selectedVariant ? (
+          <img
+            src={selectedVariant.image}
+            alt={selectedVariant.name}
+            className="rounded-lg h-40 w-full object-cover"
+          />
+        ) : (
+          <img
+            src={drink.images?.[variant]}
+            alt={drink.name}
+            className="rounded-lg h-40 w-full object-cover"
+          />
+        )}
 
-      {/* Nombre y descripción */}
-      <h3 className="text-lg font-serif font-semibold">{drink.name}</h3>
-      <p className="text-sm text-muted-foreground mb-2">{drink.description}</p>
-      <p className="font-semibold mb-3">${drink.basePrice.toFixed(2)}</p>
+        {/* Descripción */}
+        <p className="text-sm text-muted-foreground">
+          {selectedVariant ? selectedVariant.description : drink.description}
+        </p>
 
-      {/* Botones Hot/Iced */}
-      <div className="flex space-x-2 mb-3">
-        <Button
-          type="button"
-          onClick={() => setTemperature("hot")}
-          className={`flex-1 ${
-            temperature === "hot"
-              ? "bg-[#1D9099] hover:bg-[#00454E] text-white"
-              : "bg-gray-200 text-black"
-          }`}
-        >
-          Hot
-        </Button>
-        {drink.images.iced && (
+        {/* Botones de variantes */}
+        {drink.variants ? (
+          <div className="flex gap-2">
+            {drink.variants.map((v: any) => (
+              <Button
+                key={v.id}
+                type="button"
+                variant={variant === v.id ? "default" : "outline"}
+                onClick={() => setVariant(v.id)}
+                disabled={v.disabled}
+                className={
+                  variant === v.id
+                    ? "bg-[#1D9099] hover:bg-[#00454E] text-white"
+                    : "text-[#1D9099] border-[#1D9099]"
+                }
+              >
+                {v.name}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            {["hot", "iced"].map((opt) =>
+              drink.images?.[opt] ? (
+                <Button
+                  key={opt}
+                  type="button"
+                  variant={variant === opt ? "default" : "outline"}
+                  onClick={() => setVariant(opt)}
+                  className={
+                    variant === opt
+                      ? "bg-[#1D9099] hover:bg-[#00454E] text-white"
+                      : "text-[#1D9099] border-[#1D9099]"
+                  }
+                >
+                  {opt === "hot" ? "Hot" : "Iced"}
+                </Button>
+              ) : null
+            )}
+          </div>
+        )}
+
+        {/* Precio */}
+        <p className="font-semibold">
+          ${selectedVariant ? selectedVariant.price : drink.basePrice}
+        </p>
+
+        {/* Cantidad */}
+        <div className="flex items-center gap-2">
           <Button
             type="button"
-            onClick={() => setTemperature("iced")}
-            className={`flex-1 ${
-              temperature === "iced"
-                ? "bg-[#1D9099] hover:bg-[#00454E] text-white"
-                : "bg-gray-200 text-black"
-            }`}
+            variant="outline"
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
           >
-            Iced
+            -
+          </Button>
+          <span>{quantity}</span>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setQuantity((q) => q + 1)}
+          >
+            +
+          </Button>
+        </div>
+
+        {/* Botón Add to Order */}
+        {selectedVariant?.disabled ? (
+          <Button disabled className="w-full bg-gray-400 text-white">
+            Coming Soon
+          </Button>
+        ) : (
+          <Button
+            onClick={handleAdd}
+            className="w-full bg-[#1D9099] hover:bg-[#00454E] text-white"
+          >
+            Add to Order
           </Button>
         )}
-      </div>
-
-      {/* Cantidad */}
-      <div className="flex items-center justify-between mb-3">
-        <label className="text-sm">Quantity:</label>
-        <input
-          type="number"
-          min="1"
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          className="w-16 border rounded px-2 py-1 text-center"
-        />
-      </div>
-
-      {/* Customize your drink */}
-      <AddOnSelector
-        selectedAddOns={selectedAddOns}
-        onChange={setSelectedAddOns}
-      />
-
-      {/* Botón de agregar */}
-      <Button
-        type="button"
-        onClick={handleAdd}
-        className="mt-4 w-full bg-[#1D9099] hover:bg-[#00454E] text-white"
-      >
-        Add to Order
-      </Button>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
