@@ -211,10 +211,12 @@ TOTAL: $${calculateTotal().toFixed(2)}
           {/* Right - Order + Form */}
           <div className="space-y-6" ref={formRef}>
             <OrderSummary
-              items={orderItems}
-              addOns={addOnOptions}
-              onRemoveItem={removeFromOrder}
+                items={orderItems}
+                addOns={addOnOptions}
+                onRemoveItem={removeFromOrder}
+                discount={discount}
             />
+
 
             {/* Coupon Section */}
             <div className="flex gap-2">
