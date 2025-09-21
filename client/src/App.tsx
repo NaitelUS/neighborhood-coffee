@@ -3,7 +3,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
 import OrderPage from "@/pages/OrderPage";
 import ThankYou from "@/pages/ThankYou";
 import OrderStatus from "@/pages/OrderStatus";
@@ -15,7 +14,7 @@ function Router() {
       <Route path="/" component={OrderPage} />
       <Route path="/thank-you" component={ThankYou} />
       <Route path="/order-status/:id" component={OrderStatus} />
-      {/* Fallback 404 */}
+      {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
   );
