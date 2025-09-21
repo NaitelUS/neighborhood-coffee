@@ -8,7 +8,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Coffee } from "lucide-react";
 
 const customerInfoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -19,6 +18,14 @@ const customerInfoSchema = z.object({
   preferredDate: z.string().min(1, "Please select a preferred date"),
   preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
+}).refine((data) => {
+  if (data.isDelivery && (!data.address || data.address.length < 5)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Address is required when delivery is selected",
+  path: ["address"],
 });
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
@@ -26,18 +33,11 @@ type CustomerInfo = z.infer<typeof customerInfoSchema>;
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
   initialValues?: Partial<CustomerInfo>;
-  orderItems: any[];
-  total: number;
-  orderNumber: number;
+  orderNumber: string;
+  orderDetails: string;
 }
 
-export default function CustomerInfoForm({
-  onInfoChange,
-  initialValues,
-  orderItems,
-  total,
-  orderNumber,
-}: CustomerInfoFormProps) {
+export default function CustomerInfoForm({ onInfoChange, initialValues, orderNumber, orderDetails }: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
@@ -46,28 +46,29 @@ export default function CustomerInfoForm({
       phone: initialValues?.phone || "",
       address: initialValues?.address || "",
       isDelivery: initialValues?.isDelivery ?? false,
-      preferredDate: initialValues?.preferredDate || new Date().toISOString().split("T")[0],
-      preferredTime: initialValues?.preferredTime || new Date().toISOString().slice(11, 16),
+      preferredDate: initialValues?.preferredDate || "",
+      preferredTime: initialValues?.preferredTime || "",
       specialNotes: initialValues?.specialNotes || "",
-    },
+    }
   });
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
+
   const timeOptions: { value: string; label: string }[] = [];
   for (let hour = 6; hour <= 11; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       const displayTime = new Date(`2000-01-01 ${time}`).toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
       });
       timeOptions.push({ value: time, label: displayTime });
     }
   }
 
   const watchedValues = form.watch();
-  const isDeliveryChecked = form.watch("isDelivery");
+  const isDeliveryChecked = form.watch('isDelivery');
 
   React.useEffect(() => {
     if (form.formState.isValid) {
@@ -82,149 +83,165 @@ export default function CustomerInfoForm({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form name="order" method="POST" data-netlify="true" netlify-honeypot="bot-field" className="space-y-4">
+          <form 
+            name="order" 
+            method="POST" 
+            data-netlify="true" 
+            netlify-honeypot="bot-field"
+            className="space-y-4"
+          >
+            {/* Hidden inputs necesarios para Netlify */}
             <input type="hidden" name="form-name" value="order" />
+            <input type="hidden" name="orderNumber" value={orderNumber} />
+            <input type="hidden" name="orderDetails" value={orderDetails} />
             <p hidden>
               <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
             </p>
 
-            {/* Hidden order details */}
-            <input
-              type="hidden"
-              name="orderDetails"
-              value={JSON.stringify({
-                orderNumber,
-                items: orderItems.map((item) => ({
-                  drink: `${item.quantity}x ${item.temperature} ${item.drinkName}`,
-                  addOns: item.addOns,
-                  price: `$${item.totalPrice.toFixed(2)}`,
-                })),
-                total: `$${total.toFixed(2)}`,
-              })}
-            />
-
-            {/* Name */}
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
-                  <FormControl><Input {...field} placeholder="Enter your full name" /></FormControl>
+                  <FormControl>
+                    <Input placeholder="Enter your full name" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Email */}
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
-                  <FormControl><Input {...field} type="email" placeholder="your@email.com" /></FormControl>
+                  <FormControl>
+                    <Input type="email" placeholder="your.email@example.com" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Phone */}
             <FormField
               control={form.control}
               name="phone"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
-                  <FormControl><Input {...field} type="tel" placeholder="(555) 123-4567" /></FormControl>
+                  <FormControl>
+                    <Input type="tel" placeholder="(555) 123-4567" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Address */}
             <FormField
               control={form.control}
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Address {!isDeliveryChecked && "(Enable delivery to enter address)"}
-                  </FormLabel>
-                  <FormControl><Input {...field} disabled={!isDeliveryChecked} /></FormControl>
+                  <FormLabel>Address {!isDeliveryChecked && "(Enable delivery to enter address)"}</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123 Main St, City, State 12345" disabled={!isDeliveryChecked} {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Delivery */}
             <FormField
               control={form.control}
               name="isDelivery"
               render={({ field }) => (
-                <FormItem className="flex flex-col space-y-2">
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
-                  <div>
-                    <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
-                    <div className="text-sm flex items-center gap-2 text-gray-600">
-                      <Coffee className="h-4 w-4" /> 12821 Little Misty Ln, El Paso, TX 79938 • (915) 401-5547
-                    </div>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Delivery (otherwise pickup at store)
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <span>12821 Little Misty Ln, El Paso, TX 79938</span>
+                      <span>(915) 401-5547</span>
+                      <span>☕</span>
+                    </p>
                   </div>
                 </FormItem>
               )}
             />
 
-            {/* Date */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="preferredDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Date</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date"
+                        min={today}
+                        defaultValue={today}
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferredTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Time</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || timeOptions[0].value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select time" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {timeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
-              name="preferredDate"
+              name="specialNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preferred Date</FormLabel>
+                  <FormLabel>Special Instructions (Optional)</FormLabel>
                   <FormControl>
-                    <Input {...field} type="date" min={today} />
+                    <Textarea placeholder="Any special requests or notes..." className="min-h-[80px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Time */}
-            <FormField
-              control={form.control}
-              name="preferredTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Time</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {timeOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Notes */}
-            <FormField
-              control={form.control}
-              name="specialNotes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Special Instructions</FormLabel>
-                  <FormControl><Textarea {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <button type="submit" className="bg-[#1D9099] hover:bg-[#00454E] text-white px-4 py-2 rounded">
+              Submit Order
+            </button>
           </form>
         </Form>
       </CardContent>
