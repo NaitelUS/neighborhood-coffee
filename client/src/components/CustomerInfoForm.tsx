@@ -1,34 +1,65 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Coffee } from "lucide-react";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
-const customerInfoSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-  address: z.string().optional(),
-  isDelivery: z.boolean(),
-  preferredDate: z.string().min(1, "Please select a preferred date"),
-  preferredTime: z.string().min(1, "Please select a preferred time"),
-  specialNotes: z.string().optional(),
-});
+const customerInfoSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Please enter a valid email address"),
+    phone: z.string().min(10, "Please enter a valid phone number"),
+    address: z.string().optional(),
+    isDelivery: z.boolean(),
+    preferredDate: z.string().min(1, "Please select a preferred date"),
+    preferredTime: z.string().min(1, "Please select a preferred time"),
+    specialNotes: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.isDelivery && (!data.address || data.address.length < 5)) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Address is required when delivery is selected",
+      path: ["address"],
+    }
+  );
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
 
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
   initialValues?: Partial<CustomerInfo>;
+  orderDetails?: any;
 }
 
-export default function CustomerInfoForm({ onInfoChange, initialValues }: CustomerInfoFormProps) {
+export default function CustomerInfoForm({
+  onInfoChange,
+  initialValues,
+  orderDetails,
+}: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
@@ -38,18 +69,19 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
       address: initialValues?.address || "",
       isDelivery: initialValues?.isDelivery ?? false,
       preferredDate: initialValues?.preferredDate || new Date().toISOString().split("T")[0],
-      preferredTime: initialValues?.preferredTime || new Date().toTimeString().slice(0, 5),
+      preferredTime: initialValues?.preferredTime || "",
       specialNotes: initialValues?.specialNotes || "",
     },
   });
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Horarios de 6am a 11am
   const timeOptions: { value: string; label: string }[] = [];
   for (let hour = 6; hour <= 11; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      const time = `${hour.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}`;
       const displayTime = new Date(`2000-01-01 ${time}`).toLocaleTimeString([], {
         hour: "numeric",
         minute: "2-digit",
@@ -68,10 +100,6 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
     }
   }, [watchedValues, form.formState.isValid, onInfoChange]);
 
-  const isSunday = (date: string) => {
-    return new Date(date).getDay() === 0;
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -79,7 +107,25 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form className="space-y-4">
+          <form
+            name="order"
+            method="POST"
+            data-netlify="true"
+            netlify-honeypot="bot-field"
+            className="space-y-4"
+          >
+            <input type="hidden" name="form-name" value="order" />
+            <input
+              type="hidden"
+              name="orderDetails"
+              value={JSON.stringify(orderDetails)}
+            />
+            <p hidden>
+              <label>
+                Don’t fill this out if you’re human: <input name="bot-field" />
+              </label>
+            </p>
+
             <FormField
               control={form.control}
               name="name"
@@ -127,7 +173,9 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address {!isDeliveryChecked && "(Enable delivery to enter address)"}</FormLabel>
+                  <FormLabel>
+                    Address {!isDeliveryChecked && "(Enable delivery to enter address)"}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="123 Main St, City, State 12345"
@@ -136,13 +184,6 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                     />
                   </FormControl>
                   <FormMessage />
-                  <div className="text-sm mt-1 flex items-center gap-2">
-                    <Coffee className="h-4 w-4" />
-                    <span>
-                      12821 Little Misty Ln, El Paso, Texas 79938<br />
-                      (915) 401-5547
-                    </span>
-                  </div>
                 </FormItem>
               )}
             />
@@ -156,7 +197,15 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>Delivery (otherwise pickup at store)</FormLabel>
+                    <FormLabel>
+                      Delivery (otherwise pickup at store)
+                      <br />
+                      12821 Little Misty Ln
+                      <br />
+                      El Paso, Texas 79938
+                      <br />
+                      (915) 401-5547 ☕
+                    </FormLabel>
                   </div>
                 </FormItem>
               )}
@@ -170,18 +219,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                   <FormItem>
                     <FormLabel>Preferred Date</FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        min={today}
-                        value={field.value}
-                        onChange={(e) => {
-                          if (isSunday(e.target.value)) {
-                            alert("Sundays are not available.");
-                            return;
-                          }
-                          field.onChange(e);
-                        }}
-                      />
+                      <Input type="date" min={today} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,6 +269,11 @@ export default function CustomerInfoForm({ onInfoChange, initialValues }: Custom
                 </FormItem>
               )}
             />
+
+            {/* Métodos de pago */}
+            <div className="mt-4 text-sm text-gray-600">
+              We accept <strong>Cash App</strong>, <strong>Zelle</strong>, and <strong>Cash</strong>.
+            </div>
           </form>
         </Form>
       </CardContent>
