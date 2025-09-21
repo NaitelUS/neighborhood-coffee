@@ -18,14 +18,6 @@ const customerInfoSchema = z.object({
   preferredDate: z.string().min(1, "Please select a preferred date"),
   preferredTime: z.string().min(1, "Please select a preferred time"),
   specialNotes: z.string().optional(),
-}).refine((data) => {
-  if (data.isDelivery && (!data.address || data.address.length < 5)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Address is required when delivery is selected",
-  path: ["address"],
 });
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
@@ -33,11 +25,11 @@ type CustomerInfo = z.infer<typeof customerInfoSchema>;
 interface CustomerInfoFormProps {
   onInfoChange: (info: CustomerInfo) => void;
   initialValues?: Partial<CustomerInfo>;
-  orderNumber: string;
   orderDetails: string;
+  orderNumber: number;
 }
 
-export default function CustomerInfoForm({ onInfoChange, initialValues, orderNumber, orderDetails }: CustomerInfoFormProps) {
+export default function CustomerInfoForm({ onInfoChange, initialValues, orderDetails, orderNumber }: CustomerInfoFormProps) {
   const form = useForm<CustomerInfo>({
     resolver: zodResolver(customerInfoSchema),
     defaultValues: {
@@ -46,13 +38,14 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderNum
       phone: initialValues?.phone || "",
       address: initialValues?.address || "",
       isDelivery: initialValues?.isDelivery ?? false,
-      preferredDate: initialValues?.preferredDate || "",
-      preferredTime: initialValues?.preferredTime || "",
+      preferredDate: initialValues?.preferredDate || new Date().toISOString().split('T')[0],
+      preferredTime: initialValues?.preferredTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       specialNotes: initialValues?.specialNotes || "",
     }
   });
 
   const today = new Date().toISOString().split('T')[0];
+  const dayOfWeek = new Date().getDay();
 
   const timeOptions: { value: string; label: string }[] = [];
   for (let hour = 6; hour <= 11; hour++) {
@@ -90,10 +83,9 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderNum
             netlify-honeypot="bot-field"
             className="space-y-4"
           >
-            {/* Hidden inputs necesarios para Netlify */}
             <input type="hidden" name="form-name" value="order" />
-            <input type="hidden" name="orderNumber" value={orderNumber} />
             <input type="hidden" name="orderDetails" value={orderDetails} />
+            <input type="hidden" name="orderNumber" value={`ORD-${orderNumber}`} />
             <p hidden>
               <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
             </p>
@@ -158,22 +150,17 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderNum
               control={form.control}
               name="isDelivery"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormItem className="flex flex-col items-start space-y-1">
                   <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Delivery (otherwise pickup at store)
-                    </FormLabel>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span>12821 Little Misty Ln, El Paso, TX 79938</span>
-                      <span>(915) 401-5547</span>
-                      <span>☕</span>
-                    </p>
+                  <FormLabel>
+                    Delivery (otherwise pickup at store)
+                  </FormLabel>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>12821 Little Misty Ln, El Paso TX 79938</span>
+                    <span>(915) 401-5547</span>
+                    <span>☕</span>
                   </div>
                 </FormItem>
               )}
@@ -190,8 +177,9 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderNum
                       <Input 
                         type="date"
                         min={today}
-                        defaultValue={today}
-                        {...field} 
+                        value={field.value}
+                        disabled={new Date(field.value).getDay() === 0}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -205,7 +193,7 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderNum
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Preferred Time</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || timeOptions[0].value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select time" />
@@ -232,16 +220,12 @@ export default function CustomerInfoForm({ onInfoChange, initialValues, orderNum
                 <FormItem>
                   <FormLabel>Special Instructions (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Any special requests or notes..." className="min-h-[80px]" {...field} />
+                    <Textarea placeholder="Any special requests or notes about your order..." className="min-h-[80px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <button type="submit" className="bg-[#1D9099] hover:bg-[#00454E] text-white px-4 py-2 rounded">
-              Submit Order
-            </button>
           </form>
         </Form>
       </CardContent>
