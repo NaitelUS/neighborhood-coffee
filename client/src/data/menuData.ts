@@ -42,7 +42,7 @@ export const drinkOptions = [
       "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
-      // Golden Coffee solo HOT
+      iced: "", // ⚠️ se define vacío para evitar undefined
     },
   },
   {
@@ -57,34 +57,20 @@ export const drinkOptions = [
     },
   },
   {
-    id: "empanadas",
+    id: "empanada",
     name: "Handcrafted Empanadas",
     basePrice: 2.75,
     description:
-      "Enjoy our artisan empanada, handcrafted with a golden, flaky crust. Choose Apple or Pineapple.",
+      "Enjoy our artisan empanada, handcrafted with a golden, flaky crust. Each one is filled with a sweet and vibrant homemade fruit jam.",
+    options: ["Apple", "Pineapple"],
     images: {
       apple: "/attached_assets/Apple-Soon.png",
       pineapple: "/attached_assets/Pineapple-Soon.png",
     },
-    options: [
-      {
-        id: "apple",
-        name: "Apple",
-        description:
-          "A delicious, homemade turnover filled with a warm, natural apple filling.",
-      },
-      {
-        id: "pineapple",
-        name: "Pineapple",
-        description:
-          "A flaky pastry filled with a sweet and tangy pineapple filling made from fresh fruit.",
-      },
-    ],
-    comingSoon: true,
+    comingSoon: true, // 🚨 bandera para deshabilitar botón
   },
 ];
 
-// ✅ Solo los add-ons que pediste
 export const addOnOptions = [
   { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
   { id: "oatMilk", name: "Oat Milk", price: 0.5 },
@@ -94,6 +80,6 @@ export const addOnOptions = [
   { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
 ];
 
-// ✅ Cupón hardcoded
-export const COUPON_CODE = "FALL2025";
+// Coupon estático de ejemplo
+export const COUPON_CODE = "NEIGHBOR15";
 export const COUPON_DISCOUNT = 0.15;
