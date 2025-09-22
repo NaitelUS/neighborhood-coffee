@@ -1,31 +1,53 @@
 // src/components/Header.tsx
-import React from "react";
 import { ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export default function Header({ cartCount = 0 }: { cartCount?: number }) {
+interface HeaderProps {
+  cartCount?: number;
+}
+
+export default function Header({ cartCount = 0 }: HeaderProps) {
   return (
-    <header className="w-full flex items-center justify-between py-4 px-6 border-b bg-white shadow-sm">
-      {/* Logo + frase */}
-      <div className="flex flex-col items-start">
-        <img
-          src="/attached_assets/tnclogo.png" // asegúrate que exista en public/attached_assets/
-          alt="The Neighborhood Coffee Logo"
-          className="h-14"
-        />
-        <p className="italic text-[#E5A645] text-sm">
-          More than Coffee, it's a neighborhood tradition, from our home to yours.
-        </p>
-      </div>
+    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+      <div className="container mx-auto flex justify-between items-center px-4 py-3">
+        {/* Logo + Tagline */}
+        <div className="flex items-center gap-3">
+          <img
+            src="/attached_assets/tnclogo.png"
+            alt="The Neighborhood Coffee"
+            className="h-12 w-auto"
+          />
+          <div>
+            <h1 className="text-lg font-bold text-[#1D9099]">
+              The Neighborhood Coffee
+            </h1>
+            <p className="text-xs italic text-gray-600">
+              More than coffee, it's a neighborhood tradition
+            </p>
+          </div>
+        </div>
 
-      {/* Carrito */}
-      <a href="#order-form" className="relative">
-        <ShoppingCart size={28} className="text-[#1D9099] hover:text-[#00454E]" />
-        {cartCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
-            {cartCount}
-          </span>
-        )}
-      </a>
+        {/* Carrito */}
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            className="relative"
+            onClick={() => {
+              const form = document.getElementById("order-form");
+              if (form) {
+                form.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+          >
+            <ShoppingCart className="h-6 w-6 text-[#1D9099]" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Button>
+        </div>
+      </div>
     </header>
   );
 }
