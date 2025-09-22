@@ -42,7 +42,7 @@ export const drinkOptions = [
       "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
-      // Golden Coffee es solo HOT
+      // Golden Coffee solo HOT
     },
   },
   {
@@ -57,39 +57,43 @@ export const drinkOptions = [
     },
   },
   {
-    id: "empanada",
+    id: "empanadas",
     name: "Handcrafted Empanadas",
     basePrice: 2.75,
     description:
-      "Enjoy our artisan empanadas, handcrafted with a golden, flaky crust and filled with natural fruit jams.",
-    variants: [
+      "Enjoy our artisan empanada, handcrafted with a golden, flaky crust. Choose Apple or Pineapple.",
+    images: {
+      apple: "/attached_assets/Apple-Soon.png",
+      pineapple: "/attached_assets/Pineapple-Soon.png",
+    },
+    options: [
       {
-        id: "appleEmpanada",
-        label: "Apple",
+        id: "apple",
+        name: "Apple",
         description:
           "A delicious, homemade turnover filled with a warm, natural apple filling.",
-        image: "/attached_assets/Apple-Soon.png",
       },
       {
-        id: "pineappleEmpanada",
-        label: "Pineapple",
+        id: "pineapple",
+        name: "Pineapple",
         description:
-          "A flaky, handcrafted pastry filled with a sweet and tangy pineapple jam.",
-        image: "/attached_assets/Pineapple-Soon.png",
+          "A flaky pastry filled with a sweet and tangy pineapple filling made from fresh fruit.",
       },
     ],
     comingSoon: true,
   },
 ];
 
-// Cupón válido hardcoded
-export const COUPON_CODE = "FALL2025";     // nombre del cupón
-export const COUPON_DISCOUNT = 0.15;       // 15% de descuento
-
+// ✅ Solo los add-ons que pediste
 export const addOnOptions = [
   { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
   { id: "oatMilk", name: "Oat Milk", price: 0.5 },
   { id: "hazelnutSyrup", name: "Hazelnut Syrup", price: 0.5 },
   { id: "caramelSyrup", name: "Caramel Syrup", price: 0.5 },
   { id: "vanillaSyrup", name: "Vanilla Syrup", price: 0.5 },
+  { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
 ];
+
+// ✅ Cupón hardcoded
+export const COUPON_CODE = "FALL2025";
+export const COUPON_DISCOUNT = 0.15;
