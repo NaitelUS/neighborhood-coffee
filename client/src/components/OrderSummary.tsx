@@ -1,76 +1,52 @@
-import React from "react";
+// src/components/OrderSummary.tsx
+import { addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 
-interface OrderSummaryProps {
+type Props = {
   items: OrderItem[];
-  addOns: { id: string; name: string; price: number }[];
-  onRemoveItem: (index: number) => void;
-  discount: number; // porcentaje aplicado (ej. 0.15 para 15%)
-}
+  couponApplied: boolean;
+};
 
-export default function OrderSummary({
-  items,
-  addOns,
-  onRemoveItem,
-  discount,
-}: OrderSummaryProps) {
+export default function OrderSummary({ items, couponApplied }: Props) {
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-  const discountAmount = subtotal * discount;
-  const total = subtotal - discountAmount;
+  const discount = couponApplied ? subtotal * COUPON_DISCOUNT : 0;
+  const total = subtotal - discount;
 
   return (
-    <div className="border rounded-lg p-4 bg-card">
-      <h3 className="text-lg font-serif mb-3">Your Order</h3>
-
+    <div className="border rounded-xl p-4 bg-card">
+      <h3 className="text-lg font-semibold mb-2">Order Summary</h3>
       {items.length === 0 ? (
-        <p className="text-muted-foreground">No items yet.</p>
+        <p className="text-sm text-muted-foreground">Your cart is empty.</p>
       ) : (
-        <ul className="space-y-2">
-          {items.map((item, index) => (
-            <li
-              key={index}
-              className="flex justify-between items-start border-b pb-2"
-            >
-              <div>
-                <p className="font-medium">
-                  {item.quantity}x {item.temperature} {item.drinkName}
-                </p>
+        <>
+          <ul className="space-y-2 mb-3">
+            {items.map((item, idx) => (
+              <li key={idx} className="text-sm border-b pb-1">
+                {item.quantity}x {item.temperature} {item.drinkName}
                 {item.addOns.length > 0 && (
-                  <ul className="text-sm text-muted-foreground list-disc pl-4">
-                    {item.addOns.map((id) => {
-                      const addOn = addOns.find((a) => a.id === id);
-                      return <li key={id}>{addOn?.name}</li>;
-                    })}
-                  </ul>
+                  <span className="text-muted-foreground"> (with {item.addOns.join(", ")})</span>
                 )}
+                <span className="float-right font-medium">${item.totalPrice.toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="text-sm">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            {couponApplied && (
+              <div className="flex justify-between text-green-700">
+                <span>Promotional discount ({COUPON_CODE})</span>
+                <span>- ${discount.toFixed(2)}</span>
               </div>
-              <div className="text-right">
-                <p>${item.totalPrice.toFixed(2)}</p>
-                <button
-                  className="text-xs text-red-500 hover:underline"
-                  onClick={() => onRemoveItem(index)}
-                >
-                  Remove
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Subtotal */}
-      {items.length > 0 && (
-        <div className="mt-4 space-y-1 text-right">
-          <p className="font-medium">Subtotal: ${subtotal.toFixed(2)}</p>
-
-          {discount > 0 && (
-            <p className="text-green-600 font-medium">
-              Promotional Discount: -${discountAmount.toFixed(2)}
-            </p>
-          )}
-
-          <p className="text-xl font-bold mt-2">TOTAL: ${total.toFixed(2)}</p>
-        </div>
+            )}
+            <div className="flex justify-between font-semibold mt-1">
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
