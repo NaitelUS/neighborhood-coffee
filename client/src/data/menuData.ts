@@ -1,20 +1,6 @@
 // src/data/menuData.ts
 
-export type DrinkImages = {
-  hot: string;
-  iced?: string; // algunos no tienen iced
-};
-
-export type DrinkOption = {
-  id: string;
-  name: string;
-  basePrice: number;
-  description: string;
-  images: DrinkImages;
-  onlyHot?: boolean;
-};
-
-export const drinkOptions: DrinkOption[] = [
+export const drinkOptions = [
   {
     id: "americano",
     name: "Americano",
@@ -42,7 +28,7 @@ export const drinkOptions: DrinkOption[] = [
     name: "Mocha",
     basePrice: 5.25,
     description:
-      "A delightful blend of rich espresso, steamed milk, and decadent chocolate.",
+      "A delightful blend of rich espresso, steamed milk, and decadent chocolate, topped with whipped cream.",
     images: {
       hot: "/attached_assets/Hot_Mocha_Coffee_0428bb6d.png",
       iced: "/attached_assets/Iced_Mocha_Coffee_8dea2fdb.png",
@@ -53,34 +39,53 @@ export const drinkOptions: DrinkOption[] = [
     name: "Golden Coffee",
     basePrice: 4.75,
     description:
-      "Coffee with turmeric and warming spices — flavorful and cozy. (Hot only)",
+      "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
+      // Golden Coffee es solo HOT
     },
-    onlyHot: true,
   },
   {
     id: "cafeaulait",
     name: "Café au Lait",
     basePrice: 4.25,
     description:
-      "French-style coffee with equal parts strong coffee and steamed milk.",
+      "Traditional French-style coffee with equal parts strong coffee and steamed milk for a balanced taste.",
     images: {
       hot: "/attached_assets/Hot_Café_au_Lait_8c8a1ed2.png",
       iced: "/attached_assets/Iced_Café_au_Lait_60f2c4d8.png",
     },
+  },
+  {
+    id: "empanada",
+    name: "Handcrafted Empanadas",
+    basePrice: 2.75,
+    description:
+      "Enjoy our artisan empanadas, handcrafted with a golden, flaky crust and filled with natural fruit jams.",
+    variants: [
+      {
+        id: "appleEmpanada",
+        label: "Apple",
+        description:
+          "A delicious, homemade turnover filled with a warm, natural apple filling.",
+        image: "/attached_assets/Apple-Soon.png",
+      },
+      {
+        id: "pineappleEmpanada",
+        label: "Pineapple",
+        description:
+          "A flaky, handcrafted pastry filled with a sweet and tangy pineapple jam.",
+        image: "/attached_assets/Pineapple-Soon.png",
+      },
+    ],
+    comingSoon: true,
   },
 ];
 
 export const addOnOptions = [
   { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
   { id: "oatMilk", name: "Oat Milk", price: 0.5 },
-  { id: "hazelnut", name: "Hazelnut Syrup", price: 0.5 },
-  { id: "caramel", name: "Caramel Syrup", price: 0.5 },
-  { id: "vanilla", name: "Vanilla Syrup", price: 0.5 },
-  { id: "whipped", name: "Whipped Cream", price: 0.5 },
+  { id: "hazelnutSyrup", name: "Hazelnut Syrup", price: 0.5 },
+  { id: "caramelSyrup", name: "Caramel Syrup", price: 0.5 },
+  { id: "vanillaSyrup", name: "Vanilla Syrup", price: 0.5 },
 ];
-
-// Cupón hardcoded
-export const COUPON_CODE = "FALL15";
-export const COUPON_DISCOUNT = 0.15;
