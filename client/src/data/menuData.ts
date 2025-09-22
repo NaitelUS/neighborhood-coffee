@@ -42,7 +42,8 @@ export const drinkOptions = [
       "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
-      iced: "", // ⚠️ se define vacío para evitar undefined
+      // iced vacío → lo convertimos en null
+      iced: null,
     },
   },
   {
@@ -64,8 +65,7 @@ export const drinkOptions = [
       "Enjoy our artisan empanada, handcrafted with a golden, flaky crust. Each one is filled with a sweet and vibrant homemade fruit jam.",
     options: ["Apple", "Pineapple"],
     images: {
-      apple: "/attached_assets/Apple-Soon.png",
-      pineapple: "/attached_assets/Pineapple-Soon.png",
+      default: "/attached_assets/Empanadas-Soon.png", // ✅ imagen por defecto
     },
     comingSoon: true, // 🚨 bandera para deshabilitar botón
   },
