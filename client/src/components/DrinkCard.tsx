@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import AddOnSelector from "@/components/AddOnSelector";
-import type { OrderItem } from "@shared/schema";
 
 interface DrinkCardProps {
   drink: any;
@@ -33,8 +32,12 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
     );
   };
 
+  // ✅ Protegemos imágenes
   const imageSrc =
-    drink.images?.[temperature] || drink.images?.hot || "/attached_assets/placeholder.png";
+    drink.images?.[temperature] ||
+    drink.images?.hot ||
+    drink.images?.default ||
+    "/attached_assets/placeholder.png";
 
   return (
     <div className="border rounded-lg shadow-sm p-4 flex flex-col">
@@ -44,11 +47,13 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
         className="w-full h-40 object-cover rounded"
       />
       <h3 className="mt-3 text-lg font-semibold">{drink.name}</h3>
-      <p className="text-sm text-muted-foreground">{drink.description}</p>
+      {drink.description && (
+        <p className="text-sm text-muted-foreground">{drink.description}</p>
+      )}
       <p className="mt-2 font-bold">${drink.basePrice.toFixed(2)}</p>
 
-      {/* Opciones Hot/Iced o Apple/Pineapple */}
-      {drink.options ? (
+      {/* Opciones Hot/Iced o personalizadas */}
+      {drink.options && drink.options.length > 0 ? (
         <div className="flex gap-2 mt-3">
           {drink.options.map((opt: string) => (
             <Button
@@ -62,23 +67,28 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
         </div>
       ) : (
         <div className="flex gap-2 mt-3">
-          <Button
-            className={`flex-1 ${
-              temperature === "hot" ? "bg-[#1D9099] text-white" : "bg-gray-200 text-black"
-            }`}
-            onClick={() => setTemperature("hot")}
-          >
-            Hot
-          </Button>
-          <Button
-            className={`flex-1 ${
-              temperature === "iced" ? "bg-[#1D9099] text-white" : "bg-gray-200 text-black"
-            }`}
-            onClick={() => setTemperature("iced")}
-            disabled={!drink.images?.iced}
-          >
-            Iced
-          </Button>
+          {/* Hot */}
+          {drink.images?.hot && (
+            <Button
+              className={`flex-1 ${
+                temperature === "hot" ? "bg-[#1D9099] text-white" : "bg-gray-200 text-black"
+              }`}
+              onClick={() => setTemperature("hot")}
+            >
+              Hot
+            </Button>
+          )}
+          {/* Iced */}
+          {drink.images?.iced && (
+            <Button
+              className={`flex-1 ${
+                temperature === "iced" ? "bg-[#1D9099] text-white" : "bg-gray-200 text-black"
+              }`}
+              onClick={() => setTemperature("iced")}
+            >
+              Iced
+            </Button>
+          )}
         </div>
       )}
 
