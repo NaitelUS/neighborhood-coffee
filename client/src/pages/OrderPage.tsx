@@ -1,20 +1,19 @@
-// src/pages/OrderPage.tsx
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import DrinkCard from "@/components/DrinkCard";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
-import { drinkOptions } from "@/data/menuData";
-import { COUPON_DISCOUNT } from "@/data/menuData";
+import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 import { ShoppingCart } from "lucide-react";
+
+let globalOrderCounter = 1;
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [couponApplied, setCouponApplied] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -27,16 +26,11 @@ export default function OrderPage() {
     const drink = drinkOptions.find((d) => d.id === drinkId);
     if (!drink) return;
 
-    // Precio de add-ons
-    const ADDON_PRICES: Record<string, number> = {
-      extraShot: 0.75,
-      oatMilk: 0.5,
-      hazelnut: 0.5,
-      caramel: 0.5,
-      vanilla: 0.5,
-      whipped: 0.5,
-    };
-    const addOnCost = addOns.reduce((sum, id) => sum + (ADDON_PRICES[id] || 0), 0);
+    const addOnCost = addOns.reduce((total, addOnId) => {
+      const addOn = addOnOptions.find((a) => a.id === addOnId);
+      return total + (addOn?.price || 0);
+    }, 0);
+
     const totalPrice = (drink.basePrice + addOnCost) * quantity;
 
     const newItem: OrderItem = {
@@ -50,6 +44,7 @@ export default function OrderPage() {
     };
 
     setOrderItems((prev) => [...prev, newItem]);
+
     toast({
       title: "Added to order!",
       description: `${quantity}x ${temperature} ${drink.name} added.`,
@@ -60,48 +55,84 @@ export default function OrderPage() {
     setOrderItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const discount = couponApplied ? subtotal * COUPON_DISCOUNT : 0;
-  const total = subtotal - discount;
+  const calculateTotal = () => {
+    return orderItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+  };
 
   const handleSubmitOrder = async () => {
     if (orderItems.length === 0) {
-      toast({ title: "Order is empty", description: "Please add at least one item.", variant: "destructive" });
+      toast({
+        title: "Order is empty",
+        description: "Please add at least one item.",
+        variant: "destructive",
+      });
       return;
     }
 
     const info = customerInfo as any;
-    if (!info.name || !info.email || !info.phone || !info.preferredDate || !info.preferredTime) {
-      toast({ title: "Missing info", description: "Please fill all required fields.", variant: "destructive" });
+    if (
+      !info.name ||
+      !info.email ||
+      !info.phone ||
+      !info.preferredDate ||
+      !info.preferredTime
+    ) {
+      toast({
+        title: "Missing info",
+        description: "Please fill all required fields.",
+        variant: "destructive",
+      });
       return;
     }
-    if (info.isDelivery && !info.address) {
-      toast({ title: "Address required", description: "Please enter delivery address.", variant: "destructive" });
-      return;
-    }
 
-    setIsSubmitting(true);
-    try {
-      const orderNumber = Date.now(); // id único
-      const orderData = {
-        orderNo: orderNumber,
-        customer: info,
-        items: orderItems,
-        subtotal,
-        discount,
-        total,
-        status: "Received",
-        createdAt: new Date().toISOString(),
-      };
+    const orderNumber = globalOrderCounter++;
 
-      const existing = JSON.parse(localStorage.getItem("orders") || "[]");
-      existing.push(orderData);
-      localStorage.setItem("orders", JSON.stringify(existing));
+    const orderDetails = `
+Order No: ${orderNumber}
+Name: ${info.name}
+Email: ${info.email}
+Phone: ${info.phone}
+Delivery: ${info.isDelivery ? "Yes" : "Pickup"}
+Address: ${info.address || "N/A"}
+Preferred Date: ${info.preferredDate}
+Preferred Time: ${info.preferredTime}
+Notes: ${info.specialNotes || "N/A"}
 
-      window.location.href = `/thank-you?orderNo=${orderNumber}`;
-    } finally {
-      setIsSubmitting(false);
-    }
+Items:
+${orderItems
+  .map(
+    (item) =>
+      `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(
+        2
+      )}`
+  )
+  .join("\n")}
+
+TOTAL: $${calculateTotal().toFixed(2)}
+`;
+
+    // Netlify Forms integration
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.setAttribute("data-netlify", "true");
+    form.style.display = "none";
+
+    const formName = document.createElement("input");
+    formName.type = "hidden";
+    formName.name = "form-name";
+    formName.value = "order";
+    form.appendChild(formName);
+
+    const orderField = document.createElement("input");
+    orderField.type = "hidden";
+    orderField.name = "orderDetails";
+    orderField.value = orderDetails;
+    form.appendChild(orderField);
+
+    document.body.appendChild(form);
+    form.submit();
+
+    window.location.href = `/thank-you?orderNo=${orderNumber}`;
   };
 
   return (
@@ -114,9 +145,12 @@ export default function OrderPage() {
             alt="Logo"
             className="h-12 w-auto"
           />
+
           <button
             className="relative"
-            onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+            onClick={() =>
+              formRef.current?.scrollIntoView({ behavior: "smooth" })
+            }
           >
             <ShoppingCart className="h-8 w-8 text-primary" />
             {orderItems.length > 0 && (
@@ -130,21 +164,24 @@ export default function OrderPage() {
 
       {/* Main */}
       <div className="container mx-auto px-4 py-8">
+        <p className="text-center text-muted-foreground mb-6 italic">
+          We serve fresh coffee Monday–Saturday from 6:00am to 11:00am.  
+          On Sundays, we rest ☕✨
+        </p>
+
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Menu */}
+          {/* Left - Menu */}
           <div className="lg:col-span-2 space-y-8">
             <section>
-              <h2 className="text-2xl font-serif font-semibold mb-2">
+              <h2 className="text-2xl font-serif font-semibold mb-6">
                 Our Coffee Menu
               </h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                We serve Monday–Saturday from 6:00am to 11:00am. Sundays we rest ☕
-              </p>
               <div className="grid md:grid-cols-2 gap-6">
                 {drinkOptions.map((drink) => (
                   <DrinkCard
                     key={drink.id}
                     drink={drink}
+                    addOns={addOnOptions}
                     onAddToOrder={addToOrder}
                   />
                 ))}
@@ -152,19 +189,24 @@ export default function OrderPage() {
             </section>
           </div>
 
-          {/* Summary + Form */}
+          {/* Right - Order + Form */}
           <div className="space-y-6" ref={formRef}>
-            <OrderSummary items={orderItems} couponApplied={couponApplied} />
-            <CustomerInfoForm
-              onInfoChange={setCustomerInfo}
-              onCouponApplied={setCouponApplied}
+            <OrderSummary
+              items={orderItems}
+              addOns={addOnOptions}
+              onRemoveItem={removeFromOrder}
             />
+
+            <CustomerInfoForm onInfoChange={setCustomerInfo} />
+
             <Button
               onClick={handleSubmitOrder}
               disabled={isSubmitting || orderItems.length === 0}
               className="w-full h-12 text-lg bg-[#1D9099] hover:bg-[#00454E] text-white"
             >
-              {isSubmitting ? "Placing Order..." : `Place Order - $${Math.max(total,0).toFixed(2)}`}
+              {isSubmitting
+                ? "Placing Order..."
+                : `Place Order - $${calculateTotal().toFixed(2)}`}
             </Button>
           </div>
         </div>
