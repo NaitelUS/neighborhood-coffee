@@ -9,14 +9,20 @@ import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 import { ShoppingCart } from "lucide-react";
 
-let globalOrderCounter = parseInt(localStorage.getItem("orderCounter") || "1", 10);
-
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerInfo, setCustomerInfo] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Generar número consecutivo guardado en localStorage
+  const getNextOrderNumber = () => {
+    const last = localStorage.getItem("lastOrderNumber");
+    const next = last ? parseInt(last) + 1 : 1;
+    localStorage.setItem("lastOrderNumber", next.toString());
+    return next;
+  };
 
   const addToOrder = (
     drinkId: string,
@@ -59,7 +65,7 @@ export default function OrderPage() {
     return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
-  const handleSubmitOrder = async () => {
+  const handleSubmitOrder = () => {
     if (orderItems.length === 0) {
       toast({
         title: "Order is empty",
@@ -87,44 +93,25 @@ export default function OrderPage() {
 
     setIsSubmitting(true);
 
-    try {
-      // Increment order number
-      const orderNumber = globalOrderCounter++;
-      localStorage.setItem("orderCounter", orderNumber.toString());
+    // ✅ Crear número de orden
+    const orderNumber = getNextOrderNumber();
 
-      const newOrder = {
-        orderNo: orderNumber,
-        customer: {
-          name: info.name,
-          email: info.email,
-          phone: info.phone,
-          address: info.isDelivery ? info.address : "Pickup",
-        },
-        items: orderItems.map(
-          (item) =>
-            `${item.quantity}x ${item.temperature} ${item.drinkName} ($${item.totalPrice.toFixed(2)})`
-        ),
-        total: calculateTotal(),
-        status: "Order Received",
-      };
+    // ✅ Guardar en localStorage
+    const orderData = {
+      orderNumber,
+      customer: info,
+      items: orderItems,
+      total: calculateTotal(),
+      status: "Received", // 👈 Status inicial
+      createdAt: new Date().toISOString(),
+    };
 
-      const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]");
-      localStorage.setItem(
-        "orders",
-        JSON.stringify([...existingOrders, newOrder])
-      );
+    const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]");
+    existingOrders.push(orderData);
+    localStorage.setItem("orders", JSON.stringify(existingOrders));
 
-      // Redirigir a la página de gracias
-      window.location.href = `/thank-you?orderNo=${orderNumber}`;
-    } catch (error) {
-      toast({
-        title: "Order failed",
-        description: "There was an error submitting your order.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // ✅ Redirigir al Thank You
+    window.location.href = `/thank-you?orderNo=${orderNumber}`;
   };
 
   return (
