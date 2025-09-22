@@ -21,25 +21,48 @@ export default function OrderSummary({
     <div className="border p-4 rounded-lg shadow-sm">
       <h2 className="text-lg font-bold mb-2">Your Order</h2>
       <ul className="space-y-2">
-        {items.map((item, idx) => (
-          <li key={idx} className="flex justify-between items-center">
-            <span>
-              {item.quantity}x {item.name} ({item.temperature})
-            </span>
-            <button
-              onClick={() => removeItem(idx)}
-              className="text-red-600 text-sm"
+        {items.map((item, idx) => {
+          const addOnsPrice = item.addOns.reduce((sum: number, addOnId: string) => {
+            const addOn = (item.addOnOptions || []).find((a: any) => a.id === addOnId);
+            return sum + (addOn ? addOn.price : 0);
+          }, 0);
+          const lineTotal = (item.basePrice + addOnsPrice) * item.quantity;
+
+          return (
+            <li
+              key={idx}
+              className="flex justify-between items-start border-b pb-1"
             >
-              ❌
-            </button>
-          </li>
-        ))}
+              <div>
+                <span>
+                  {item.quantity}x {item.name} ({item.temperature})
+                </span>
+                {item.addOns.length > 0 && (
+                  <ul className="ml-4 text-xs text-gray-600 list-disc">
+                    {item.addOns.map((addOn: string, i: number) => (
+                      <li key={i}>{addOn}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm">${lineTotal.toFixed(2)}</span>
+                <button
+                  onClick={() => removeItem(idx)}
+                  className="text-red-600 text-sm"
+                >
+                  ❌
+                </button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       <div className="mt-4 text-sm">
         <p>Subtotal: ${subtotal.toFixed(2)}</p>
         {discount > 0 && <p>Discount: -${discount.toFixed(2)}</p>}
-        <p className="font-bold">Total: ${total.toFixed(2)}</p>
+        <p className="font-bold text-lg">Total: ${total.toFixed(2)}</p>
       </div>
 
       {!couponApplied && (
