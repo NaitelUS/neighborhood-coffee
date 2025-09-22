@@ -1,4 +1,3 @@
-// src/pages/OrderPage.tsx
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -15,14 +14,6 @@ export default function OrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
-
-  // ✅ Generar número consecutivo guardado en localStorage
-  const getNextOrderNumber = () => {
-    const last = localStorage.getItem("lastOrderNumber");
-    const next = last ? parseInt(last) + 1 : 1;
-    localStorage.setItem("lastOrderNumber", next.toString());
-    return next;
-  };
 
   const addToOrder = (
     drinkId: string,
@@ -65,7 +56,7 @@ export default function OrderPage() {
     return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
     if (orderItems.length === 0) {
       toast({
         title: "Order is empty",
@@ -93,25 +84,32 @@ export default function OrderPage() {
 
     setIsSubmitting(true);
 
-    // ✅ Crear número de orden
-    const orderNumber = getNextOrderNumber();
+    try {
+      const orderNumber = Date.now(); // número único
+      const orderData = {
+        orderNo: orderNumber,
+        customer: info,
+        items: orderItems,
+        total: calculateTotal(),
+        status: "Received",
+      };
 
-    // ✅ Guardar en localStorage
-    const orderData = {
-      orderNumber,
-      customer: info,
-      items: orderItems,
-      total: calculateTotal(),
-      status: "Received", // 👈 Status inicial
-      createdAt: new Date().toISOString(),
-    };
+      // Guardar en localStorage
+      const existing = JSON.parse(localStorage.getItem("orders") || "[]");
+      existing.push(orderData);
+      localStorage.setItem("orders", JSON.stringify(existing));
 
-    const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]");
-    existingOrders.push(orderData);
-    localStorage.setItem("orders", JSON.stringify(existingOrders));
-
-    // ✅ Redirigir al Thank You
-    window.location.href = `/thank-you?orderNo=${orderNumber}`;
+      // Redirigir
+      window.location.href = `/thank-you?orderNo=${orderNumber}`;
+    } catch (err) {
+      toast({
+        title: "Order failed",
+        description: "There was an error submitting your order.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
