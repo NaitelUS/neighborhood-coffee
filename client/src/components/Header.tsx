@@ -1,6 +1,4 @@
-// src/components/Header.tsx
 import { ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   cartCount?: number;
@@ -17,35 +15,24 @@ export default function Header({ cartCount = 0 }: HeaderProps) {
             alt="The Neighborhood Coffee"
             className="h-12 w-auto"
           />
-          <div>
-            <h1 className="text-lg font-bold text-[#1D9099]">
-              The Neighborhood Coffee
-            </h1>
-            <p className="text-xs italic text-gray-600">
-              More than coffee, it's a neighborhood tradition
-            </p>
-          </div>
+          <p className="italic text-[#E5A645] text-sm">
+            More than coffee, it's a neighborhood tradition
+          </p>
         </div>
 
         {/* Carrito */}
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            className="relative"
-            onClick={() => {
-              const form = document.getElementById("order-form");
-              if (form) {
-                form.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
+        <div className="relative">
+          <a
+            href="#order-form"
+            className="relative flex items-center justify-center"
           >
-            <ShoppingCart className="h-6 w-6 text-[#1D9099]" />
+            <ShoppingCart className="h-7 w-7 text-[#1D9099]" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {cartCount}
               </span>
             )}
-          </Button>
+          </a>
         </div>
       </div>
     </header>
