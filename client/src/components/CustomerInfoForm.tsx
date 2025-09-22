@@ -1,175 +1,218 @@
-import { useState, useEffect } from "react";
+// src/components/CustomerInfoForm.tsx
+import { useEffect, useMemo, useState } from "react";
+import { COUPON_CODE } from "@/data/menuData";
 
-type CustomerInfoFormProps = {
+type Props = {
   onInfoChange: (info: any) => void;
+  onCouponApplied: (applied: boolean) => void;
 };
 
-export default function CustomerInfoForm({ onInfoChange }: CustomerInfoFormProps) {
-  const [info, setInfo] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    isDelivery: false,
-    address: "",
-    preferredDate: "",
-    preferredTime: "",
-    specialNotes: "",
-    coupon: "",
-    addOnsEnabled: false,
-  });
+export default function CustomerInfoForm({ onInfoChange, onCouponApplied }: Props) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
+  const [fulfillment, setFulfillment] = useState<"pickup" | "delivery">("pickup");
+  const [address, setAddress] = useState("");
+
+  const [preferredDate, setPreferredDate] = useState<string>("");
+  const [preferredTime, setPreferredTime] = useState<string>("");
+
+  const [coupon, setCoupon] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponMsg, setCouponMsg] = useState<string>("");
+
+  // Hoy por defecto + bloquear domingos
   useEffect(() => {
-    onInfoChange(info);
-  }, [info]);
+    const today = new Date();
+    const ymd = today.toISOString().split("T")[0];
+    setPreferredDate(ymd);
 
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const hh = String(today.getHours()).padStart(2, "0");
-  const min = String(today.getMinutes()).padStart(2, "0");
-  const formattedDate = `${yyyy}-${mm}-${dd}`;
-  const formattedTime = `${hh}:${min}`;
+    // Hora actual clamp a rango 06:00 - 11:30 (pasos de 30 min)
+    const minutes = today.getMinutes();
+    const rounded = minutes < 30 ? 0 : 30;
+    const clampedH = Math.min(Math.max(today.getHours(), 6), 11);
+    const clampedM = clampedH === 11 ? Math.min(rounded, 30) : rounded;
+    const hh = String(clampedH).padStart(2, "0");
+    const mm = String(clampedM).padStart(2, "0");
+    setPreferredTime(`${hh}:${mm}`);
+  }, []);
+
+  // Notificar cambios al padre
+  useEffect(() => {
+    onInfoChange({
+      name,
+      email,
+      phone,
+      isDelivery: fulfillment === "delivery",
+      address: fulfillment === "delivery" ? address : "",
+      preferredDate,
+      preferredTime,
+      couponApplied,
+    });
+  }, [name, email, phone, fulfillment, address, preferredDate, preferredTime, couponApplied, onInfoChange]);
+
+  const handleApplyCoupon = () => {
+    if (coupon.trim().toUpperCase() === COUPON_CODE) {
+      setCouponApplied(true);
+      onCouponApplied(true);
+      setCouponMsg("Coupon applied: 15% off");
+    } else {
+      setCouponApplied(false);
+      onCouponApplied(false);
+      setCouponMsg("Coupon not valid");
+    }
+  };
+
+  const isSunday = (d: string) => {
+    if (!d) return false;
+    const dt = new Date(d + "T00:00:00");
+    return dt.getDay() === 0; // 0 = Sunday
+  };
+
+  const clampTime = (value: string) => {
+    if (!value) return value;
+    const [h, m] = value.split(":").map((n) => parseInt(n));
+    let hh = Math.max(6, Math.min(11, h));
+    let mm = m;
+    if (hh === 11) mm = Math.min(m, 30);
+    const out = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+    return out;
+  };
 
   return (
-    <div className="space-y-4 p-4 border rounded-lg shadow-sm">
-      <h2 className="text-lg font-semibold">Customer Information</h2>
+    <div className="border rounded-xl p-4 space-y-4 bg-card">
+      <h3 className="text-lg font-semibold">Contact Information</h3>
 
-      <input
-        type="text"
-        placeholder="Full Name"
-        className="w-full p-2 border rounded"
-        value={info.name}
-        onChange={(e) => setInfo({ ...info, name: e.target.value })}
-        required
-      />
+      {/* Siempre visible: datos de la tienda */}
+      <div className="text-sm p-3 bg-muted rounded">
+        <p><strong>The Neighborhood Coffee</strong></p>
+        <p>12821 Little Misty Ln</p>
+        <p>El Paso, Texas 79938</p>
+        <p>+1 (915) 401-5547 ☕</p>
+        <p className="mt-2 text-[#00454E]">
+          Servimos de lunes a sábado de 6:00am a 11:00am. Los domingos descansamos. ☀️
+        </p>
+      </div>
 
-      <input
-        type="email"
-        placeholder="Email Address"
-        className="w-full p-2 border rounded"
-        value={info.email}
-        onChange={(e) => setInfo({ ...info, email: e.target.value })}
-        required
-      />
-
-      <input
-        type="tel"
-        placeholder="Phone Number"
-        className="w-full p-2 border rounded"
-        value={info.phone}
-        onChange={(e) => setInfo({ ...info, phone: e.target.value })}
-        required
-      />
+      {/* Datos del cliente */}
+      <div className="grid gap-3">
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Email Address"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Phone Number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+      </div>
 
       {/* Pickup / Delivery */}
       <div className="space-y-2">
-        <label className="font-medium">Order Type:</label>
-        <div className="flex gap-4">
-          <label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2">
             <input
               type="radio"
-              checked={!info.isDelivery}
-              onChange={() => setInfo({ ...info, isDelivery: false })}
-            />{" "}
-            Pickup
+              name="fulfillment"
+              value="pickup"
+              checked={fulfillment === "pickup"}
+              onChange={() => setFulfillment("pickup")}
+            />
+            <span>Pickup</span>
           </label>
-          <label>
+          <label className="flex items-center gap-2">
             <input
               type="radio"
-              checked={info.isDelivery}
-              onChange={() => setInfo({ ...info, isDelivery: true })}
-            />{" "}
-            Delivery
+              name="fulfillment"
+              value="delivery"
+              checked={fulfillment === "delivery"}
+              onChange={() => setFulfillment("delivery")}
+            />
+            <span>Delivery</span>
           </label>
         </div>
-      </div>
 
-      {info.isDelivery && (
-        <div className="space-y-2">
+        {fulfillment === "delivery" && (
           <input
-            type="text"
-            placeholder="Delivery Address"
-            className="w-full p-2 border rounded"
-            value={info.address}
-            onChange={(e) => setInfo({ ...info, address: e.target.value })}
+            className="border rounded px-3 py-2 w-full"
+            placeholder="Address for delivery"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
           />
-          <div className="text-sm text-gray-700">
-            <b>The Neighborhood Coffee</b>
-            <br />
-            12821 Little Misty Ln
-            <br />
-            El Paso, Texas 79938
-            <br />
-            +1 (915) 401-5547 ☕
-          </div>
-        </div>
-      )}
-
-      {/* Date & Time */}
-      <div className="flex gap-4">
-        <input
-          type="date"
-          className="w-1/2 p-2 border rounded"
-          min={formattedDate}
-          value={info.preferredDate || formattedDate}
-          onChange={(e) => setInfo({ ...info, preferredDate: e.target.value })}
-        />
-        <input
-          type="time"
-          className="w-1/2 p-2 border rounded"
-          value={info.preferredTime || formattedTime}
-          onChange={(e) => setInfo({ ...info, preferredTime: e.target.value })}
-        />
+        )}
       </div>
 
-      <textarea
-        placeholder="Special Notes"
-        className="w-full p-2 border rounded"
-        value={info.specialNotes}
-        onChange={(e) => setInfo({ ...info, specialNotes: e.target.value })}
-      />
-
-      {/* Customize your drink */}
-      <div className="mt-4">
-        <label>
+      {/* Fecha y hora (mismo renglón) */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm block mb-1">Preferred Date</label>
           <input
-            type="checkbox"
-            checked={info.addOnsEnabled}
-            onChange={() => setInfo({ ...info, addOnsEnabled: !info.addOnsEnabled })}
-          />{" "}
-          Customize your drink
-        </label>
+            type="date"
+            className="border rounded px-3 py-2 w-full"
+            value={preferredDate}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (isSunday(v)) {
+                // limpia si es domingo
+                e.target.value = "";
+                setPreferredDate("");
+                return;
+              }
+              setPreferredDate(v);
+            }}
+            min={new Date().toISOString().split("T")[0]}
+          />
+          <p className="text-xs text-muted-foreground mt-1">* Domingos no disponibles</p>
+        </div>
+        <div>
+          <label className="text-sm block mb-1">Preferred Time</label>
+          <input
+            type="time"
+            className="border rounded px-3 py-2 w-full"
+            value={preferredTime}
+            min="06:00"
+            max="11:30"
+            step={1800} // 30 min
+            onChange={(e) => setPreferredTime(clampTime(e.target.value))}
+          />
+          <p className="text-xs text-muted-foreground mt-1">* Solo entre 6:00 y 11:30 (cada 30 min)</p>
+        </div>
+      </div>
 
-        {info.addOnsEnabled && (
-          <div className="mt-2 space-y-2 pl-4">
-            {[
-              { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
-              { id: "oatMilk", name: "Oat Milk", price: 0.5 },
-              { id: "hazelnutSyrup", name: "Hazelnut Syrup", price: 0.5 },
-              { id: "caramelSyrup", name: "Caramel Syrup", price: 0.5 },
-              { id: "vanillaSyrup", name: "Vanilla Syrup", price: 0.5 },
-              { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
-            ].map((addOn) => (
-              <label key={addOn.id} className="block">
-                <input
-                  type="checkbox"
-                  onChange={(e) => {
-                    const currentAddOns = info.addOns || [];
-                    if (e.target.checked) {
-                      setInfo({ ...info, addOns: [...currentAddOns, addOn.id] });
-                    } else {
-                      setInfo({
-                        ...info,
-                        addOns: currentAddOns.filter((id) => id !== addOn.id),
-                      });
-                    }
-                  }}
-                />{" "}
-                {addOn.name} (+${addOn.price.toFixed(2)})
-              </label>
-            ))}
-          </div>
+      {/* Cupón */}
+      <div className="pt-2">
+        <label className="text-sm block mb-1">Coupon</label>
+        <div className="flex gap-2">
+          <input
+            className="border rounded px-3 py-2 flex-1"
+            placeholder="Enter coupon code"
+            value={coupon}
+            disabled={couponApplied}
+            onChange={(e) => setCoupon(e.target.value)}
+          />
+        <button
+          className={`px-3 rounded ${couponApplied ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-[#1D9099] hover:bg-[#00454E] text-white"}`}
+          onClick={handleApplyCoupon}
+          disabled={couponApplied}
+        >
+          Apply
+        </button>
+        </div>
+        {couponMsg && (
+          <p className={`text-sm mt-1 ${couponApplied ? "text-green-700" : "text-red-600"}`}>
+            {couponMsg}
+          </p>
         )}
       </div>
     </div>
