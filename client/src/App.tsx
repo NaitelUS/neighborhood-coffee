@@ -1,34 +1,28 @@
 // src/App.tsx
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import OrderPage from "@/pages/OrderPage";
 import ThankYou from "@/pages/ThankYou";
 import OrderStatus from "@/pages/OrderStatus";
 import AdminOrders from "@/pages/AdminOrders";
-import NotFound from "@/pages/not-found";
-
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={OrderPage} />
-      <Route path="/thank-you" component={ThankYou} />
-      <Route path="/order-status/:id" component={OrderStatus} />
-      <Route path="/admin/orders" component={AdminOrders} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+import Header from "@/components/Header";
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <Router>
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        {/* Header con logo + frase */}
+        <Header />
+
+        {/* Contenido de páginas */}
+        <main className="flex-1 container mx-auto px-4 py-6">
+          <Routes>
+            <Route path="/" element={<OrderPage />} />
+            <Route path="/thank-you" element={<ThankYou />} />
+            <Route path="/order-status/:id" element={<OrderStatus />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
