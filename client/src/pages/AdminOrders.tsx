@@ -1,88 +1,76 @@
 import { useEffect, useState } from "react";
 
-const STATUSES = [
-  "Received",
-  "In Process",
-  "On the Way",
-  "Ready for Pickup",
-  "Completed",
-  "Cancelled",
-];
-
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [auth, setAuth] = useState(false);
+  const password = "coffee123";
 
-  // Verificación de contraseña al entrar
   useEffect(() => {
-    const pwd = prompt("Enter admin password:");
-    if (pwd === "coffee123") {
-      setIsAuthorized(true);
-      const stored = JSON.parse(localStorage.getItem("orders") || "[]");
-      setOrders(stored);
-    } else {
-      alert("Unauthorized");
-      window.location.href = "/";
+    const allOrders: any[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("order-")) {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          allOrders.push({ ...parsed, id: key });
+        }
+      }
     }
+    setOrders(allOrders);
   }, []);
 
-  const updateStatus = (orderNo: number, newStatus: string) => {
-    const updatedOrders = orders.map((o) =>
-      o.orderNo === orderNo ? { ...o, status: newStatus } : o
+  if (!auth) {
+    return (
+      <div className="p-6">
+        <input
+          type="password"
+          placeholder="Enter password"
+          id="admin-pass"
+          className="border rounded p-2"
+        />
+        <button
+          className="ml-2 bg-[#1D9099] text-white px-4 py-2 rounded"
+          onClick={() => {
+            const input = (document.getElementById("admin-pass") as HTMLInputElement).value;
+            if (input === password) setAuth(true);
+            else alert("Incorrect password");
+          }}
+        >
+          Login
+        </button>
+      </div>
     );
-    setOrders(updatedOrders);
-    localStorage.setItem("orders", JSON.stringify(updatedOrders));
-  };
-
-  if (!isAuthorized) return null;
+  }
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold mb-6">Admin Orders</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Admin Orders</h1>
       {orders.length === 0 ? (
-        <p>No orders yet.</p>
+        <p>No orders found</p>
       ) : (
-        <table className="w-full border-collapse border border-gray-300 text-sm">
+        <table className="w-full border">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-2 py-1">Order No</th>
-              <th className="border px-2 py-1">Customer</th>
-              <th className="border px-2 py-1">Items</th>
-              <th className="border px-2 py-1">Total</th>
-              <th className="border px-2 py-1">Status</th>
+            <tr className="bg-gray-200">
+              <th className="p-2 border">Order ID</th>
+              <th className="p-2 border">Customer</th>
+              <th className="p-2 border">Items</th>
+              <th className="p-2 border">Total</th>
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
-              <tr key={order.orderNo}>
-                <td className="border px-2 py-1">{order.orderNo}</td>
-                <td className="border px-2 py-1">
-                  {order.customer.name} <br />
-                  {order.customer.phone}
+            {orders.map((order, idx) => (
+              <tr key={idx} className="border">
+                <td className="p-2 border">{order.id}</td>
+                <td className="p-2 border">{order.info?.name}</td>
+                <td className="p-2 border">
+                  {order.items.map((item: any, i: number) => (
+                    <div key={i}>
+                      {item.quantity}x {item.name} ({item.temperature})
+                    </div>
+                  ))}
                 </td>
-                <td className="border px-2 py-1">
-                  <ul>
-                    {order.items.map((item: any, idx: number) => (
-                      <li key={idx}>
-                        {item.quantity}x {item.temperature} {item.drinkName}
-                      </li>
-                    ))}
-                  </ul>
-                </td>
-                <td className="border px-2 py-1">${order.total.toFixed(2)}</td>
-                <td className="border px-2 py-1">
-                  <select
-                    value={order.status}
-                    onChange={(e) => updateStatus(order.orderNo, e.target.value)}
-                    className="border rounded px-2 py-1"
-                  >
-                    {STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </td>
+                <td className="p-2 border">${order.total.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
