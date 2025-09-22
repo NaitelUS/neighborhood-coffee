@@ -1,9 +1,14 @@
 // src/pages/OrderPage.tsx
 import { useState } from "react";
-import DrinkCard from "@/components/DrinkCard";
-import OrderSummary from "@/components/OrderSummary";
-import CustomerInfoForm from "@/components/CustomerInfoForm";
-import { drinkOptions, addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
+import DrinkCard from "../components/DrinkCard"; // usa rutas relativas en vez de "@"
+import OrderSummary from "../components/OrderSummary";
+import CustomerInfoForm from "../components/CustomerInfoForm";
+import {
+  drinkOptions,
+  addOnOptions,
+  COUPON_CODE,
+  COUPON_DISCOUNT,
+} from "../data/menuData";
 
 interface OrderItem {
   id: string;
@@ -26,7 +31,7 @@ export default function OrderPage() {
     quantity: number,
     addOns: string[]
   ) => {
-    const drink = drinkOptions.find((d) => d.id === drinkId);
+    const drink = drinkOptions?.find((d) => d.id === drinkId);
     if (!drink) return;
 
     setOrderItems((prev) => [
@@ -44,7 +49,7 @@ export default function OrderPage() {
 
   const subtotal = orderItems.reduce((acc, item) => {
     const addOnsPrice = item.addOns.reduce((sum, addOnId) => {
-      const addOn = addOnOptions.find((a) => a.id === addOnId);
+      const addOn = addOnOptions?.find((a) => a.id === addOnId);
       return sum + (addOn ? addOn.price : 0);
     }, 0);
     return acc + (item.basePrice + addOnsPrice) * item.quantity;
@@ -82,14 +87,18 @@ export default function OrderPage() {
       <div className="md:col-span-2 space-y-4">
         <h2 className="text-2xl font-bold mb-2">Our Coffee Menu</h2>
         <div className="grid sm:grid-cols-2 gap-4">
-          {drinkOptions.map((drink) => (
-            <DrinkCard
-              key={drink.id}
-              drink={drink}
-              addOns={addOnOptions}
-              onAddToOrder={handleAddToOrder}
-            />
-          ))}
+          {drinkOptions && drinkOptions.length > 0 ? (
+            drinkOptions.map((drink) => (
+              <DrinkCard
+                key={drink.id}
+                drink={drink}
+                addOns={addOnOptions || []}
+                onAddToOrder={handleAddToOrder}
+              />
+            ))
+          ) : (
+            <p>No drinks available</p>
+          )}
         </div>
       </div>
 
