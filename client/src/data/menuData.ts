@@ -42,8 +42,6 @@ export const drinkOptions = [
       "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
-      // iced vacío → lo convertimos en null
-      iced: null,
     },
   },
   {
@@ -65,9 +63,10 @@ export const drinkOptions = [
       "Enjoy our artisan empanada, handcrafted with a golden, flaky crust. Each one is filled with a sweet and vibrant homemade fruit jam.",
     options: ["Apple", "Pineapple"],
     images: {
-      default: "/attached_assets/Empanadas-Soon.png", // ✅ imagen por defecto
+      apple: "/attached_assets/Apple-Soon.png",
+      pineapple: "/attached_assets/Pineapple-Soon.png",
     },
-    comingSoon: true, // 🚨 bandera para deshabilitar botón
+    comingSoon: true,
   },
 ];
 
@@ -80,6 +79,5 @@ export const addOnOptions = [
   { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
 ];
 
-// Coupon estático de ejemplo
 export const COUPON_CODE = "NEIGHBOR15";
 export const COUPON_DISCOUNT = 0.15;
