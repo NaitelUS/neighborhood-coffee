@@ -2,17 +2,23 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
+interface OrderItem {
+  drinkId: string;
+  drinkName: string;
+  temperature: "hot" | "iced";
+  quantity: number;
+  basePrice: number;
+  addOns: string[];
+  totalPrice: number;
+}
+
 interface Order {
-  orderNo: number;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-  };
-  items: string[];
+  orderNumber: number;
+  customer: any;
+  items: OrderItem[];
   total: number;
   status: string;
+  createdAt: string;
 }
 
 export default function ThankYou() {
@@ -20,73 +26,78 @@ export default function ThankYou() {
   const [location] = useLocation();
 
   useEffect(() => {
+    // Extraer orderNo de la query string
     const params = new URLSearchParams(window.location.search);
     const orderNo = params.get("orderNo");
 
     if (orderNo) {
-      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-      const found = orders.find((o: Order) => o.orderNo === parseInt(orderNo));
-      if (found) setOrder(found);
+      const allOrders: Order[] = JSON.parse(localStorage.getItem("orders") || "[]");
+      const found = allOrders.find((o) => o.orderNumber === Number(orderNo));
+      if (found) {
+        setOrder(found);
+      }
     }
   }, [location]);
 
   if (!order) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <h1 className="text-3xl font-bold mb-4">Order Not Found</h1>
-        <p className="text-muted-foreground">
-          Sorry, we couldn’t find your order. Please check again.
-        </p>
+        <h1 className="text-2xl font-bold mb-4">Order not found</h1>
+        <p>Please check your order number and try again.</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 text-center">
-      <h1 className="text-3xl font-bold mb-4 text-primary">
-        Thank you! Your order has been received 🎉
-      </h1>
-      <p className="mb-6 text-lg">
-        <strong>Order No:</strong> {order.orderNo}
-      </p>
+    <div className="container mx-auto px-4 py-12">
+      <div className="bg-white shadow-md rounded-lg p-6 text-center">
+        <h1 className="text-3xl font-serif font-bold text-[#1D9099] mb-4">
+          Thank you! Your order has been received 🎉
+        </h1>
+        <p className="text-lg mb-2">
+          Your order number is:{" "}
+          <span className="font-bold text-[#00454E]">#{order.orderNumber}</span>
+        </p>
+        <p className="mb-6">
+          We’ll start preparing your order soon. You can check its status at any
+          time.
+        </p>
 
-      <div className="bg-card shadow rounded-lg p-6 max-w-xl mx-auto text-left">
-        <h2 className="text-xl font-semibold mb-4">Order Details</h2>
-        <p>
-          <strong>Name:</strong> {order.customer.name}
-        </p>
-        <p>
-          <strong>Email:</strong> {order.customer.email}
-        </p>
-        <p>
-          <strong>Phone:</strong> {order.customer.phone}
-        </p>
-        <p>
-          <strong>Address:</strong> {order.customer.address}
-        </p>
-        <p className="mt-4">
-          <strong>Items:</strong>
-        </p>
-        <ul className="list-disc ml-6">
-          {order.items.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-        <p className="mt-4 font-bold">
-          Total: ${order.total.toFixed(2)}
-        </p>
-        <p className="mt-2">
-          <strong>Status:</strong> {order.status}
-        </p>
-      </div>
+        {/* Order summary */}
+        <div className="text-left max-w-xl mx-auto">
+          <h2 className="text-xl font-semibold mb-3">Order Summary</h2>
+          <ul className="space-y-2 mb-4">
+            {order.items.map((item, idx) => (
+              <li key={idx} className="border-b pb-2">
+                <span className="font-medium">{item.quantity}x</span>{" "}
+                {item.temperature} {item.drinkName}
+                {item.addOns.length > 0 && (
+                  <span className="text-sm text-gray-600">
+                    {" "}
+                    (with {item.addOns.join(", ")})
+                  </span>
+                )}
+                <span className="float-right font-semibold">
+                  ${item.totalPrice.toFixed(2)}
+                </span>
+              </li>
+            ))}
+          </ul>
 
-      <div className="mt-6">
-        <a
-          href={`/order-status/${order.orderNo}`}
-          className="text-primary underline hover:text-primary/80"
-        >
-          Check your order status here
-        </a>
+          <p className="text-lg font-bold">
+            Total: ${order.total.toFixed(2)}
+          </p>
+        </div>
+
+        {/* Link to order status */}
+        <div className="mt-8">
+          <a
+            href={`/order-status/${order.orderNumber}`}
+            className="inline-block bg-[#1D9099] hover:bg-[#00454E] text-white px-6 py-3 rounded-lg text-lg"
+          >
+            Track Your Order
+          </a>
+        </div>
       </div>
     </div>
   );
