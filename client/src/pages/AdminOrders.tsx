@@ -61,7 +61,7 @@ export default function AdminOrders() {
           <tbody>
             {orders.map((order, idx) => (
               <tr key={idx} className="border">
-                <td className="p-2 border">{order.id}</td>
+                <td className="p-2 border">{order.orderNo}</td>
                 <td className="p-2 border">{order.info?.name}</td>
                 <td className="p-2 border">
                   {order.items.map((item: any, i: number) => (
@@ -70,7 +70,7 @@ export default function AdminOrders() {
                     </div>
                   ))}
                 </td>
-                <td className="p-2 border">${order.total.toFixed(2)}</td>
+                <td className="p-2 border font-bold">${order.total.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
