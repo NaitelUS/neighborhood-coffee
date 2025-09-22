@@ -1,51 +1,61 @@
 import { useParams } from "wouter";
 import { useEffect, useState } from "react";
 
-interface Order {
-  orderNo: number;
-  details: string;
-  status: string;
-}
-
 export default function OrderStatus() {
-  const { orderNo } = useParams<{ orderNo: string }>();
-  const [order, setOrder] = useState<Order | null>(null);
+  const params = useParams(); // obtiene { orderNo }
+  const [order, setOrder] = useState<any>(null);
 
   useEffect(() => {
-    const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]");
-    const found = savedOrders.find((o: Order) => o.orderNo === Number(orderNo));
-    setOrder(found || null);
-  }, [orderNo]);
+    const lastOrder = localStorage.getItem("lastOrder");
+    if (lastOrder) {
+      const parsed = JSON.parse(lastOrder);
+      if (parsed.orderNo.toString() === params.orderNo) {
+        setOrder(parsed);
+      }
+    }
+  }, [params.orderNo]);
 
   if (!order) {
     return (
-      <div className="container mx-auto px-4 py-10 text-center">
-        <h1 className="text-2xl font-bold">Order Not Found ❌</h1>
-        <p className="mt-2 text-muted-foreground">
-          Please check your order number and try again.
-        </p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>No order found with this number.</p>
       </div>
     );
   }
 
-  const statusMessages: Record<string, string> = {
-    received: "We got your order 📩",
-    preparing: "Your coffee is being made ☕",
-    ready: "Your drink is ready for pickup 🏠",
-    delivering: "Your order is on the way 🚗",
-    completed: "Enjoy your coffee! ✅",
-    canceled: "This order was canceled ❌",
-  };
-
   return (
-    <div className="container mx-auto px-4 py-10">
-      <h1 className="text-3xl font-serif font-bold mb-4">
-        Order Status for #{order.orderNo}
-      </h1>
-      <p className="mb-4 whitespace-pre-line">{order.details}</p>
-      <div className="p-4 bg-card rounded-lg shadow">
-        <h2 className="text-xl font-semibold">Current Status:</h2>
-        <p className="mt-2 text-lg">{statusMessages[order.status]}</p>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="max-w-lg w-full bg-card shadow-lg rounded-lg p-6 space-y-4">
+        <h1 className="text-2xl font-semibold text-center">
+          Order Status for #{order.orderNo}
+        </h1>
+
+        <div className="border-t pt-4 space-y-2">
+          <p><b>Name:</b> {order.customer.name}</p>
+          <p><b>Email:</b> {order.customer.email}</p>
+          <p><b>Phone:</b> {order.customer.phone}</p>
+
+          <h2 className="text-lg font-semibold mt-4">Items</h2>
+          <ul className="list-disc pl-5 space-y-1">
+            {order.items.map((item: any, idx: number) => (
+              <li key={idx}>
+                {item.quantity}x {item.temperature} {item.drinkName} - $
+                {item.totalPrice.toFixed(2)}
+              </li>
+            ))}
+          </ul>
+
+          <p className="font-bold mt-4">TOTAL: ${order.total}</p>
+
+          <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-4">
+            <p className="text-blue-700 font-semibold">
+              Current Status: Order Received ✅
+            </p>
+            <p className="text-sm text-blue-600 mt-1">
+              Your order is being processed, please stay tuned.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
