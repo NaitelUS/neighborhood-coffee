@@ -1,14 +1,10 @@
 // src/pages/OrderPage.tsx
 import { useState } from "react";
-import DrinkCard from "../components/DrinkCard"; // usa rutas relativas en vez de "@"
-import OrderSummary from "../components/OrderSummary";
-import CustomerInfoForm from "../components/CustomerInfoForm";
-import {
-  drinkOptions,
-  addOnOptions,
-  COUPON_CODE,
-  COUPON_DISCOUNT,
-} from "../data/menuData";
+import DrinkCard from "@/components/DrinkCard";
+import OrderSummary from "@/components/OrderSummary";
+import CustomerInfoForm from "@/components/CustomerInfoForm";
+import Header from "@/components/Header";
+import { drinkOptions, addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 
 interface OrderItem {
   id: string;
@@ -22,7 +18,6 @@ interface OrderItem {
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [customerInfo, setCustomerInfo] = useState<any>(null);
   const [couponApplied, setCouponApplied] = useState(false);
 
   const handleAddToOrder = (
@@ -31,7 +26,7 @@ export default function OrderPage() {
     quantity: number,
     addOns: string[]
   ) => {
-    const drink = drinkOptions?.find((d) => d.id === drinkId);
+    const drink = drinkOptions.find((d) => d.id === drinkId);
     if (!drink) return;
 
     setOrderItems((prev) => [
@@ -49,7 +44,7 @@ export default function OrderPage() {
 
   const subtotal = orderItems.reduce((acc, item) => {
     const addOnsPrice = item.addOns.reduce((sum, addOnId) => {
-      const addOn = addOnOptions?.find((a) => a.id === addOnId);
+      const addOn = addOnOptions.find((a) => a.id === addOnId);
       return sum + (addOn ? addOn.price : 0);
     }, 0);
     return acc + (item.basePrice + addOnsPrice) * item.quantity;
@@ -68,41 +63,32 @@ export default function OrderPage() {
   };
 
   const handleSubmitOrder = (info: any) => {
-    setCustomerInfo(info);
-
-    // Guardar orden temporalmente (simulando DB)
     const orderNo = Date.now().toString().slice(-5);
     localStorage.setItem(
       `order-${orderNo}`,
       JSON.stringify({ items: orderItems, info, subtotal, discount, total })
     );
-
-    // Redirigir a página Thank You
     window.location.href = `/thank-you?orderNo=${orderNo}`;
   };
 
   return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Menu */}
+      {/* Menú */}
       <div className="md:col-span-2 space-y-4">
         <h2 className="text-2xl font-bold mb-2">Our Coffee Menu</h2>
         <div className="grid sm:grid-cols-2 gap-4">
-          {drinkOptions && drinkOptions.length > 0 ? (
-            drinkOptions.map((drink) => (
-              <DrinkCard
-                key={drink.id}
-                drink={drink}
-                addOns={addOnOptions || []}
-                onAddToOrder={handleAddToOrder}
-              />
-            ))
-          ) : (
-            <p>No drinks available</p>
-          )}
+          {drinkOptions.map((drink) => (
+            <DrinkCard
+              key={drink.id}
+              drink={drink}
+              addOns={addOnOptions}
+              onAddToOrder={handleAddToOrder}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Order Summary + Customer Info */}
+      {/* Order Summary + Form */}
       <div>
         <OrderSummary
           items={orderItems}
@@ -120,11 +106,14 @@ export default function OrderPage() {
             <p>El Paso, Texas 79938</p>
             <p>+1 (915) 401-5547</p>
             <p className="mt-2 italic text-[#E5A645]">
-              More than Coffee, it's a neighborhood tradition, from our home to yours.
+              On Sundays we rest to serve you better. See you Monday!
             </p>
           </div>
         </div>
       </div>
+
+      {/* Header recibe el contador */}
+      <Header cartCount={orderItems.length} />
     </div>
   );
 }
