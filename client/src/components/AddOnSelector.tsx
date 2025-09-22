@@ -1,17 +1,22 @@
-import React, { useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { addOnOptions } from "@/data/menuData";
+import { useState } from "react";
 
-interface AddOnSelectorProps {
+interface AddOn {
+  id: string;
+  name: string;
+  price: number;
+}
+
+interface Props {
+  addOns: AddOn[];
   selectedAddOns: string[];
   onChange: (addOns: string[]) => void;
 }
 
 export default function AddOnSelector({
+  addOns,
   selectedAddOns,
   onChange,
-}: AddOnSelectorProps) {
+}: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const toggleAddOn = (id: string) => {
@@ -23,33 +28,35 @@ export default function AddOnSelector({
   };
 
   return (
-    <div className="border rounded-lg p-3">
-      {/* Toggle */}
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full font-medium text-sm text-left"
-      >
-        <span>☑ Customize your drink</span>
-        <span>{expanded ? "−" : "+"}</span>
-      </button>
+    <div className="border rounded-lg p-4">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={expanded}
+          onChange={() => setExpanded(!expanded)}
+        />
+        <span className="font-medium">Customize your drink</span>
+      </label>
 
       {expanded && (
         <div className="mt-3 space-y-2">
-          {addOnOptions.map((addOn) => (
-            <div key={addOn.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={addOn.id}
-                checked={selectedAddOns.includes(addOn.id)}
-                onCheckedChange={() => toggleAddOn(addOn.id)}
-              />
-              <Label htmlFor={addOn.id} className="flex-1">
-                {addOn.name}
-              </Label>
+          {addOns.map((addOn) => (
+            <label
+              key={addOn.id}
+              className="flex items-center justify-between cursor-pointer"
+            >
+              <div>
+                <input
+                  type="checkbox"
+                  checked={selectedAddOns.includes(addOn.id)}
+                  onChange={() => toggleAddOn(addOn.id)}
+                />
+                <span className="ml-2">{addOn.name}</span>
+              </div>
               <span className="text-sm text-muted-foreground">
                 +${addOn.price.toFixed(2)}
               </span>
-            </div>
+            </label>
           ))}
         </div>
       )}
