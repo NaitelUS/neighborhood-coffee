@@ -19,6 +19,7 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
   const [quantity, setQuantity] = useState(1);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [showAddOns, setShowAddOns] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   const handleAddToOrder = () => {
     if (!drink.comingSoon) {
@@ -32,34 +33,41 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
     );
   };
 
-  // ✅ Protegemos imágenes
-  const imageSrc =
-    drink.images?.[temperature] ||
-    drink.images?.hot ||
-    drink.images?.default ||
-    "/attached_assets/placeholder.png";
+  // Mostrar imagen dependiendo de la opción seleccionada
+  let imageSrc = "/attached_assets/placeholder.png";
+  if (drink.id === "empanada") {
+    if (selectedOption === "Apple") {
+      imageSrc = drink.images.apple;
+    } else if (selectedOption === "Pineapple") {
+      imageSrc = drink.images.pineapple;
+    } else {
+      imageSrc = drink.images.apple; // default a Apple
+    }
+  } else {
+    imageSrc =
+      drink.images?.[temperature] ||
+      drink.images?.hot ||
+      drink.images?.default ||
+      "/attached_assets/placeholder.png";
+  }
 
   return (
     <div className="border rounded-lg shadow-sm p-4 flex flex-col">
-      <img
-        src={imageSrc}
-        alt={drink.name}
-        className="w-full h-40 object-cover rounded"
-      />
+      <img src={imageSrc} alt={drink.name} className="w-full h-40 object-cover rounded" />
       <h3 className="mt-3 text-lg font-semibold">{drink.name}</h3>
-      {drink.description && (
-        <p className="text-sm text-muted-foreground">{drink.description}</p>
-      )}
+      <p className="text-sm text-muted-foreground">{drink.description}</p>
       <p className="mt-2 font-bold">${drink.basePrice.toFixed(2)}</p>
 
-      {/* Opciones Hot/Iced o personalizadas */}
+      {/* Opciones de producto */}
       {drink.options && drink.options.length > 0 ? (
         <div className="flex gap-2 mt-3">
           {drink.options.map((opt: string) => (
             <Button
               key={opt}
-              className="flex-1 bg-[#1D9099] hover:bg-[#00454E] text-white"
-              disabled={drink.comingSoon}
+              className={`flex-1 ${
+                selectedOption === opt ? "bg-[#1D9099] text-white" : "bg-gray-200 text-black"
+              }`}
+              onClick={() => setSelectedOption(opt)}
             >
               {opt}
             </Button>
@@ -67,7 +75,6 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
         </div>
       ) : (
         <div className="flex gap-2 mt-3">
-          {/* Hot */}
           {drink.images?.hot && (
             <Button
               className={`flex-1 ${
@@ -78,7 +85,6 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
               Hot
             </Button>
           )}
-          {/* Iced */}
           {drink.images?.iced && (
             <Button
               className={`flex-1 ${
@@ -92,7 +98,7 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
         </div>
       )}
 
-      {/* Quantity */}
+      {/* Cantidad (solo si no es coming soon) */}
       {!drink.comingSoon && (
         <div className="flex items-center gap-2 mt-3">
           <input
@@ -106,25 +112,27 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
       )}
 
       {/* Customize Add-ons */}
-      <div className="mt-3">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showAddOns}
-            onChange={() => setShowAddOns(!showAddOns)}
-          />
-          <span className="text-sm font-medium">Customize your drink</span>
-        </label>
-        {showAddOns && (
-          <AddOnSelector
-            addOns={addOns}
-            selectedAddOns={selectedAddOns}
-            toggleAddOn={toggleAddOn}
-          />
-        )}
-      </div>
+      {!drink.comingSoon && (
+        <div className="mt-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showAddOns}
+              onChange={() => setShowAddOns(!showAddOns)}
+            />
+            <span className="text-sm font-medium">Customize your drink</span>
+          </label>
+          {showAddOns && (
+            <AddOnSelector
+              addOns={addOns}
+              selectedAddOns={selectedAddOns}
+              toggleAddOn={toggleAddOn}
+            />
+          )}
+        </div>
+      )}
 
-      {/* Add to Order */}
+      {/* Botón Add to Order */}
       <Button
         className="mt-4 w-full bg-[#1D9099] hover:bg-[#00454E] text-white"
         onClick={handleAddToOrder}
