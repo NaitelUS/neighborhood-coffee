@@ -1,25 +1,13 @@
-// src/components/Layout.tsx
-import React from "react";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header global con contador de carrito */}
+    <div className="flex flex-col min-h-screen">
+      {/* Header solo aquí, no en cada página */}
       <Header />
-
-      {/* Contenido dinámico */}
-      <main className="flex-1 container mx-auto px-4 py-6">
-        {children}
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-[#1D9099] text-white text-center py-4 mt-6">
-        <p className="text-sm">© {new Date().getFullYear()} The Neighborhood Coffee</p>
-        <p className="text-xs mt-1">
-          Crafted with ❤️ in El Paso — More than coffee, it's a neighborhood tradition.
-        </p>
-      </footer>
+      <main className="flex-1">{children}</main>
+      <Footer />
     </div>
   );
 }
