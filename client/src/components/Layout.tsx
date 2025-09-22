@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header global */}
+      {/* Header global con contador de carrito */}
       <Header />
 
       {/* Contenido dinámico */}
@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Footer global */}
+      {/* Footer */}
       <footer className="bg-[#1D9099] text-white text-center py-4 mt-6">
         <p className="text-sm">© {new Date().getFullYear()} The Neighborhood Coffee</p>
         <p className="text-xs mt-1">
