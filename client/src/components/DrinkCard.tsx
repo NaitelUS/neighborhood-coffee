@@ -41,7 +41,7 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
     } else if (selectedOption === "Pineapple") {
       imageSrc = drink.images.pineapple;
     } else {
-      imageSrc = drink.images.apple; // default a Apple
+      imageSrc = drink.images.apple; // default
     }
   } else {
     imageSrc =
@@ -98,7 +98,7 @@ export default function DrinkCard({ drink, addOns, onAddToOrder }: DrinkCardProp
         </div>
       )}
 
-      {/* Cantidad (solo si no es coming soon) */}
+      {/* Quantity (solo si no es coming soon) */}
       {!drink.comingSoon && (
         <div className="flex items-center gap-2 mt-3">
           <input
