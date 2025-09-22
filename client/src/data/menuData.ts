@@ -82,6 +82,10 @@ export const drinkOptions = [
   },
 ];
 
+// Cupón válido hardcoded
+export const COUPON_CODE = "FALL2025";     // nombre del cupón
+export const COUPON_DISCOUNT = 0.15;       // 15% de descuento
+
 export const addOnOptions = [
   { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
   { id: "oatMilk", name: "Oat Milk", price: 0.5 },
