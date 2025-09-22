@@ -8,7 +8,7 @@ import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 import { ShoppingCart } from "lucide-react";
 
-let globalOrderCounter = Number(localStorage.getItem("orderCounter") || "1");
+let globalOrderCounter = 1;
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -17,14 +17,9 @@ export default function OrderPage() {
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
-  // Cupón
-  const [coupon, setCoupon] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [couponLocked, setCouponLocked] = useState(false);
-
   const addToOrder = (
     drinkId: string,
-    temperature: "hot" | "iced",
+    temperature: "hot" | "iced" | "apple" | "pineapple",
     quantity: number,
     addOns: string[]
   ) => {
@@ -60,30 +55,7 @@ export default function OrderPage() {
   };
 
   const calculateTotal = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    return subtotal - discount;
-  };
-
-  const applyCoupon = () => {
-    if (coupon.toUpperCase() === "BREWLOVE15") {
-      const subtotal = orderItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0
-      );
-      const discountAmount = subtotal * 0.15;
-      setDiscount(discountAmount);
-      setCouponLocked(true);
-      toast({
-        title: "Coupon applied ✅",
-        description: "15% discount has been applied.",
-      });
-    } else {
-      toast({
-        title: "Coupon not valid ❌",
-        description: "Please try another code.",
-        variant: "destructive",
-      });
-    }
+    return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
   const handleSubmitOrder = async () => {
@@ -113,46 +85,16 @@ export default function OrderPage() {
     }
 
     const orderNumber = globalOrderCounter++;
-    localStorage.setItem("orderCounter", String(globalOrderCounter));
 
-    const orderDetails = `
-Order No: ${orderNumber}
-Name: ${info.name}
-Email: ${info.email}
-Phone: ${info.phone}
-Delivery: ${info.isDelivery ? "Yes" : "Pickup"}
-Address: ${info.address || "N/A"}
-Preferred Date: ${info.preferredDate}
-Preferred Time: ${info.preferredTime}
-Notes: ${info.specialNotes || "N/A"}
-
-Items:
-${orderItems
-  .map(
-    (item) =>
-      `${item.quantity}x ${item.temperature} ${item.drinkName} - $${item.totalPrice.toFixed(
-        2
-      )}`
-  )
-  .join("\n")}
-
-Subtotal: $${orderItems
-      .reduce((sum, item) => sum + item.totalPrice, 0)
-      .toFixed(2)}
-Discount: -$${discount.toFixed(2)}
-TOTAL: $${calculateTotal().toFixed(2)}
-`;
-
-    // Guardar en localStorage
-    const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]");
-    savedOrders.push({
+    const orderDetails = {
       orderNo: orderNumber,
-      details: orderDetails,
-      status: "received",
-    });
-    localStorage.setItem("orders", JSON.stringify(savedOrders));
+      customer: info,
+      items: orderItems,
+      total: calculateTotal().toFixed(2),
+    };
 
-    // Redirect a Thank You
+    localStorage.setItem("lastOrder", JSON.stringify(orderDetails));
+
     window.location.href = `/thank-you?orderNo=${orderNumber}`;
   };
 
@@ -192,6 +134,9 @@ TOTAL: $${calculateTotal().toFixed(2)}
               <h2 className="text-2xl font-serif font-semibold mb-6">
                 Our Coffee Menu
               </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Open daily from 6am to 11am, closed on Sundays ☕
+              </p>
               <div className="grid md:grid-cols-2 gap-6">
                 {drinkOptions.map((drink) => (
                   <DrinkCard
@@ -212,26 +157,6 @@ TOTAL: $${calculateTotal().toFixed(2)}
               addOns={addOnOptions}
               onRemoveItem={removeFromOrder}
             />
-
-            {/* Coupon */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
-                disabled={couponLocked}
-                placeholder="Enter coupon"
-                className="flex-1 border rounded px-3 py-2"
-              />
-              <Button
-                type="button"
-                onClick={applyCoupon}
-                disabled={couponLocked}
-                className="bg-[#1D9099] hover:bg-[#00454E] text-white"
-              >
-                Apply
-              </Button>
-            </div>
 
             <CustomerInfoForm onInfoChange={setCustomerInfo} />
 
