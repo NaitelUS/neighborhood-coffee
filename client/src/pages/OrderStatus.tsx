@@ -1,48 +1,89 @@
-// src/pages/OrderStatus.tsx
+// src/pages/AdminOrders.tsx
 import { useEffect, useState } from "react";
-import { useRoute } from "wouter";
 
-export default function OrderStatus() {
-  const [match, params] = useRoute("/order-status/:id");
-  const [order, setOrder] = useState<any>(null);
+const STATUSES = [
+  "Received",
+  "In Process",
+  "Ready for Pickup",
+  "On the Way",
+  "Completed",
+  "Cancelled",
+];
+
+export default function AdminOrders() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    if (!params?.id) return;
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    setOrder(orders.find((o: any) => String(o.orderNo) === String(params.id)) || null);
-  }, [params]);
+    const pwd = prompt("Enter admin password:");
+    if (pwd === "coffee123") {
+      setAuthorized(true);
+      const stored = JSON.parse(localStorage.getItem("orders") || "[]");
+      setOrders(stored);
+    } else {
+      alert("Unauthorized");
+      window.location.href = "/";
+    }
+  }, []);
 
-  if (!order) {
-    return <div className="container mx-auto px-4 py-10 text-center">Order not found.</div>;
-  }
+  const updateStatus = (orderNo: number, newStatus: string) => {
+    const updated = orders.map((o) => (o.orderNo === orderNo ? { ...o, status: newStatus } : o));
+    setOrders(updated);
+    localStorage.setItem("orders", JSON.stringify(updated));
+  };
+
+  if (!authorized) return null;
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold text-center mb-6">Order Status</h1>
-      <div className="max-w-xl mx-auto bg-card p-4 rounded border">
-        <p className="mb-2"><strong>Order No:</strong> #{order.orderNo}</p>
-        <p className="mb-4"><strong>Status:</strong> {order.status}</p>
-
-        <h2 className="text-lg font-semibold mb-2">Order Details</h2>
-        <ul className="space-y-1 mb-3 text-sm">
-          {order.items.map((item: any, idx: number) => (
-            <li key={idx} className="border-b pb-1">
-              {item.quantity}x {item.temperature} {item.drinkName}
-              {item.addOns?.length > 0 && (
-                <span className="text-muted-foreground"> (with {item.addOns.join(", ")})</span>
-              )}
-              <span className="float-right font-medium">${item.totalPrice.toFixed(2)}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="text-sm">
-          <div className="flex justify-between">
-            <span>Total</span>
-            <span>${order.total.toFixed(2)}</span>
-          </div>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Admin Orders</h1>
+      {orders.length === 0 ? (
+        <p>No orders yet.</p>
+      ) : (
+        <table className="w-full border-collapse border border-gray-300 text-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border px-2 py-1">Order No</th>
+              <th className="border px-2 py-1">Customer</th>
+              <th className="border px-2 py-1">Items</th>
+              <th className="border px-2 py-1">Total</th>
+              <th className="border px-2 py-1">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((o) => (
+              <tr key={o.orderNo}>
+                <td className="border px-2 py-1">#{o.orderNo}</td>
+                <td className="border px-2 py-1">
+                  {o.customer?.name}<br />
+                  {o.customer?.phone}
+                </td>
+                <td className="border px-2 py-1">
+                  <ul>
+                    {o.items.map((it: any, idx: number) => (
+                      <li key={idx}>
+                        {it.quantity}x {it.temperature} {it.drinkName}
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+                <td className="border px-2 py-1">${o.total.toFixed(2)}</td>
+                <td className="border px-2 py-1">
+                  <select
+                    value={o.status}
+                    onChange={(e) => updateStatus(o.orderNo, e.target.value)}
+                    className="border rounded px-2 py-1"
+                  >
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
