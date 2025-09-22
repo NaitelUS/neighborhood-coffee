@@ -1,3 +1,4 @@
+// src/pages/OrderPage.tsx
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -8,7 +9,7 @@ import { drinkOptions, addOnOptions } from "@/data/menuData";
 import type { OrderItem } from "@shared/schema";
 import { ShoppingCart } from "lucide-react";
 
-let globalOrderCounter = 1;
+let globalOrderCounter = parseInt(localStorage.getItem("orderCounter") || "1", 10);
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -19,7 +20,7 @@ export default function OrderPage() {
 
   const addToOrder = (
     drinkId: string,
-    temperature: "hot" | "iced" | "apple" | "pineapple",
+    temperature: "hot" | "iced",
     quantity: number,
     addOns: string[]
   ) => {
@@ -84,18 +85,46 @@ export default function OrderPage() {
       return;
     }
 
-    const orderNumber = globalOrderCounter++;
+    setIsSubmitting(true);
 
-    const orderDetails = {
-      orderNo: orderNumber,
-      customer: info,
-      items: orderItems,
-      total: calculateTotal().toFixed(2),
-    };
+    try {
+      // Increment order number
+      const orderNumber = globalOrderCounter++;
+      localStorage.setItem("orderCounter", orderNumber.toString());
 
-    localStorage.setItem("lastOrder", JSON.stringify(orderDetails));
+      const newOrder = {
+        orderNo: orderNumber,
+        customer: {
+          name: info.name,
+          email: info.email,
+          phone: info.phone,
+          address: info.isDelivery ? info.address : "Pickup",
+        },
+        items: orderItems.map(
+          (item) =>
+            `${item.quantity}x ${item.temperature} ${item.drinkName} ($${item.totalPrice.toFixed(2)})`
+        ),
+        total: calculateTotal(),
+        status: "Order Received",
+      };
 
-    window.location.href = `/thank-you?orderNo=${orderNumber}`;
+      const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]");
+      localStorage.setItem(
+        "orders",
+        JSON.stringify([...existingOrders, newOrder])
+      );
+
+      // Redirigir a la página de gracias
+      window.location.href = `/thank-you?orderNo=${orderNumber}`;
+    } catch (error) {
+      toast({
+        title: "Order failed",
+        description: "There was an error submitting your order.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -134,9 +163,6 @@ export default function OrderPage() {
               <h2 className="text-2xl font-serif font-semibold mb-6">
                 Our Coffee Menu
               </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Open daily from 6am to 11am, closed on Sundays ☕
-              </p>
               <div className="grid md:grid-cols-2 gap-6">
                 {drinkOptions.map((drink) => (
                   <DrinkCard
