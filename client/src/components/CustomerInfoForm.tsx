@@ -28,7 +28,7 @@ export default function CustomerInfoForm({ onSubmit }: { onSubmit: (info: any) =
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form id="order-form" onSubmit={handleSubmit} className="space-y-3">
       <input
         type="text"
         placeholder="Name"
