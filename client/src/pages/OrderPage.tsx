@@ -1,3 +1,4 @@
+// src/pages/OrderPage.tsx
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -44,7 +45,6 @@ export default function OrderPage() {
     };
 
     setOrderItems((prev) => [...prev, newItem]);
-
     toast({
       title: "Added to order!",
       description: `${quantity}x ${temperature} ${drink.name} added.`,
@@ -56,7 +56,7 @@ export default function OrderPage() {
   };
 
   const calculateTotal = () => {
-    return orderItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+    return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
   const handleSubmitOrder = async () => {
@@ -111,7 +111,6 @@ ${orderItems
 TOTAL: $${calculateTotal().toFixed(2)}
 `;
 
-    // Netlify Forms integration
     const form = document.createElement("form");
     form.method = "POST";
     form.setAttribute("data-netlify", "true");
@@ -139,15 +138,17 @@ TOTAL: $${calculateTotal().toFixed(2)}
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-4 flex flex-col items-center">
           <img
             src="/attached_assets/tnclogo.png"
             alt="Logo"
             className="h-12 w-auto"
           />
-
+          <p className="italic text-[#E5A645] text-sm mt-2 text-center">
+            More than Coffee, it's a neighborhood tradition, from our home to your's
+          </p>
           <button
-            className="relative"
+            className="relative mt-2 self-end"
             onClick={() =>
               formRef.current?.scrollIntoView({ behavior: "smooth" })
             }
@@ -164,11 +165,6 @@ TOTAL: $${calculateTotal().toFixed(2)}
 
       {/* Main */}
       <div className="container mx-auto px-4 py-8">
-        <p className="text-center text-muted-foreground mb-6 italic">
-          We serve fresh coffee Monday–Saturday from 6:00am to 11:00am.  
-          On Sundays, we rest ☕✨
-        </p>
-
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left - Menu */}
           <div className="lg:col-span-2 space-y-8">
