@@ -1,209 +1,177 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useState, useEffect } from "react";
 
-const customerInfoSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-  address: z.string().optional(),
-  isDelivery: z.boolean(),
-  preferredDate: z.string().min(1, "Please select a preferred date"),
-  preferredTime: z.string().min(1, "Please select a preferred time"),
-  specialNotes: z.string().optional(),
-}).refine((data) => {
-  if (data.isDelivery && (!data.address || data.address.length < 5)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Address is required when delivery is selected",
-  path: ["address"],
-});
+type CustomerInfoFormProps = {
+  onInfoChange: (info: any) => void;
+};
 
-type CustomerInfo = z.infer<typeof customerInfoSchema>;
-
-interface CustomerInfoFormProps {
-  onInfoChange: (info: CustomerInfo) => void;
-  initialValues?: Partial<CustomerInfo>;
-}
-
-export default function CustomerInfoForm({ onInfoChange, initialValues }: CustomerInfoFormProps) {
-  const today = new Date();
-  const todayDate = today.toISOString().split("T")[0];
-  const currentTime = today.toTimeString().slice(0, 5);
-
-  const form = useForm<CustomerInfo>({
-    resolver: zodResolver(customerInfoSchema),
-    defaultValues: {
-      name: initialValues?.name || "",
-      email: initialValues?.email || "",
-      phone: initialValues?.phone || "",
-      address: initialValues?.address || "",
-      isDelivery: initialValues?.isDelivery ?? false,
-      preferredDate: todayDate,
-      preferredTime: currentTime,
-      specialNotes: initialValues?.specialNotes || "",
-    }
+export default function CustomerInfoForm({ onInfoChange }: CustomerInfoFormProps) {
+  const [info, setInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    isDelivery: false,
+    address: "",
+    preferredDate: "",
+    preferredTime: "",
+    specialNotes: "",
+    coupon: "",
+    addOnsEnabled: false,
   });
 
-  const watchedValues = form.watch();
-  const isDeliveryChecked = form.watch("isDelivery");
+  useEffect(() => {
+    onInfoChange(info);
+  }, [info]);
 
-  React.useEffect(() => {
-    if (form.formState.isValid) {
-      onInfoChange(watchedValues);
-    }
-  }, [watchedValues, form.formState.isValid, onInfoChange]);
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const hh = String(today.getHours()).padStart(2, "0");
+  const min = String(today.getMinutes()).padStart(2, "0");
+  const formattedDate = `${yyyy}-${mm}-${dd}`;
+  const formattedTime = `${hh}:${min}`;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-serif">Contact Information</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter your full name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <div className="space-y-4 p-4 border rounded-lg shadow-sm">
+      <h2 className="text-lg font-semibold">Customer Information</h2>
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="your.email@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <input
+        type="text"
+        placeholder="Full Name"
+        className="w-full p-2 border rounded"
+        value={info.name}
+        onChange={(e) => setInfo({ ...info, name: e.target.value })}
+        required
+      />
 
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input type="tel" placeholder="(555) 123-4567" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <input
+        type="email"
+        placeholder="Email Address"
+        className="w-full p-2 border rounded"
+        value={info.email}
+        onChange={(e) => setInfo({ ...info, email: e.target.value })}
+        required
+      />
 
-            <FormField
-              control={form.control}
-              name="isDelivery"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      Delivery (otherwise pickup at store)
-                    </FormLabel>
-                  </div>
-                </FormItem>
-              )}
-            />
+      <input
+        type="tel"
+        placeholder="Phone Number"
+        className="w-full p-2 border rounded"
+        value={info.phone}
+        onChange={(e) => setInfo({ ...info, phone: e.target.value })}
+        required
+      />
 
-            {isDeliveryChecked && (
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="123 Main St, City, State 12345" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+      {/* Pickup / Delivery */}
+      <div className="space-y-2">
+        <label className="font-medium">Order Type:</label>
+        <div className="flex gap-4">
+          <label>
+            <input
+              type="radio"
+              checked={!info.isDelivery}
+              onChange={() => setInfo({ ...info, isDelivery: false })}
+            />{" "}
+            Pickup
+          </label>
+          <label>
+            <input
+              type="radio"
+              checked={info.isDelivery}
+              onChange={() => setInfo({ ...info, isDelivery: true })}
+            />{" "}
+            Delivery
+          </label>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="preferredDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preferred Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {info.isDelivery && (
+        <div className="space-y-2">
+          <input
+            type="text"
+            placeholder="Delivery Address"
+            className="w-full p-2 border rounded"
+            value={info.address}
+            onChange={(e) => setInfo({ ...info, address: e.target.value })}
+          />
+          <div className="text-sm text-gray-700">
+            <b>The Neighborhood Coffee</b>
+            <br />
+            12821 Little Misty Ln
+            <br />
+            El Paso, Texas 79938
+            <br />
+            +1 (915) 401-5547 ☕
+          </div>
+        </div>
+      )}
 
-              <FormField
-                control={form.control}
-                name="preferredTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preferred Time</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      {/* Date & Time */}
+      <div className="flex gap-4">
+        <input
+          type="date"
+          className="w-1/2 p-2 border rounded"
+          min={formattedDate}
+          value={info.preferredDate || formattedDate}
+          onChange={(e) => setInfo({ ...info, preferredDate: e.target.value })}
+        />
+        <input
+          type="time"
+          className="w-1/2 p-2 border rounded"
+          value={info.preferredTime || formattedTime}
+          onChange={(e) => setInfo({ ...info, preferredTime: e.target.value })}
+        />
+      </div>
 
-            <FormField
-              control={form.control}
-              name="specialNotes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Special Instructions (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Any special requests or notes about your order..."
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <textarea
+        placeholder="Special Notes"
+        className="w-full p-2 border rounded"
+        value={info.specialNotes}
+        onChange={(e) => setInfo({ ...info, specialNotes: e.target.value })}
+      />
 
-            <p className="text-sm text-muted-foreground mt-2">
-              ☕ Orders are served daily from 6 AM to 11 AM. We rest on Sundays!
-            </p>
+      {/* Customize your drink */}
+      <div className="mt-4">
+        <label>
+          <input
+            type="checkbox"
+            checked={info.addOnsEnabled}
+            onChange={() => setInfo({ ...info, addOnsEnabled: !info.addOnsEnabled })}
+          />{" "}
+          Customize your drink
+        </label>
 
-            <p className="text-sm text-muted-foreground mt-1">
-              Payment accepted: CashApp, Zelle, or Cash.
-            </p>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+        {info.addOnsEnabled && (
+          <div className="mt-2 space-y-2 pl-4">
+            {[
+              { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
+              { id: "oatMilk", name: "Oat Milk", price: 0.5 },
+              { id: "hazelnutSyrup", name: "Hazelnut Syrup", price: 0.5 },
+              { id: "caramelSyrup", name: "Caramel Syrup", price: 0.5 },
+              { id: "vanillaSyrup", name: "Vanilla Syrup", price: 0.5 },
+              { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
+            ].map((addOn) => (
+              <label key={addOn.id} className="block">
+                <input
+                  type="checkbox"
+                  onChange={(e) => {
+                    const currentAddOns = info.addOns || [];
+                    if (e.target.checked) {
+                      setInfo({ ...info, addOns: [...currentAddOns, addOn.id] });
+                    } else {
+                      setInfo({
+                        ...info,
+                        addOns: currentAddOns.filter((id) => id !== addOn.id),
+                      });
+                    }
+                  }}
+                />{" "}
+                {addOn.name} (+${addOn.price.toFixed(2)})
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
