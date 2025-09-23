@@ -1,91 +1,100 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const PASSWORD = "coffee123";
-const STATUS_OPTIONS = [
-  "☕ Received",
-  "👨‍🍳 In Process",
-  "🛵 On the Way",
-  "📦 Ready for Pickup",
-  "✅ Completed",
-  "❌ Cancelled",
-];
+interface Order {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+  date: string;
+  time: string;
+  items: { name: string; quantity: number; addOns?: { name: string; price: number }[] }[];
+  status: "received" | "in-process" | "ready" | "delivered";
+}
 
-export default function AdminOrders() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [orders, setOrders] = useState<any[]>([]);
+const AdminOrders: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const navigate = useNavigate();
 
+  // Simulación de fetch de órdenes (puedes conectar con localStorage o API)
   useEffect(() => {
-    const pass = prompt("Enter admin password:");
-    if (pass === PASSWORD) setAuthenticated(true);
-    else {
-      alert("Incorrect password.");
-      window.location.href = "/";
+    const storedOrders = localStorage.getItem("admin-orders");
+    if (storedOrders) {
+      setOrders(JSON.parse(storedOrders));
+    } else {
+      // Demo con una orden fake
+      setOrders([
+        {
+          id: "1001",
+          name: "John Doe",
+          phone: "915-555-1234",
+          address: "123 Main St",
+          date: "2025-09-25",
+          time: "08:30",
+          items: [
+            { name: "Latte", quantity: 2, addOns: [{ name: "Extra Shot", price: 0.5 }] },
+            { name: "Croissant", quantity: 1 },
+          ],
+          status: "received",
+        },
+      ]);
     }
   }, []);
 
+  // Guardar cambios en localStorage
   useEffect(() => {
-    if (!authenticated) return;
-    const all: any[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith("order-")) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(key) || "null");
-          all.push({ ...parsed, id: key.replace("order-", "") });
-        } catch {}
-      }
-    }
-    setOrders(all);
-  }, [authenticated]);
+    localStorage.setItem("admin-orders", JSON.stringify(orders));
+  }, [orders]);
 
-  const updateStatus = (orderId: string, newStatus: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
-    const raw = localStorage.getItem(`order-${orderId}`);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      parsed.status = newStatus;
-      localStorage.setItem(`order-${orderId}`, JSON.stringify(parsed));
-    }
+  const updateStatus = (id: string, newStatus: Order["status"]) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
+    );
   };
 
-  if (!authenticated) return null;
+  const statusFlow: Order["status"][] = ["received", "in-process", "ready", "delivered"];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Admin Orders Panel</h1>
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      <h1 className="text-2xl font-bold mb-6">Admin Orders</h1>
+
       {orders.length === 0 ? (
-        <p>No orders found.</p>
+        <p className="text-gray-500">No orders yet.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border">
+          <table className="w-full border-collapse border border-gray-300 text-sm">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border px-2 py-1">Order #</th>
-                <th className="border px-2 py-1">Customer</th>
-                <th className="border px-2 py-1">Items</th>
-                <th className="border px-2 py-1">Total</th>
-                <th className="border px-2 py-1">Status</th>
+              <tr className="bg-gray-100 text-left">
+                <th className="border px-3 py-2">Order #</th>
+                <th className="border px-3 py-2">Customer</th>
+                <th className="border px-3 py-2">Phone</th>
+                <th className="border px-3 py-2">Address</th>
+                <th className="border px-3 py-2">Delivery Date</th>
+                <th className="border px-3 py-2">Delivery Time</th>
+                <th className="border px-3 py-2">Items</th>
+                <th className="border px-3 py-2">Status</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
-                <tr key={o.id}>
-                  <td className="border px-2 py-1">{o.id}</td>
-                  <td className="border px-2 py-1">
-                    {o.info?.name}
-                    <div className="text-xs text-gray-600">{o.info?.phone}</div>
-                  </td>
-                  <td className="border px-2 py-1 text-sm">
-                    <ul className="list-disc ml-4">
-                      {o.items?.map((it: any, i: number) => (
+              {orders.map((order) => (
+                <tr key={order.id} className="hover:bg-gray-50">
+                  <td className="border px-3 py-2">{order.id}</td>
+                  <td className="border px-3 py-2">{order.name}</td>
+                  <td className="border px-3 py-2">{order.phone}</td>
+                  <td className="border px-3 py-2">{order.address}</td>
+                  <td className="border px-3 py-2">{order.date}</td>
+                  <td className="border px-3 py-2">{order.time}</td>
+                  <td className="border px-3 py-2">
+                    <ul className="list-disc pl-4">
+                      {order.items.map((item, i) => (
                         <li key={i}>
-                          {it.quantity}× {it.name}
-                          {it.temperature && ` (${it.temperature})`}
-                          {it.option && ` - ${it.option}`}
-                          {(it.addOns && it.addOns.length > 0) && (
-                            <ul className="ml-4 list-disc text-xs text-gray-700">
-                              {it.addOns.map((a: any) => (
-                                <li key={a.id}>{a.name} (+${Number(a.price || 0).toFixed(2)})</li>
+                          {item.quantity}× {item.name}
+                          {item.addOns?.length > 0 && (
+                            <ul className="ml-4 text-xs text-gray-600 list-disc">
+                              {item.addOns.map((add, j) => (
+                                <li key={j}>
+                                  {add.name} (+${add.price.toFixed(2)})
+                                </li>
                               ))}
                             </ul>
                           )}
@@ -93,17 +102,22 @@ export default function AdminOrders() {
                       ))}
                     </ul>
                   </td>
-                  <td className="border px-2 py-1 font-semibold">${Number(o.total || 0).toFixed(2)}</td>
-                  <td className="border px-2 py-1">
-                    <select
-                      value={o.status || "☕ Received"}
-                      onChange={(e) => updateStatus(o.id, e.target.value)}
-                      className="border rounded px-2 py-1"
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                  <td className="border px-3 py-2">
+                    <div className="flex gap-2 flex-wrap">
+                      {statusFlow.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => updateStatus(order.id, s)}
+                          className={`px-2 py-1 rounded text-xs ${
+                            order.status === s
+                              ? "bg-brown-600 text-white"
+                              : "bg-gray-200 hover:bg-gray-300"
+                          }`}
+                        >
+                          {s}
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -113,4 +127,6 @@ export default function AdminOrders() {
       )}
     </div>
   );
-}
+};
+
+export default AdminOrders;
