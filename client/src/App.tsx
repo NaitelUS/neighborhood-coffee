@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Layout from "@/Layout";
+import Layout from "@/components/Layout";
 import OrderPage from "@/pages/OrderPage";
 import ThankYou from "@/pages/ThankYou";
 import OrderStatus from "@/pages/OrderStatus"; // nuevo
