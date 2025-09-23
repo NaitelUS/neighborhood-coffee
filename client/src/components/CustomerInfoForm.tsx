@@ -1,65 +1,60 @@
 import { useState } from "react";
+import { format } from "date-fns";
 
-interface Props {
-  onSubmit: (info: any) => void;
-}
-
-export default function CustomerInfoForm({ onSubmit }: Props) {
+export default function CustomerInfoForm({ onSubmit }: { onSubmit: (info: any) => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [method, setMethod] = useState("pickup");
   const [address, setAddress] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [method, setMethod] = useState<"pickup" | "delivery">("pickup");
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [time, setTime] = useState(format(new Date(), "HH:mm"));
   const [error, setError] = useState("");
 
   const validateDateTime = () => {
-    const selected = new Date(`${date}T${time}`);
+    const chosen = new Date(`${date}T${time}`);
     const now = new Date();
 
-    if (!date || !time) return "Please select both date and time.";
-
-    const day = selected.getDay();
-    if (day === 0) {
-      return "Sorry, we rest on Sundays. Even coffee needs a day off ☕💤.";
+    // No domingos
+    if (new Date(date).getDay() === 0) {
+      setError("We’re closed on Sundays, come visit us during the week!");
+      return false;
     }
 
-    const hours = selected.getHours();
-    const minutes = selected.getMinutes();
-    if (hours < 6 || (hours === 11 && minutes > 0) || hours > 11) {
-      return "We’re only serving coffee between 6:00 AM and 11:00 AM. Come a bit earlier — we’ll keep the coffee warm for you!";
+    // No pasado
+    if (chosen < now) {
+      setError("We can’t deliver to the past… yet ⏳☕");
+      return false;
     }
 
-    if (selected < now) {
-      return "You can’t go back in time… unless it’s with an espresso 😉.";
+    const hour = chosen.getHours();
+    const minute = chosen.getMinutes();
+
+    if (hour < 6) {
+      setError("It’s too early, let’s have coffee after 6:00 am ☀️");
+      return false;
+    }
+    if (hour > 11 || (hour === 11 && minute > 0)) {
+      setError("Our morning shift ends at 11:00 am, see you tomorrow!");
+      return false;
     }
 
-    return "";
+    setError("");
+    return true;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validationError = validateDateTime();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    setError("");
-    onSubmit({ name, email, phone, method, address, date, time });
+    if (!validateDateTime()) return;
+    onSubmit({ name, email, phone, address, method, date, time });
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      id="order-form"
-      className="border rounded-lg p-4 shadow-sm mt-6"
-    >
-      <h2 className="text-lg font-semibold mb-3">Your Info</h2>
+    <form onSubmit={handleSubmit} className="space-y-4 border p-4 rounded">
       <input
         type="text"
-        placeholder="Name"
-        className="w-full border rounded p-2 mb-3"
+        placeholder="Full Name"
+        className="w-full border rounded p-2"
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
@@ -67,7 +62,7 @@ export default function CustomerInfoForm({ onSubmit }: Props) {
       <input
         type="email"
         placeholder="Email"
-        className="w-full border rounded p-2 mb-3"
+        className="w-full border rounded p-2"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
@@ -75,30 +70,32 @@ export default function CustomerInfoForm({ onSubmit }: Props) {
       <input
         type="tel"
         placeholder="Phone"
-        className="w-full border rounded p-2 mb-3"
+        className="w-full border rounded p-2"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         required
       />
 
-      <p className="font-medium mb-2">Delivery Method</p>
-      <div className="flex gap-4 mb-3">
-        <label className="flex items-center gap-2">
+      <div>
+        <p className="font-semibold mb-1">Delivery Method</p>
+        <label className="mr-4">
           <input
             type="radio"
+            name="method"
             value="pickup"
             checked={method === "pickup"}
             onChange={() => setMethod("pickup")}
-          />
+          />{" "}
           Pickup
         </label>
-        <label className="flex items-center gap-2">
+        <label>
           <input
             type="radio"
+            name="method"
             value="delivery"
             checked={method === "delivery"}
             onChange={() => setMethod("delivery")}
-          />
+          />{" "}
           Delivery
         </label>
       </div>
@@ -106,8 +103,8 @@ export default function CustomerInfoForm({ onSubmit }: Props) {
       {method === "delivery" && (
         <input
           type="text"
-          placeholder="Delivery Address + ZIP"
-          className="w-full border rounded p-2 mb-3"
+          placeholder="Address (include ZIP)"
+          className="w-full border rounded p-2"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           required
@@ -116,25 +113,22 @@ export default function CustomerInfoForm({ onSubmit }: Props) {
 
       <input
         type="date"
-        className="w-full border rounded p-2 mb-3"
+        className="w-full border rounded p-2"
         value={date}
         onChange={(e) => setDate(e.target.value)}
         required
       />
       <input
         type="time"
-        className="w-full border rounded p-2 mb-3"
+        className="w-full border rounded p-2"
         value={time}
         onChange={(e) => setTime(e.target.value)}
         required
       />
 
-      {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+      {error && <p className="text-red-600 font-semibold">{error}</p>}
 
-      <button
-        type="submit"
-        className="w-full bg-[#1D9099] hover:bg-[#00454E] text-white py-2 rounded"
-      >
+      <button type="submit" className="w-full bg-[#1D9099] hover:bg-[#00454E] text-white p-2 rounded">
         Submit Order
       </button>
     </form>
