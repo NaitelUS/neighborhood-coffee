@@ -1,55 +1,86 @@
 import { useEffect, useState } from "react";
 
-export function useCart() {
-  const [items, setItems] = useState<any[]>([]);
+export interface CartItem {
+  id: string;
+  name: string;
+  quantity: number;
+  basePrice: number;
+  addOns: { id: string; name: string; price: number }[];
+  temperature?: "hot" | "iced";
+  option?: string;
+}
 
-  // Load items from localStorage
+export function useCart() {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  // Cargar carrito desde localStorage al iniciar
   useEffect(() => {
-    const savedOrder = JSON.parse(localStorage.getItem("current-order") || "null");
-    if (savedOrder?.items) {
-      setItems(savedOrder.items);
+    const saved = localStorage.getItem("current-order");
+    if (saved) {
+      try {
+        setCartItems(JSON.parse(saved));
+      } catch (err) {
+        console.error("Error parsing saved cart:", err);
+        setCartItems([]);
+      }
     }
   }, []);
 
-  // Listen for changes in localStorage (cross-tab sync)
+  // Guardar carrito en localStorage cuando cambie
   useEffect(() => {
-    const handler = () => {
-      const savedOrder = JSON.parse(localStorage.getItem("current-order") || "null");
-      if (savedOrder?.items) {
-        setItems(savedOrder.items);
+    localStorage.setItem("current-order", JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  // Agregar producto al carrito
+  const addItem = (item: CartItem) => {
+    setCartItems((prev) => {
+      const existing = prev.find(
+        (p) =>
+          p.id === item.id &&
+          p.temperature === item.temperature &&
+          p.option === item.option &&
+          JSON.stringify(p.addOns) === JSON.stringify(item.addOns)
+      );
+
+      if (existing) {
+        return prev.map((p) =>
+          p === existing ? { ...p, quantity: p.quantity + item.quantity } : p
+        );
       } else {
-        setItems([]);
+        return [...prev, item];
       }
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
-
-  // Helpers
-  const addItem = (item: any) => {
-    const newItems = [...items, item];
-    setItems(newItems);
-    localStorage.setItem("current-order", JSON.stringify({ items: newItems }));
+    });
   };
 
+  // Remover item individual
   const removeItem = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
-    localStorage.setItem("current-order", JSON.stringify({ items: newItems }));
+    setCartItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Vaciar carrito completo
   const clearCart = () => {
-    setItems([]);
+    setCartItems([]);
     localStorage.removeItem("current-order");
   };
 
-  const totalItems = items.reduce((acc, item) => acc + (item.quantity || 1), 0);
+  // Calcular totales
+  const subtotal = cartItems.reduce(
+    (acc, item) =>
+      acc +
+      (item.basePrice +
+        item.addOns.reduce((sum, a) => sum + a.price, 0)) *
+        item.quantity,
+    0
+  );
+
+  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return {
-    items,
+    cartItems,
     addItem,
     removeItem,
     clearCart,
+    subtotal,
     totalItems,
   };
 }
