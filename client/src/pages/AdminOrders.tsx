@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface Order {
   id: string;
@@ -8,15 +7,14 @@ interface Order {
   address: string;
   date: string;
   time: string;
-  items: { name: string; quantity: number; addOns?: { name: string; price: number }[] }[];
+  items?: { name: string; quantity: number; addOns?: { name: string; price: number }[] }[];
   status: "received" | "in-process" | "ready" | "delivered";
 }
 
 const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const navigate = useNavigate();
 
-  // Simulación de fetch de órdenes (puedes conectar con localStorage o API)
+  // Simulación de fetch de órdenes (puedes conectar con API o localStorage)
   useEffect(() => {
     const storedOrders = localStorage.getItem("admin-orders");
     if (storedOrders) {
@@ -58,7 +56,7 @@ const AdminOrders: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">Admin Orders</h1>
 
-      {orders.length === 0 ? (
+      {orders?.length === 0 ? (
         <p className="text-gray-500">No orders yet.</p>
       ) : (
         <div className="overflow-x-auto">
@@ -76,7 +74,7 @@ const AdminOrders: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {orders?.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="border px-3 py-2">{order.id}</td>
                   <td className="border px-3 py-2">{order.name}</td>
@@ -86,10 +84,10 @@ const AdminOrders: React.FC = () => {
                   <td className="border px-3 py-2">{order.time}</td>
                   <td className="border px-3 py-2">
                     <ul className="list-disc pl-4">
-                      {order.items.map((item, i) => (
+                      {order.items?.map((item, i) => (
                         <li key={i}>
                           {item.quantity}× {item.name}
-                          {item.addOns?.length > 0 && (
+                          {item.addOns?.length ? (
                             <ul className="ml-4 text-xs text-gray-600 list-disc">
                               {item.addOns.map((add, j) => (
                                 <li key={j}>
@@ -97,7 +95,7 @@ const AdminOrders: React.FC = () => {
                                 </li>
                               ))}
                             </ul>
-                          )}
+                          ) : null}
                         </li>
                       ))}
                     </ul>
