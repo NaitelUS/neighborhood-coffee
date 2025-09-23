@@ -1,78 +1,96 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import DrinkCard from "@/components/DrinkCard";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
-import { Button } from "@/components/ui/button";
+import { drinkOptions, addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
+import { useCart } from "@/hooks/useCart";
 
 export default function OrderPage() {
-  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const { items, addItem, removeItem, clearCart, subtotal } = useCart();
+  const [couponApplied, setCouponApplied] = useState(false);
 
-  // 🔹 Load current-order from localStorage on mount
-  useEffect(() => {
-    const savedOrder = JSON.parse(localStorage.getItem("current-order") || "null");
-    if (savedOrder?.items) {
-      setOrderItems(savedOrder.items);
-    }
-  }, []);
+  // handler que recibe desde DrinkCard ids de addOns y los mapea a objetos
+  const handleAddToOrder = (
+    drinkId: string,
+    temperature: "hot" | "iced",
+    quantity: number,
+    addOnIds: string[] = []
+  ) => {
+    const drink = drinkOptions.find((d) => d.id === drinkId);
+    if (!drink) return;
 
-  // 🔹 Sync state → localStorage
-  useEffect(() => {
-    localStorage.setItem("current-order", JSON.stringify({ items: orderItems }));
-  }, [orderItems]);
+    const mappedAddOns =
+      (addOnIds || [])
+        .map((id) => addOnOptions.find((a) => a.id === id))
+        .filter(Boolean)
+        .map((a) => ({ id: a!.id, name: a!.name, price: a!.price })) || [];
 
-  // 🔹 Remove one item
-  const removeItem = (index: number) => {
-    const newItems = orderItems.filter((_, i) => i !== index);
-    setOrderItems(newItems);
+    addItem({
+      id: drink.id,
+      name: drink.name,
+      temperature,
+      option: undefined,
+      quantity: Math.max(1, Number(quantity || 1)),
+      basePrice: Number(drink.basePrice || 0),
+      addOns: mappedAddOns,
+    });
   };
 
-  // 🔹 Submit order
+  const discount = useMemo(() => (couponApplied ? subtotal * COUPON_DISCOUNT : 0), [couponApplied, subtotal]);
+  const total = useMemo(() => subtotal - discount, [subtotal, discount]);
+
+  const applyCoupon = (code: string) => {
+    if (code.trim().toUpperCase() === COUPON_CODE) setCouponApplied(true);
+  };
+
   const handleSubmitOrder = (info: any) => {
     const orderNo = Date.now().toString().slice(-5);
-    const currentOrder = JSON.parse(localStorage.getItem("current-order") || "null");
 
-    if (currentOrder) {
-      localStorage.setItem(
-        `order-${orderNo}`,
-        JSON.stringify({ ...currentOrder, info })
-      );
-    }
+    const payload = {
+      items,
+      info,
+      subtotal,
+      discount,
+      total,
+      status: "☕ Received",
+    };
 
-    // Clear current-order
+    localStorage.setItem(`order-${orderNo}`, JSON.stringify(payload));
     localStorage.removeItem("current-order");
-    setOrderItems([]);
+    clearCart();
 
-    // Redirect to Thank You
     window.location.href = `/thank-you?orderNo=${orderNo}`;
   };
 
-  const subtotal = orderItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0
-  );
-
   return (
-    <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-      {/* Customer Info */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Your Information</h2>
-        <CustomerInfoForm onSubmit={handleSubmitOrder} />
+    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Menu */}
+      <div className="md:col-span-2 space-y-4">
+        <h2 className="text-2xl font-bold mb-2">Our Coffee Menu</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {drinkOptions.map((drink) => (
+            <DrinkCard
+              key={drink.id}
+              drink={drink}
+              addOns={addOnOptions}
+              onAddToOrder={handleAddToOrder}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Order Summary */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Your Order</h2>
+      {/* Order Summary + Customer Info */}
+      <div id="order-form">
         <OrderSummary
-          items={orderItems}
-          subtotal={subtotal}
+          couponApplied={couponApplied}
+          applyCoupon={applyCoupon}
+          discount={discount}
+          total={total}
           onRemoveItem={removeItem}
         />
-        <Button
-          className="w-full mt-4 bg-[#1D9099] hover:bg-[#00454E] text-white"
-          onClick={() => handleSubmitOrder({})}
-          disabled={orderItems.length === 0}
-        >
-          Submit Order
-        </Button>
+        <div className="mt-6">
+          <CustomerInfoForm onSubmit={handleSubmitOrder} />
+        </div>
       </div>
     </div>
   );
