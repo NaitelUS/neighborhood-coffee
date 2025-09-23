@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 const PASSWORD = "coffee123";
-
 const STATUS_OPTIONS = [
   "☕ Received",
   "👨‍🍳 In Process",
@@ -15,46 +14,35 @@ export default function AdminOrders() {
   const [authenticated, setAuthenticated] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
 
-  // Pedir contraseña
   useEffect(() => {
     const pass = prompt("Enter admin password:");
-    if (pass === PASSWORD) {
-      setAuthenticated(true);
-    } else {
+    if (pass === PASSWORD) setAuthenticated(true);
+    else {
       alert("Incorrect password.");
       window.location.href = "/";
     }
   }, []);
 
-  // Cargar todas las órdenes desde localStorage
   useEffect(() => {
-    if (authenticated) {
-      const allOrders: any[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith("order-")) {
-          const saved = localStorage.getItem(key);
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              allOrders.push({ ...parsed, id: key.replace("order-", "") });
-            } catch (err) {
-              console.error("Error parsing order:", err);
-            }
-          }
-        }
+    if (!authenticated) return;
+    const all: any[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("order-")) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || "null");
+          all.push({ ...parsed, id: key.replace("order-", "") });
+        } catch {}
       }
-      setOrders(allOrders);
     }
+    setOrders(all);
   }, [authenticated]);
 
   const updateStatus = (orderId: string, newStatus: string) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
-    const saved = localStorage.getItem(`order-${orderId}`);
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+    const raw = localStorage.getItem(`order-${orderId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
       parsed.status = newStatus;
       localStorage.setItem(`order-${orderId}`, JSON.stringify(parsed));
     }
@@ -63,7 +51,7 @@ export default function AdminOrders() {
   if (!authenticated) return null;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Admin Orders Panel</h1>
       {orders.length === 0 ? (
         <p>No orders found.</p>
@@ -80,28 +68,24 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td className="border px-2 py-1">{order.id}</td>
+              {orders.map((o) => (
+                <tr key={o.id}>
+                  <td className="border px-2 py-1">{o.id}</td>
                   <td className="border px-2 py-1">
-                    {order.info?.name} <br />
-                    <span className="text-sm text-gray-600">
-                      {order.info?.phone}
-                    </span>
+                    {o.info?.name}
+                    <div className="text-xs text-gray-600">{o.info?.phone}</div>
                   </td>
                   <td className="border px-2 py-1 text-sm">
                     <ul className="list-disc ml-4">
-                      {order.items.map((item: any, idx: number) => (
-                        <li key={idx}>
-                          {item.quantity}× {item.name}{" "}
-                          {item.temperature && `(${item.temperature})`}
-                          {item.option && ` - ${item.option}`}
-                          {item.addOns?.length > 0 && (
+                      {o.items?.map((it: any, i: number) => (
+                        <li key={i}>
+                          {it.quantity}× {it.name}
+                          {it.temperature && ` (${it.temperature})`}
+                          {it.option && ` - ${it.option}`}
+                          {(it.addOns && it.addOns.length > 0) && (
                             <ul className="ml-4 list-disc text-xs text-gray-700">
-                              {item.addOns.map((a: any) => (
-                                <li key={a.id}>
-                                  {a.name} (+${a.price.toFixed(2)})
-                                </li>
+                              {it.addOns.map((a: any) => (
+                                <li key={a.id}>{a.name} (+${Number(a.price || 0).toFixed(2)})</li>
                               ))}
                             </ul>
                           )}
@@ -109,19 +93,15 @@ export default function AdminOrders() {
                       ))}
                     </ul>
                   </td>
-                  <td className="border px-2 py-1 font-semibold">
-                    ${order.total.toFixed(2)}
-                  </td>
+                  <td className="border px-2 py-1 font-semibold">${Number(o.total || 0).toFixed(2)}</td>
                   <td className="border px-2 py-1">
                     <select
-                      value={order.status || "☕ Received"}
-                      onChange={(e) => updateStatus(order.id, e.target.value)}
+                      value={o.status || "☕ Received"}
+                      onChange={(e) => updateStatus(o.id, e.target.value)}
                       className="border rounded px-2 py-1"
                     >
                       {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
+                        <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
                   </td>
