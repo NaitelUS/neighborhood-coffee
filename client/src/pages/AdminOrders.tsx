@@ -85,7 +85,7 @@ export default function AdminOrders() {
       {orders.length === 0 ? (
         <p>No orders found.</p>
       ) : (
-        <table className="w-full border-collapse">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-100 text-left">
               <th className="p-2 border">Order #</th>
@@ -102,7 +102,7 @@ export default function AdminOrders() {
                 <td className="p-2 border">
                   {o.info?.name}
                   <br />
-                  <span className="text-sm text-gray-500">{o.info?.phone}</span>
+                  <span className="text-xs text-gray-500">{o.info?.phone}</span>
                 </td>
                 <td className="p-2 border">
                   <ul className="list-disc ml-4">
@@ -110,7 +110,7 @@ export default function AdminOrders() {
                       <li key={i}>
                         {it.quantity}x {it.name} ({it.temperature})
                         {it.addOns?.length > 0 && (
-                          <ul className="ml-6 text-sm text-gray-600 list-disc">
+                          <ul className="ml-6 text-xs text-gray-600 list-disc">
                             {it.addOns.map((a, j) => (
                               <li key={j}>{a}</li>
                             ))}
