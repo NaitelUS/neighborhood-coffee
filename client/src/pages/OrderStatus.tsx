@@ -1,106 +1,89 @@
-import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-
-type OrderData = {
-  orderNo: string;
-  items: {
-    id: string;
-    name: string;
-    temperature?: "hot" | "iced";
-    quantity: number;
-    basePrice: number;
-    addOns: string[];
-  }[];
-  info: any;
-  subtotal: number;
-  discount: number;
-  total: number;
-  status?: string;
-};
+import { useEffect, useState } from "react";
 
 export default function OrderStatus() {
-  const { id } = useParams();
-  const [order, setOrder] = useState<OrderData | null>(null);
+  const { id } = useParams<{ id: string }>();
+  const [order, setOrder] = useState<any>(null);
+  const [status, setStatus] = useState<string>("");
 
   useEffect(() => {
     if (id) {
       const saved = localStorage.getItem(`order-${id}`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        setOrder({ orderNo: id, ...parsed });
+        setOrder(parsed);
+        setStatus(parsed.status || "☕ Received");
       }
     }
   }, [id]);
 
   if (!order) {
-    return (
-      <div className="p-6 text-center">
-        <h2 className="text-2xl font-bold">Order not found</h2>
-        <p className="mt-2">Please check your order number.</p>
-      </div>
-    );
+    return <p className="p-6">Order not found.</p>;
   }
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-3xl font-bold mb-4">Order Status</h2>
+      <h1 className="text-2xl font-bold mb-4">Order Status</h1>
       <p className="mb-2">
-        Order number:{" "}
-        <span className="font-semibold text-[#1D9099]">{order.orderNo}</span>
+        Order <strong>#{id}</strong>
       </p>
+      <p className="mb-4">Current status: <strong>{status}</strong></p>
 
-      <div className="mb-6">
-        <p className="text-lg font-medium">Current Status:</p>
-        <p className="text-xl font-bold text-[#1D9099]">
-          {order.status || "☕ Received"}
-        </p>
-      </div>
-
-      <div className="border rounded-lg p-4 shadow-sm">
-        <h3 className="text-xl font-semibold mb-3">Order Details</h3>
-        <ul className="space-y-2">
-          {order.items.map((item, i) => (
-            <li key={i} className="flex justify-between items-start border-b pb-2">
-              <div>
-                <p className="font-medium text-lg">
-                  {item.quantity}x {item.name}{" "}
-                  {item.temperature && `(${item.temperature})`}
-                </p>
-                {item.addOns.length > 0 && (
-                  <ul className="ml-6 text-sm text-gray-600 list-disc">
-                    {item.addOns.map((a, j) => (
-                      <li key={j}>{a}</li>
-                    ))}
-                  </ul>
-                )}
+      {/* Mostrar resumen de la orden */}
+      <div className="border rounded-lg shadow-md p-4">
+        <h2 className="text-lg font-semibold mb-2">Order Summary</h2>
+        <ul className="space-y-3">
+          {order.items.map((item: any, idx: number) => (
+            <li key={idx} className="border-b pb-2 last:border-none last:pb-0">
+              <div className="flex justify-between">
+                <span>
+                  {item.quantity}× {item.name}
+                  {item.temperature && ` (${item.temperature})`}
+                  {item.option && ` - ${item.option}`}
+                </span>
+                <span>
+                  $
+                  {(
+                    (item.basePrice +
+                      (item.addOns || []).reduce(
+                        (sum: number, a: any) => sum + (a.price || 0),
+                        0
+                      )) *
+                    item.quantity
+                  ).toFixed(2)}
+                </span>
               </div>
-              <span className="font-semibold text-lg">
-                $
-                {(
-                  (item.basePrice +
-                    item.addOns.reduce((sum) => sum + 0.5, 0)) *
-                  item.quantity
-                ).toFixed(2)}
-              </span>
+
+              {/* Add-ons */}
+              {item.addOns && item.addOns.length > 0 && (
+                <ul className="ml-4 list-disc text-sm text-gray-700">
+                  {item.addOns.map((a: any) => (
+                    <li key={a.id}>
+                      {a.name} (+${a.price.toFixed(2)})
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>
 
-        <div className="mt-4 border-t pt-3 text-lg">
-          <p className="flex justify-between">
-            <span>Subtotal</span>
+        {/* Totales */}
+        <div className="mt-4 text-sm space-y-1">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
             <span>${order.subtotal.toFixed(2)}</span>
-          </p>
+          </div>
           {order.discount > 0 && (
-            <p className="flex justify-between text-green-600">
-              <span>Discount</span>
+            <div className="flex justify-between text-green-600">
+              <span>Discount:</span>
               <span>- ${order.discount.toFixed(2)}</span>
-            </p>
+            </div>
           )}
-          <p className="flex justify-between font-bold text-2xl mt-2">
-            <span>Total</span>
+          <div className="flex justify-between font-bold text-base border-t pt-2">
+            <span>Total:</span>
             <span>${order.total.toFixed(2)}</span>
-          </p>
+          </div>
         </div>
       </div>
     </div>
