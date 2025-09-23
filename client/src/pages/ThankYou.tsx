@@ -1,50 +1,97 @@
 import { useLocation } from "react-router-dom";
-import { addOnOptions } from "@/data/menuData";
+import { useEffect, useState } from "react";
 
 export default function ThankYou() {
-  const searchParams = new URLSearchParams(useLocation().search);
-  const orderNo = searchParams.get("orderNo");
-  const order = orderNo ? JSON.parse(localStorage.getItem(`order-${orderNo}`) || "null") : null;
+  const location = useLocation();
+  const [order, setOrder] = useState<any>(null);
 
-  if (!order) return <p className="p-6">Order not found</p>;
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const orderNo = params.get("orderNo");
+    if (orderNo) {
+      const saved = localStorage.getItem(`order-${orderNo}`);
+      if (saved) {
+        setOrder({ ...JSON.parse(saved), orderNo });
+      }
+    }
+  }, [location]);
+
+  if (!order) {
+    return <p className="p-6">Order not found.</p>;
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Thank You!</h1>
-      <p>Your order number is <span className="font-bold">{orderNo}</span></p>
+    <div className="p-6 max-w-2xl mx-auto text-center">
+      <h1 className="text-3xl font-bold mb-4">Thank You for Your Order!</h1>
+      <p className="mb-6">Your order number is <strong>{order.orderNo}</strong></p>
 
-      <div className="mt-4 border rounded-lg p-4 text-lg">
-        <h2 className="font-bold text-xl mb-2">Order Summary</h2>
-        <ul className="space-y-2">
-          {order.items.map((item: any, index: number) => (
-            <li key={index}>
-              <p>
-                {item.name} ({item.temperature}) x{item.quantity}
-              </p>
-              {item.addOns.length > 0 && (
-                <ul className="ml-4 list-disc text-sm text-gray-600">
-                  {item.addOns.map((id: string) => {
-                    const addOn = addOnOptions.find((a) => a.id === id);
-                    return <li key={id}>{addOn ? addOn.name : id}</li>;
-                  })}
+      {/* Resumen de la orden */}
+      <div className="border rounded-lg shadow-md p-4 text-left">
+        <h2 className="text-xl font-semibold mb-3">Order Receipt</h2>
+        <ul className="space-y-3">
+          {order.items.map((item: any, idx: number) => (
+            <li key={idx} className="border-b pb-2 last:border-none last:pb-0">
+              <div className="flex justify-between">
+                <span>
+                  {item.quantity}× {item.name}
+                  {item.temperature && ` (${item.temperature})`}
+                  {item.option && ` - ${item.option}`}
+                </span>
+                <span>
+                  $
+                  {(
+                    (item.basePrice +
+                      (item.addOns || []).reduce(
+                        (sum: number, a: any) => sum + (a.price || 0),
+                        0
+                      )) *
+                    item.quantity
+                  ).toFixed(2)}
+                </span>
+              </div>
+
+              {/* Add-ons */}
+              {item.addOns && item.addOns.length > 0 && (
+                <ul className="ml-4 list-disc text-sm text-gray-700">
+                  {item.addOns.map((a: any) => (
+                    <li key={a.id}>
+                      {a.name} (+${a.price.toFixed(2)})
+                    </li>
+                  ))}
                 </ul>
               )}
             </li>
           ))}
         </ul>
-        <div className="mt-3">
-          <p>Subtotal: ${order.subtotal.toFixed(2)}</p>
-          <p>Discount: -${order.discount.toFixed(2)}</p>
-          <p className="text-2xl font-bold">Total: ${order.total.toFixed(2)}</p>
+
+        {/* Totales */}
+        <div className="mt-4 space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span>${order.subtotal.toFixed(2)}</span>
+          </div>
+          {order.discount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>Discount:</span>
+              <span>- ${order.discount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold text-xl border-t pt-2">
+            <span>Total:</span>
+            <span>${order.total.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
-      <p className="mt-4">
-        You can check your order status{" "}
-        <a href={`/order-status/${orderNo}`} className="text-[#1D9099] font-bold underline">
-          here
-        </a>.
-      </p>
+      {/* Enlace para revisar estatus */}
+      <div className="mt-6">
+        <a
+          href={`/order-status/${order.orderNo}`}
+          className="text-[#1D9099] font-semibold hover:underline"
+        >
+          You can check your order status here →
+        </a>
+      </div>
     </div>
   );
 }
