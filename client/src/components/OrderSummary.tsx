@@ -1,18 +1,7 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { addOnOptions } from "@/data/menuData";
 
-type OrderItem = {
-  id: string;
-  name: string;
-  temperature?: "hot" | "iced";
-  quantity: number;
-  basePrice: number;
-  addOns: string[];
-};
-
 interface Props {
-  items: OrderItem[];
+  items: any[];
   subtotal: number;
   discount: number;
   total: number;
@@ -30,102 +19,72 @@ export default function OrderSummary({
   couponApplied,
   removeItem,
 }: Props) {
-  const [coupon, setCoupon] = useState("");
-
   const handleApply = () => {
-    if (!couponApplied && coupon.trim() !== "") {
-      applyCoupon(coupon);
-    }
-  };
-
-  const getAddOnName = (id: string) => {
-    const addOn = addOnOptions.find((a) => a.id === id);
-    return addOn ? addOn.name : id;
+    const code = (document.getElementById("coupon") as HTMLInputElement).value;
+    applyCoupon(code);
   };
 
   return (
-    <div className="border rounded-lg p-4 shadow-sm">
-      <h2 className="text-xl font-bold mb-3">Your Order</h2>
-
+    <div className="border rounded-lg p-4">
+      <h3 className="text-lg font-bold mb-2">Your Order</h3>
       {items.length === 0 ? (
-        <p className="text-sm text-gray-500">No items added yet.</p>
+        <p className="text-sm text-gray-500">No items yet</p>
       ) : (
-        <ul className="space-y-3">
-          {items.map((item, i) => {
-            const addOnsPrice = item.addOns.reduce((sum, addOnId) => {
-              const addOn = addOnOptions.find((a) => a.id === addOnId);
-              return sum + (addOn ? addOn.price : 0);
-            }, 0);
-            const itemTotal =
-              (item.basePrice + addOnsPrice) * item.quantity;
-
-            return (
-              <li
-                key={i}
-                className="flex justify-between items-start border-b pb-2"
-              >
-                <div>
-                  <p className="font-medium">
-                    {item.quantity}x {item.name}{" "}
-                    {item.temperature && `(${item.temperature})`}
-                  </p>
-                  {item.addOns.length > 0 && (
-                    <ul className="ml-4 text-xs text-gray-600 list-disc">
-                      {item.addOns.map((a, j) => (
-                        <li key={j}>{getAddOnName(a)}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="font-semibold">
-                    ${itemTotal.toFixed(2)}
-                  </span>
-                  <button
-                    className="text-xs text-red-500 mt-1"
-                    onClick={() => removeItem(i)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </li>
-            );
-          })}
+        <ul className="space-y-2">
+          {items.map((item, index) => (
+            <li key={index} className="flex justify-between items-start border-b pb-1">
+              <div>
+                <p className="font-semibold">
+                  {item.name} ({item.temperature}) x{item.quantity}
+                </p>
+                {item.addOns.length > 0 && (
+                  <ul className="ml-4 list-disc text-sm text-gray-600">
+                    {item.addOns.map((id: string) => {
+                      const addOn = addOnOptions.find((a) => a.id === id);
+                      return <li key={id}>{addOn ? addOn.name : id}</li>;
+                    })}
+                  </ul>
+                )}
+              </div>
+              <div className="text-right">
+                <p>
+                  $
+                  {(
+                    (item.basePrice +
+                      item.addOns.reduce((sum, id) => {
+                        const addOn = addOnOptions.find((a) => a.id === id);
+                        return sum + (addOn ? addOn.price : 0);
+                      }, 0)) *
+                    item.quantity
+                  ).toFixed(2)}
+                </p>
+                <button
+                  onClick={() => removeItem(index)}
+                  className="text-xs text-red-600 hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+            </li>
+          ))}
         </ul>
       )}
 
-      <div className="mt-4 border-t pt-3 text-sm">
-        <p className="flex justify-between">
-          <span>Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
-        </p>
-        {discount > 0 && (
-          <p className="flex justify-between text-green-600">
-            <span>Discount</span>
-            <span>- ${discount.toFixed(2)}</span>
-          </p>
-        )}
-        <p className="flex justify-between font-bold text-lg mt-2">
-          <span>Total</span>
-          <span>${total.toFixed(2)}</span>
-        </p>
+      <div className="mt-3 space-y-1 text-sm">
+        <p>Subtotal: ${subtotal.toFixed(2)}</p>
+        <p>Discount: -${discount.toFixed(2)}</p>
+        <p className="font-bold">Total: ${total.toFixed(2)}</p>
       </div>
 
       {!couponApplied && (
-        <div className="mt-4 flex gap-2">
-          <input
-            type="text"
-            placeholder="Enter coupon"
-            value={coupon}
-            onChange={(e) => setCoupon(e.target.value)}
-            className="flex-1 border rounded p-2 text-sm"
-          />
-          <Button
-            className="bg-[#1D9099] hover:bg-[#00454E] text-white"
+        <div className="mt-3 flex gap-2">
+          <input id="coupon" type="text" placeholder="Coupon code" className="border rounded p-1 flex-grow" />
+          <button
             onClick={handleApply}
+            className="bg-[#1D9099] text-white px-3 py-1 rounded hover:bg-[#00454E]"
           >
             Apply
-          </Button>
+          </button>
         </div>
       )}
     </div>
