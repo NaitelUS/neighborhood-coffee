@@ -49,7 +49,7 @@ const OrderSummary: React.FC = () => {
       </div>
       {discount > 0 && (
         <div className="flex justify-between text-sm text-green-600 mb-1">
-          <span>Discount</span>
+          <span>Discount (Coupon)</span>
           <span>- ${discount.toFixed(2)}</span>
         </div>
       )}
