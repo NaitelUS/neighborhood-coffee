@@ -27,10 +27,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Contenido */}
       <main className="flex-grow pt-20">{children}</main>
 
-      {/* Footer simple */}
       <footer className="bg-gray-100 text-center py-4 text-sm text-gray-600">
         <div className="flex flex-col items-center space-y-1">
           <span>© 2025 The Neighborhood Coffee</span>
