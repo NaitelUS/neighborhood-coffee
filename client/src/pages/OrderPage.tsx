@@ -2,12 +2,7 @@ import { useState } from "react";
 import DrinkCard from "@/components/DrinkCard";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
-import {
-  drinkOptions,
-  addOnOptions,
-  COUPON_CODE,
-  COUPON_DISCOUNT,
-} from "@/data/menuData";
+import { drinkOptions, addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 
 interface OrderItem {
   id: string;
@@ -45,7 +40,7 @@ export default function OrderPage() {
     ]);
   };
 
-  const removeItem = (index: number) => {
+  const handleRemoveItem = (index: number) => {
     setOrderItems((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -63,9 +58,6 @@ export default function OrderPage() {
   const applyCoupon = (code: string) => {
     if (code === COUPON_CODE) {
       setCouponApplied(true);
-      alert("Coupon applied successfully!");
-    } else {
-      alert("Invalid coupon code.");
     }
   };
 
@@ -73,7 +65,7 @@ export default function OrderPage() {
     const orderNo = Date.now().toString().slice(-5);
     localStorage.setItem(
       `order-${orderNo}`,
-      JSON.stringify({ items: orderItems, info, subtotal, discount, total, status: "☕ Received" })
+      JSON.stringify({ items: orderItems, info, subtotal, discount, total })
     );
     window.location.href = `/thank-you?orderNo=${orderNo}`;
   };
@@ -96,7 +88,7 @@ export default function OrderPage() {
       </div>
 
       {/* Order Summary + Customer Info */}
-      <div>
+      <div id="order-form">
         <OrderSummary
           items={orderItems}
           subtotal={subtotal}
@@ -104,22 +96,10 @@ export default function OrderPage() {
           total={total}
           applyCoupon={applyCoupon}
           couponApplied={couponApplied}
-          removeItem={removeItem}
+          removeItem={handleRemoveItem}
         />
         <div className="mt-6">
           <CustomerInfoForm onSubmit={handleSubmitOrder} />
-          <div className="mt-4 text-center">
-            <p className="font-bold text-lg">The Neighborhood Coffee</p>
-            <p className="text-lg">12821 Little Misty Ln</p>
-            <p className="text-lg">El Paso, Texas 79938</p>
-            <p className="text-lg">+1 (915) 401-5547</p>
-            <p className="mt-2 font-bold text-lg">
-              We’re open weekdays, except Sundays <br /> 6:00 AM – 11:00 AM
-            </p>
-            <p className="mt-3 italic font-bold text-xl text-[#E5A645]">
-              More than Coffee, it's a neighborhood tradition, from our home to yours.
-            </p>
-          </div>
         </div>
       </div>
     </div>
