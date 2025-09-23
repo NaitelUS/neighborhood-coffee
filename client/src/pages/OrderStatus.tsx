@@ -23,17 +23,33 @@ export default function OrderStatus() {
       <h1 className="text-2xl font-bold mb-4">Order Status</h1>
       <p>Order #: <b>{order.orderNo}</b></p>
       <p className="mt-2 font-semibold">Customer: {order.info?.name}</p>
+
       <h2 className="mt-4 font-bold">Items</h2>
       <ul>
         {order.items.map((item: any, idx: number) => (
-          <li key={idx}>
+          <li key={idx} className="mb-1">
             {item.quantity}x {item.name} ({item.temperature})
+            {item.addOns?.length > 0 && (
+              <ul className="ml-6 text-sm text-gray-700 list-disc">
+                {item.addOns.map((addOn: string, i: number) => (
+                  <li key={i}>{addOn}</li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
-      <p className="mt-3">Total: ${order.total.toFixed(2)}</p>
+
+      <div className="mt-3">
+        <p>Subtotal: ${order.subtotal.toFixed(2)}</p>
+        {order.discount > 0 && (
+          <p>Discount: -${order.discount.toFixed(2)}</p>
+        )}
+        <p className="mt-2 font-bold text-xl">Total: ${order.total.toFixed(2)}</p>
+      </div>
+
       <p className="mt-3 text-green-600 font-bold">
-        Status: Received ✅ (ready for processing)
+        Status: Received ✅ (waiting to be processed)
       </p>
     </div>
   );
