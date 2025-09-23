@@ -7,7 +7,6 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header fijo */}
       <header className="fixed top-0 w-full z-50 bg-white shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <img
@@ -15,10 +14,9 @@ export default function Layout({ children }: { children: ReactNode }) {
             alt="The Neighborhood Coffee"
             className="h-12 w-auto"
           />
-
           <a href="#order-form" className="relative">
             <ShoppingCart className="h-7 w-7 text-[#1D9099]" />
-            {totalItems > 0 && (
+            {Number(totalItems) > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#E5A645] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {totalItems}
               </span>
