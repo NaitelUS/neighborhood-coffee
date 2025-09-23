@@ -1,40 +1,49 @@
-import { ReactNode } from "react";
-import { ShoppingCart } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
+import React from "react";
+import { Link } from "react-router-dom";
+import { useCart } from "../hooks/useCart";
 
-export default function Layout({ children }: { children: ReactNode }) {
-  const { totalItems } = useCart();
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { cartItems } = useCart();
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="fixed top-0 w-full z-50 bg-white shadow-md">
+      {/* Header */}
+      <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <img
-            src="/attached_assets/tnclogo.png"
-            alt="The Neighborhood Coffee"
-            className="h-12 w-auto"
-          />
-          <a href="#order-form" className="relative">
-            <ShoppingCart className="h-7 w-7 text-[#1D9099]" />
-            {Number(totalItems) > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#E5A645] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {totalItems}
-              </span>
-            )}
-          </a>
+          <Link to="/" className="flex items-center space-x-2">
+            <img src="/logo.png" alt="The Neighborhood Coffee" className="h-10" />
+            <span className="font-semibold text-lg">The Neighborhood Coffee</span>
+          </Link>
+          <nav className="flex items-center space-x-6 text-sm">
+            <div className="text-gray-700">
+              📍 123 Main St, El Paso, TX  
+              <br /> ⏰ Mon–Sat 6:00 AM – 11:00 AM  
+              <br /> 💳 We accept Zelle, Cash & Card
+            </div>
+            <Link to="/cart" className="relative">
+              🛒
+              {cartItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2">
+                  {cartItems.length}
+                </span>
+              )}
+            </Link>
+          </nav>
+        </div>
+        <div className="bg-gray-100 text-center py-1 text-xs italic text-gray-600">
+          It is not coffee… it’s a neighborhood ritual ☕
         </div>
       </header>
 
-      <main className="flex-grow pt-20">{children}</main>
+      {/* Main */}
+      <main className="flex-1 pt-28 pb-10">{children}</main>
 
-      <footer className="bg-gray-100 text-center py-4 text-sm text-gray-600">
-        <div className="flex flex-col items-center space-y-1">
-          <span>© 2025 The Neighborhood Coffee</span>
-          <span className="flex items-center gap-1">
-            <span className="text-red-500">♥</span> Crafted in El Paso, TX
-          </span>
-        </div>
+      {/* Footer */}
+      <footer className="bg-gray-100 text-center text-xs text-gray-500 py-4">
+        © {new Date().getFullYear()} The Neighborhood Coffee. All rights reserved.
       </footer>
     </div>
   );
-}
+};
+
+export default Layout;
