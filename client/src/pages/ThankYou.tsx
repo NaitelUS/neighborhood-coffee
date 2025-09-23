@@ -28,12 +28,27 @@ export default function ThankYou() {
       <h2 className="mt-4 font-bold text-xl">Summary</h2>
       <ul className="text-lg">
         {order.items.map((item: any, idx: number) => (
-          <li key={idx}>
+          <li key={idx} className="mb-2">
             {item.quantity}x {item.name} ({item.temperature})
+            {item.addOns?.length > 0 && (
+              <ul className="ml-6 text-base text-gray-700 list-disc">
+                {item.addOns.map((addOn: string, i: number) => (
+                  <li key={i}>{addOn}</li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xl font-bold">Total: ${order.total.toFixed(2)}</p>
+      <div className="mt-3 text-lg">
+        <p>Subtotal: ${order.subtotal.toFixed(2)}</p>
+        {order.discount > 0 && (
+          <p>Discount: -${order.discount.toFixed(2)}</p>
+        )}
+        <p className="mt-2 text-2xl font-bold">
+          Total: ${order.total.toFixed(2)}
+        </p>
+      </div>
 
       <div className="mt-4">
         <Link
