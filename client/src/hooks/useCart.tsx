@@ -18,9 +18,7 @@ function readCurrentOrder(): CurrentOrder {
     const raw = localStorage.getItem("current-order");
     if (!raw) return { items: [] };
     const parsed = JSON.parse(raw);
-
-    // Acepta ambos formatos: array o { items: [...] }
-    if (Array.isArray(parsed)) return { items: parsed };
+    if (Array.isArray(parsed)) return { items: parsed };              // formato viejo
     if (parsed && Array.isArray(parsed.items)) return { items: parsed.items };
     return { items: [] };
   } catch {
@@ -35,39 +33,45 @@ function writeCurrentOrder(items: CartItem[]) {
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>(() => readCurrentOrder().items);
 
-  // Sincroniza cuando cambie el storage (otra pestaña, etc.)
+  // sync entre pestañas
   useEffect(() => {
     const onStorage = () => setItems(readCurrentOrder().items);
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // Persiste en storage cuando cambian los items
+  // persistir
   useEffect(() => {
     writeCurrentOrder(items);
   }, [items]);
 
   const addItem = (item: CartItem) => {
+    // Normaliza addOns
+    const safeItem: CartItem = {
+      ...item,
+      addOns: Array.isArray(item.addOns) ? item.addOns : [],
+      quantity: Number(item.quantity || 1),
+      basePrice: Number(item.basePrice || 0),
+    };
+
     setItems((prev) => {
-      const matchIdx = prev.findIndex(
+      const idx = prev.findIndex(
         (p) =>
-          p.id === item.id &&
-          p.temperature === item.temperature &&
-          p.option === item.option &&
-          JSON.stringify(p.addOns) === JSON.stringify(item.addOns)
+          p.id === safeItem.id &&
+          p.temperature === safeItem.temperature &&
+          p.option === safeItem.option &&
+          JSON.stringify(p.addOns) === JSON.stringify(safeItem.addOns)
       );
-      if (matchIdx >= 0) {
+      if (idx >= 0) {
         const next = [...prev];
-        next[matchIdx] = { ...next[matchIdx], quantity: next[matchIdx].quantity + item.quantity };
+        next[idx] = { ...next[idx], quantity: next[idx].quantity + safeItem.quantity };
         return next;
       }
-      return [...prev, item];
+      return [...prev, safeItem];
     });
   };
 
-  const removeItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
-  };
+  const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
 
   const clearCart = () => {
     setItems([]);
@@ -75,10 +79,14 @@ export function useCart() {
   };
 
   const subtotal = items.reduce(
-    (acc, it) => acc + (it.basePrice + it.addOns.reduce((s, a) => s + a.price, 0)) * it.quantity,
+    (acc, it) =>
+      acc +
+      (Number(it.basePrice || 0) + it.addOns.reduce((s, a) => s + Number(a.price || 0), 0)) *
+        Number(it.quantity || 0),
     0
   );
-  const totalItems = items.reduce((acc, it) => acc + it.quantity, 0);
+
+  const totalItems = items.reduce((acc, it) => acc + Number(it.quantity || 0), 0);
 
   return { items, addItem, removeItem, clearCart, subtotal, totalItems };
 }
