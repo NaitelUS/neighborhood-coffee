@@ -70,14 +70,12 @@ export default function OrderPage() {
   };
 
   const handleSubmitOrder = (info: any) => {
-    // Guardar orden en localStorage simulando DB
     const orderNo = Date.now().toString().slice(-5);
     localStorage.setItem(
       `order-${orderNo}`,
-      JSON.stringify({ items: orderItems, info, subtotal, discount, total })
+      JSON.stringify({ items: orderItems, info, subtotal, discount, total, status: "☕ Received" })
     );
 
-    // Redirigir a página Thank You
     window.location.href = `/thank-you?orderNo=${orderNo}`;
   };
 
