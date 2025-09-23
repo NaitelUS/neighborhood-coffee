@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { addOnOptions } from "@/data/menuData";
 
 type OrderItem = {
   id: string;
@@ -37,6 +38,11 @@ export default function OrderSummary({
     }
   };
 
+  const getAddOnName = (id: string) => {
+    const addOn = addOnOptions.find((a) => a.id === id);
+    return addOn ? addOn.name : id;
+  };
+
   return (
     <div className="border rounded-lg p-4 shadow-sm">
       <h2 className="text-xl font-bold mb-3">Your Order</h2>
@@ -46,9 +52,12 @@ export default function OrderSummary({
       ) : (
         <ul className="space-y-3">
           {items.map((item, i) => {
-            const addOnPrice = item.addOns.length * 0.5; // ajuste según tu `menuData`
+            const addOnsPrice = item.addOns.reduce((sum, addOnId) => {
+              const addOn = addOnOptions.find((a) => a.id === addOnId);
+              return sum + (addOn ? addOn.price : 0);
+            }, 0);
             const itemTotal =
-              (item.basePrice + addOnPrice) * item.quantity;
+              (item.basePrice + addOnsPrice) * item.quantity;
 
             return (
               <li
@@ -63,7 +72,7 @@ export default function OrderSummary({
                   {item.addOns.length > 0 && (
                     <ul className="ml-4 text-xs text-gray-600 list-disc">
                       {item.addOns.map((a, j) => (
-                        <li key={j}>{a}</li>
+                        <li key={j}>{getAddOnName(a)}</li>
                       ))}
                     </ul>
                   )}
@@ -85,7 +94,6 @@ export default function OrderSummary({
         </ul>
       )}
 
-      {/* Totals */}
       <div className="mt-4 border-t pt-3 text-sm">
         <p className="flex justify-between">
           <span>Subtotal</span>
@@ -103,7 +111,6 @@ export default function OrderSummary({
         </p>
       </div>
 
-      {/* Coupon */}
       {!couponApplied && (
         <div className="mt-4 flex gap-2">
           <input

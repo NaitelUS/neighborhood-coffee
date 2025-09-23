@@ -4,44 +4,48 @@ import tnclogo from "/attached_assets/tnclogo.png";
 
 interface LayoutProps {
   children: ReactNode;
+  cartCount?: number;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, cartCount = 0 }: LayoutProps) {
   const location = useLocation();
-  const hideHeaderFooter =
+
+  const hideCart =
     location.pathname.startsWith("/admin/orders") ||
     location.pathname.startsWith("/order-status");
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header (no en admin ni order-status) */}
-      {!hideHeaderFooter && (
-        <header className="bg-white border-b shadow-sm">
-          <div className="max-w-6xl mx-auto flex items-center justify-between p-4">
-            <Link to="/" className="flex items-center gap-3">
-              <img src={tnclogo} alt="The Neighborhood Coffee Logo" className="h-12" />
-            </Link>
-            <div className="text-sm italic text-[#E5A645]">
-              More than Coffee, it's a neighborhood tradition, from our home to yours.
-            </div>
-          </div>
-        </header>
-      )}
+      {/* Header */}
+      <header className="bg-white shadow-md p-4 flex justify-between items-center fixed w-full top-0 z-50">
+        <div className="flex items-center gap-3">
+          <img src={tnclogo} alt="The Neighborhood Coffee" className="h-10" />
+        </div>
 
-      <main className="flex-1">{children}</main>
+        {!hideCart && (
+          <a href="#order-form" className="relative">
+            <span className="material-icons text-3xl text-[#1D9099]">
+              shopping_cart
+            </span>
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2">
+                {cartCount}
+              </span>
+            )}
+          </a>
+        )}
+      </header>
 
-      {/* Footer (no en admin ni order-status) */}
-      {!hideHeaderFooter && (
-        <footer className="bg-gray-50 border-t mt-6">
-          <div className="max-w-6xl mx-auto p-4 flex flex-col items-center text-sm text-gray-600">
-            <div className="flex items-center gap-1 text-gray-500">
-              <span>❤️</span>
-              <span>Crafted in El Paso with love</span>
-            </div>
-            <div className="mt-1">&copy; 2025 The Neighborhood Coffee</div>
-          </div>
-        </footer>
-      )}
+      {/* Main */}
+      <main className="flex-1 mt-20">{children}</main>
+
+      {/* Footer */}
+      <footer className="bg-gray-100 text-center py-4 mt-6 text-sm text-gray-600">
+        <p>
+          <span className="text-red-500">♥</span> Crafted in El Paso
+        </p>
+        <p className="mt-1">©2025 The Neighborhood Coffee</p>
+      </footer>
     </div>
   );
 }

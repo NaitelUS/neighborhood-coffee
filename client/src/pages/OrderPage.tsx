@@ -75,7 +75,6 @@ export default function OrderPage() {
       `order-${orderNo}`,
       JSON.stringify({ items: orderItems, info, subtotal, discount, total, status: "☕ Received" })
     );
-
     window.location.href = `/thank-you?orderNo=${orderNo}`;
   };
 
@@ -109,14 +108,16 @@ export default function OrderPage() {
         />
         <div className="mt-6">
           <CustomerInfoForm onSubmit={handleSubmitOrder} />
-          <div className="mt-4 text-sm text-center">
-            <p className="font-bold">The Neighborhood Coffee</p>
-            <p>12821 Little Misty Ln</p>
-            <p>El Paso, Texas 79938</p>
-            <p>+1 (915) 401-5547</p>
-            <p className="mt-2 italic text-[#E5A645]">
-              <strong>We’re open weekdays, except Sundays</strong> <br />
-              6:00 AM – 11:00 AM
+          <div className="mt-4 text-center">
+            <p className="font-bold text-lg">The Neighborhood Coffee</p>
+            <p className="text-lg">12821 Little Misty Ln</p>
+            <p className="text-lg">El Paso, Texas 79938</p>
+            <p className="text-lg">+1 (915) 401-5547</p>
+            <p className="mt-2 font-bold text-lg">
+              We’re open weekdays, except Sundays <br /> 6:00 AM – 11:00 AM
+            </p>
+            <p className="mt-3 italic font-bold text-xl text-[#E5A645]">
+              More than Coffee, it's a neighborhood tradition, from our home to yours.
             </p>
           </div>
         </div>
