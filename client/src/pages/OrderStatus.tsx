@@ -1,56 +1,77 @@
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 
 export default function OrderStatus() {
-  const { id } = useParams();
-  const [order, setOrder] = useState<any>(null);
+  const { orderNo } = useParams<{ orderNo: string }>();
 
-  useEffect(() => {
-    if (id) {
-      const stored = localStorage.getItem(`order-${id}`);
-      if (stored) {
-        setOrder(JSON.parse(stored));
-      }
-    }
-  }, [id]);
+  let order;
+  if (orderNo) {
+    const raw = localStorage.getItem(`order-${orderNo}`);
+    if (raw) order = JSON.parse(raw);
+  }
 
   if (!order) {
-    return <p className="p-6">Order not found</p>;
+    return (
+      <div className="p-6 text-center">
+        <h1 className="text-2xl font-bold mb-4">Order not found</h1>
+        <Link to="/" className="text-blue-600 underline">
+          Back to Home
+        </Link>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Order Status</h1>
-      <p>Order #: <b>{order.orderNo}</b></p>
-      <p className="mt-2 font-semibold">Customer: {order.info?.name}</p>
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">Order Status</h1>
+      <div className="border rounded-lg p-6 shadow">
+        <p className="text-lg font-semibold mb-2">
+          <span className="font-bold">Order #:</span> {orderNo}
+        </p>
+        <p className="mb-4">
+          <span className="font-bold">Customer:</span> {order.customerName}
+        </p>
 
-      <h2 className="mt-4 font-bold">Items</h2>
-      <ul>
-        {order.items.map((item: any, idx: number) => (
-          <li key={idx} className="mb-1">
-            {item.quantity}x {item.name} ({item.temperature})
-            {item.addOns?.length > 0 && (
-              <ul className="ml-6 text-sm text-gray-700 list-disc">
-                {item.addOns.map((addOn: string, i: number) => (
-                  <li key={i}>{addOn}</li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+        <h2 className="text-xl font-semibold mb-2">Items</h2>
+        <ul className="list-disc ml-6">
+          {order.items.map((item: any, idx: number) => (
+            <li key={idx} className="mb-2">
+              {item.quantity}x {item.name} ({item.temperature})
+              {item.addOns?.length > 0 && (
+                <ul className="ml-6 list-disc text-sm text-gray-600">
+                  {item.addOns.map((a: string, i: number) => (
+                    <li key={i}>{a}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
 
-      <div className="mt-3">
-        <p>Subtotal: ${order.subtotal.toFixed(2)}</p>
-        {order.discount > 0 && (
-          <p>Discount: -${order.discount.toFixed(2)}</p>
-        )}
-        <p className="mt-2 font-bold text-xl">Total: ${order.total.toFixed(2)}</p>
+        <div className="mt-4 text-lg">
+          <p>Subtotal: ${order.subtotal.toFixed(2)}</p>
+          {order.discount > 0 && (
+            <p>Discount: -${order.discount.toFixed(2)}</p>
+          )}
+          <p className="font-bold text-2xl mt-2">
+            Total: ${order.total.toFixed(2)}
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <p className="font-bold text-green-600 text-lg">
+            Status: {order.status || "Received ✅ (waiting to be processed)"}
+          </p>
+        </div>
       </div>
 
-      <p className="mt-3 text-green-600 font-bold">
-        Status: Received ✅ (waiting to be processed)
-      </p>
+      <div className="text-center mt-6">
+        <Link
+          to="/"
+          className="bg-[#1D9099] hover:bg-[#00454E] text-white px-6 py-2 rounded"
+        >
+          Back to Menu
+        </Link>
+      </div>
     </div>
   );
 }
