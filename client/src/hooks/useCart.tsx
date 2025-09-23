@@ -1,86 +1,84 @@
 import { useEffect, useState } from "react";
 
+export interface CartAddOn { id: string; name: string; price: number }
 export interface CartItem {
   id: string;
   name: string;
   quantity: number;
   basePrice: number;
-  addOns: { id: string; name: string; price: number }[];
+  addOns: CartAddOn[];
   temperature?: "hot" | "iced";
   option?: string;
 }
 
-export function useCart() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+type CurrentOrder = { items: CartItem[] };
 
-  // Cargar carrito desde localStorage al iniciar
+function readCurrentOrder(): CurrentOrder {
+  try {
+    const raw = localStorage.getItem("current-order");
+    if (!raw) return { items: [] };
+    const parsed = JSON.parse(raw);
+
+    // Acepta ambos formatos: array o { items: [...] }
+    if (Array.isArray(parsed)) return { items: parsed };
+    if (parsed && Array.isArray(parsed.items)) return { items: parsed.items };
+    return { items: [] };
+  } catch {
+    return { items: [] };
+  }
+}
+
+function writeCurrentOrder(items: CartItem[]) {
+  localStorage.setItem("current-order", JSON.stringify({ items }));
+}
+
+export function useCart() {
+  const [items, setItems] = useState<CartItem[]>(() => readCurrentOrder().items);
+
+  // Sincroniza cuando cambie el storage (otra pestaña, etc.)
   useEffect(() => {
-    const saved = localStorage.getItem("current-order");
-    if (saved) {
-      try {
-        setCartItems(JSON.parse(saved));
-      } catch (err) {
-        console.error("Error parsing saved cart:", err);
-        setCartItems([]);
-      }
-    }
+    const onStorage = () => setItems(readCurrentOrder().items);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // Guardar carrito en localStorage cuando cambie
+  // Persiste en storage cuando cambian los items
   useEffect(() => {
-    localStorage.setItem("current-order", JSON.stringify(cartItems));
-  }, [cartItems]);
+    writeCurrentOrder(items);
+  }, [items]);
 
-  // Agregar producto al carrito
   const addItem = (item: CartItem) => {
-    setCartItems((prev) => {
-      const existing = prev.find(
+    setItems((prev) => {
+      const matchIdx = prev.findIndex(
         (p) =>
           p.id === item.id &&
           p.temperature === item.temperature &&
           p.option === item.option &&
           JSON.stringify(p.addOns) === JSON.stringify(item.addOns)
       );
-
-      if (existing) {
-        return prev.map((p) =>
-          p === existing ? { ...p, quantity: p.quantity + item.quantity } : p
-        );
-      } else {
-        return [...prev, item];
+      if (matchIdx >= 0) {
+        const next = [...prev];
+        next[matchIdx] = { ...next[matchIdx], quantity: next[matchIdx].quantity + item.quantity };
+        return next;
       }
+      return [...prev, item];
     });
   };
 
-  // Remover item individual
   const removeItem = (index: number) => {
-    setCartItems((prev) => prev.filter((_, i) => i !== index));
+    setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Vaciar carrito completo
   const clearCart = () => {
-    setCartItems([]);
+    setItems([]);
     localStorage.removeItem("current-order");
   };
 
-  // Calcular totales
-  const subtotal = cartItems.reduce(
-    (acc, item) =>
-      acc +
-      (item.basePrice +
-        item.addOns.reduce((sum, a) => sum + a.price, 0)) *
-        item.quantity,
+  const subtotal = items.reduce(
+    (acc, it) => acc + (it.basePrice + it.addOns.reduce((s, a) => s + a.price, 0)) * it.quantity,
     0
   );
+  const totalItems = items.reduce((acc, it) => acc + it.quantity, 0);
 
-  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-
-  return {
-    cartItems,
-    addItem,
-    removeItem,
-    clearCart,
-    subtotal,
-    totalItems,
-  };
+  return { items, addItem, removeItem, clearCart, subtotal, totalItems };
 }
