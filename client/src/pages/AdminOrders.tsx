@@ -1,77 +1,88 @@
 import { useState, useEffect } from "react";
 
-type Order = {
+type OrderData = {
   orderNo: string;
-  info: { name: string; phone: string; email: string };
   items: {
+    id: string;
     name: string;
-    temperature?: string;
+    temperature?: "hot" | "iced";
     quantity: number;
+    basePrice: number;
     addOns: string[];
   }[];
+  info: any;
   subtotal: number;
   discount: number;
   total: number;
-  status: string;
+  status?: string;
 };
 
+const ORDER_STATUSES = [
+  "☕ Received",
+  "👨‍🍳 In Process",
+  "🛵 On the Way",
+  "📦 Ready for Pickup",
+  "✅ Completed",
+  "❌ Cancelled",
+];
+
 export default function AdminOrders() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [passwordInput, setPasswordInput] = useState("");
+  const [authorized, setAuthorized] = useState(false);
+  const [orders, setOrders] = useState<OrderData[]>([]);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    if (authenticated) {
+    if (authorized) {
       const keys = Object.keys(localStorage).filter((k) =>
         k.startsWith("order-")
       );
-      const loaded = keys.map((k) => {
-        const raw = localStorage.getItem(k);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return {
-          orderNo: k.replace("order-", ""),
-          ...parsed,
-          status: parsed.status || "☕ Received",
-        };
+      const loaded: OrderData[] = keys.map((k) => {
+        const orderNo = k.replace("order-", "");
+        const parsed = JSON.parse(localStorage.getItem(k) || "{}");
+        return { orderNo, ...parsed };
       });
-      setOrders(loaded.filter((o) => o !== null) as Order[]);
+      setOrders(loaded);
     }
-  }, [authenticated]);
+  }, [authorized]);
 
-  const updateStatus = (orderNo: string, status: string) => {
-    const key = `order-${orderNo}`;
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      parsed.status = status;
-      localStorage.setItem(key, JSON.stringify(parsed));
-      setOrders((prev) =>
-        prev.map((o) => (o.orderNo === orderNo ? { ...o, status } : o))
-      );
+  const handleLogin = () => {
+    if (password === "coffee123") {
+      setAuthorized(true);
+    } else {
+      alert("Invalid password");
     }
   };
 
-  if (!authenticated) {
+  const updateStatus = (orderNo: string, newStatus: string) => {
+    const key = `order-${orderNo}`;
+    const saved = localStorage.getItem(key);
+    if (!saved) return;
+
+    const parsed = JSON.parse(saved);
+    parsed.status = newStatus;
+    localStorage.setItem(key, JSON.stringify(parsed));
+
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.orderNo === orderNo ? { ...o, status: newStatus } : o
+      )
+    );
+  };
+
+  if (!authorized) {
     return (
       <div className="p-6 max-w-sm mx-auto">
-        <h1 className="text-xl font-bold mb-4">Admin Login</h1>
+        <h2 className="text-2xl font-bold mb-4 text-center">Admin Login</h2>
         <input
           type="password"
           placeholder="Enter password"
-          className="border rounded w-full p-2 mb-3"
-          value={passwordInput}
-          onChange={(e) => setPasswordInput(e.target.value)}
+          className="w-full border rounded p-2 mb-3"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
         <button
+          onClick={handleLogin}
           className="w-full bg-[#1D9099] hover:bg-[#00454E] text-white py-2 rounded"
-          onClick={() => {
-            if (passwordInput === "coffee123") {
-              setAuthenticated(true);
-            } else {
-              alert("Incorrect password.");
-            }
-          }}
         >
           Login
         </button>
@@ -80,38 +91,39 @@ export default function AdminOrders() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Orders</h1>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold mb-6">Admin Orders</h2>
       {orders.length === 0 ? (
         <p>No orders found.</p>
       ) : (
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse border text-sm">
           <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="p-2 border">Order #</th>
-              <th className="p-2 border">Customer</th>
-              <th className="p-2 border">Items</th>
-              <th className="p-2 border">Total</th>
-              <th className="p-2 border">Status</th>
+            <tr className="bg-gray-100">
+              <th className="border px-2 py-1">Order No</th>
+              <th className="border px-2 py-1">Customer</th>
+              <th className="border px-2 py-1">Items</th>
+              <th className="border px-2 py-1">Total</th>
+              <th className="border px-2 py-1">Status</th>
+              <th className="border px-2 py-1">Actions</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o.orderNo} className="border-t">
-                <td className="p-2 border">{o.orderNo}</td>
-                <td className="p-2 border">
-                  {o.info?.name}
-                  <br />
-                  <span className="text-xs text-gray-500">{o.info?.phone}</span>
+              <tr key={o.orderNo}>
+                <td className="border px-2 py-1">{o.orderNo}</td>
+                <td className="border px-2 py-1">
+                  {o.info?.name || "N/A"} <br />
+                  {o.info?.email}
                 </td>
-                <td className="p-2 border">
+                <td className="border px-2 py-1">
                   <ul className="list-disc ml-4">
-                    {o.items.map((it, i) => (
+                    {o.items.map((item, i) => (
                       <li key={i}>
-                        {it.quantity}x {it.name} ({it.temperature})
-                        {it.addOns?.length > 0 && (
-                          <ul className="ml-6 text-xs text-gray-600 list-disc">
-                            {it.addOns.map((a, j) => (
+                        {item.quantity}x {item.name}{" "}
+                        {item.temperature && `(${item.temperature})`}
+                        {item.addOns.length > 0 && (
+                          <ul className="ml-4 text-xs text-gray-600">
+                            {item.addOns.map((a, j) => (
                               <li key={j}>{a}</li>
                             ))}
                           </ul>
@@ -120,21 +132,21 @@ export default function AdminOrders() {
                     ))}
                   </ul>
                 </td>
-                <td className="p-2 border font-semibold">
+                <td className="border px-2 py-1 font-semibold">
                   ${o.total.toFixed(2)}
                 </td>
-                <td className="p-2 border">
+                <td className="border px-2 py-1">{o.status || "☕ Received"}</td>
+                <td className="border px-2 py-1">
                   <select
-                    value={o.status}
+                    value={o.status || "☕ Received"}
                     onChange={(e) => updateStatus(o.orderNo, e.target.value)}
                     className="border rounded p-1"
                   >
-                    <option>☕ Received</option>
-                    <option>👨‍🍳 In Process</option>
-                    <option>🛵 On the Way</option>
-                    <option>📦 Ready for Pickup</option>
-                    <option>✅ Completed</option>
-                    <option>❌ Cancelled</option>
+                    {ORDER_STATUSES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
                   </select>
                 </td>
               </tr>
