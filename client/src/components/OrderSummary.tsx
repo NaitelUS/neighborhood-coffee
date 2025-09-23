@@ -1,10 +1,11 @@
-import { CartItem, useCart } from "@/hooks/useCart";
+import { useCart } from "@/hooks/useCart";
 
 interface Props {
   couponApplied: boolean;
   applyCoupon: (code: string) => void;
   discount: number;
   total: number;
+  onRemoveItem: (index: number) => void;
 }
 
 export default function OrderSummary({
@@ -12,64 +13,57 @@ export default function OrderSummary({
   applyCoupon,
   discount,
   total,
+  onRemoveItem,
 }: Props) {
-  const { cartItems, removeItem, subtotal } = useCart();
+  const { items, subtotal } = useCart();
 
   const handleApply = () => {
-    const code = (document.getElementById("coupon-input") as HTMLInputElement)
-      ?.value;
-    if (code) applyCoupon(code);
+    const el = document.getElementById("coupon-input") as HTMLInputElement | null;
+    if (el?.value) applyCoupon(el.value);
   };
 
   return (
     <div className="border rounded-lg p-4 shadow-md">
       <h2 className="text-lg font-bold mb-3">Your Order</h2>
 
-      {cartItems.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-gray-600">No items added yet.</p>
       ) : (
         <ul className="space-y-3">
-          {cartItems.map((item: CartItem, idx) => (
-            <li
-              key={idx}
-              className="flex flex-col border-b pb-2 last:border-none last:pb-0"
-            >
-              <div className="flex justify-between items-center">
-                <span>
-                  {item.quantity}× {item.name}{" "}
-                  {item.temperature && `(${item.temperature})`}
-                  {item.option && ` - ${item.option}`}
-                </span>
-                <span className="font-semibold">
-                  $
-                  {(
-                    (item.basePrice +
-                      item.addOns.reduce((sum, a) => sum + a.price, 0)) *
-                    item.quantity
-                  ).toFixed(2)}
-                </span>
-              </div>
+          {items.map((item, idx) => {
+            const addOnTotal = (item.addOns || []).reduce((s, a) => s + Number(a.price || 0), 0);
+            const lineTotal = (Number(item.basePrice || 0) + addOnTotal) * Number(item.quantity || 0);
 
-              {/* Mostrar add-ons con Display name */}
-              {item.addOns.length > 0 && (
-                <ul className="ml-4 list-disc text-sm text-gray-700">
-                  {item.addOns.map((a) => (
-                    <li key={a.id}>
-                      {a.name} (+${a.price.toFixed(2)})
-                    </li>
-                  ))}
-                </ul>
-              )}
+            return (
+              <li key={idx} className="flex flex-col border-b pb-2 last:border-none last:pb-0">
+                <div className="flex justify-between items-center">
+                  <span>
+                    {item.quantity}× {item.name}
+                    {item.temperature && ` (${item.temperature})`}
+                    {item.option && ` - ${item.option}`}
+                  </span>
+                  <span className="font-semibold">${lineTotal.toFixed(2)}</span>
+                </div>
 
-              {/* Botón para eliminar item */}
-              <button
-                onClick={() => removeItem(idx)}
-                className="text-xs text-red-500 hover:underline mt-1 self-start"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
+                {(item.addOns && item.addOns.length > 0) && (
+                  <ul className="ml-4 list-disc text-sm text-gray-700">
+                    {item.addOns.map((a) => (
+                      <li key={a.id}>
+                        {a.name} (+${Number(a.price || 0).toFixed(2)})
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <button
+                  onClick={() => onRemoveItem(idx)}
+                  className="text-xs text-red-500 hover:underline mt-1 self-start"
+                >
+                  Remove
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
