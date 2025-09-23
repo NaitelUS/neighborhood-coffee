@@ -33,7 +33,7 @@ export const drinkOptions = [
     id: "golden",
     name: "Golden Coffee",
     basePrice: 4.75,
-    description: "A unique blend of coffee with turmeric and warming spices, offering both flavor and wellness benefits.",
+    description: "A unique blend of coffee with turmeric and warming spices.",
     images: {
       hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
     },
@@ -42,7 +42,7 @@ export const drinkOptions = [
     id: "cafeaulait",
     name: "Café au Lait",
     basePrice: 4.25,
-    description: "Traditional French-style coffee with equal parts strong coffee and steamed milk for a balanced taste.",
+    description: "Traditional French-style coffee with equal parts strong coffee and steamed milk.",
     images: {
       hot: "/attached_assets/Hot_Café_au_Lait_8c8a1ed2.png",
       iced: "/attached_assets/Iced_Café_au_Lait_60f2c4d8.png",
@@ -53,7 +53,7 @@ export const drinkOptions = [
     name: "Handcrafted Empanadas",
     basePrice: 2.75,
     description:
-      "Enjoy our artisan empanada, handcrafted with a golden, flaky crust. Each one is filled with a sweet and vibrant homemade fruit jam.",
+      "Artisan empanada with a golden, flaky crust and sweet homemade fruit jam.",
     options: ["Apple", "Pineapple"],
     images: {
       apple: "/attached_assets/Apple-Soon.png",
@@ -64,12 +64,12 @@ export const drinkOptions = [
 ];
 
 export const addOnOptions = [
-  { id: "extraShot", name: "Extra Espresso Shot", price: 0.75 },
-  { id: "oatMilk", name: "Oat Milk", price: 0.5 },
-  { id: "hazelnutSyrup", name: "Hazelnut Syrup", price: 0.5 },
-  { id: "caramelSyrup", name: "Caramel Syrup", price: 0.5 },
-  { id: "vanillaSyrup", name: "Vanilla Syrup", price: 0.5 },
-  { id: "whippedCream", name: "Whipped Cream", price: 0.5 },
+  { id: "extraShot",    name: "Extra Espresso Shot", price: 0.75 },
+  { id: "oatMilk",      name: "Oat Milk",            price: 0.5  },
+  { id: "hazelnutSyrup",name: "Hazelnut Syrup",      price: 0.5  },
+  { id: "caramelSyrup", name: "Caramel Syrup",       price: 0.5  },
+  { id: "vanillaSyrup", name: "Vanilla Syrup",       price: 0.5  },
+  { id: "whippedCream", name: "Whipped Cream",       price: 0.5  },
 ];
 
 export const COUPON_CODE = "NEIGHBOR15";
