@@ -18,7 +18,6 @@ type Order = {
 export default function AdminOrders() {
   const [authenticated, setAuthenticated] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
-
   const [passwordInput, setPasswordInput] = useState("");
 
   useEffect(() => {
