@@ -1,56 +1,104 @@
 import { useState } from "react";
+import DrinkCard from "@/components/DrinkCard";
 import OrderSummary from "@/components/OrderSummary";
+import CustomerInfoForm from "@/components/CustomerInfoForm";
+import {
+  drinkOptions,
+  addOnOptions,
+  COUPON_CODE,
+  COUPON_DISCOUNT,
+} from "@/data/menuData";
 
-type OrderItem = {
+interface OrderItem {
   id: string;
   name: string;
-  temperature: string;
+  temperature?: "hot" | "iced";
+  option?: string;
   quantity: number;
   basePrice: number;
   addOns: string[];
-};
-
-const addOnOptions = [
-  { id: "extraShot", name: "Extra Espresso Shot (+$0.75)", price: 0.75 },
-  { id: "oatMilk", name: "Oat Milk (+$0.50)", price: 0.5 },
-  { id: "caramel", name: "Caramel Syrup (+$0.50)", price: 0.5 },
-  { id: "vanilla", name: "Vanilla Syrup (+$0.50)", price: 0.5 },
-  { id: "whipped", name: "Whipped Cream (+$0.50)", price: 0.5 },
-];
+}
 
 export default function OrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
 
-  const subtotal = orderItems.reduce((acc, item) => {
-    const addOnsTotal = item.addOns.reduce((sum, addOnId) => {
-      const addOn = addOnOptions.find((a) => a.id === addOnId);
-      return sum + (addOn ? addOn.price : 0);
-    }, 0);
-    return acc + (item.basePrice + addOnsTotal) * item.quantity;
-  }, 0);
+  const handleAddToOrder = (
+    drinkId: string,
+    temperature: "hot" | "iced",
+    quantity: number,
+    addOns: string[]
+  ) => {
+    const drink = drinkOptions.find((d) => d.id === drinkId);
+    if (!drink) return;
 
-  const discount = couponApplied ? subtotal * 0.15 : 0;
-  const total = subtotal - discount;
-
-  const applyCoupon = (code: string) => {
-    if (code === "COFFEE15") {
-      setCoupon(code);
-      setCouponApplied(true);
-    }
+    setOrderItems((prev) => [
+      ...prev,
+      {
+        id: drink.id,
+        name: drink.name,
+        temperature,
+        quantity,
+        basePrice: drink.basePrice,
+        addOns,
+      },
+    ]);
   };
 
   const removeItem = (index: number) => {
     setOrderItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const subtotal = orderItems.reduce((acc, item) => {
+    const addOnsPrice = item.addOns.reduce((sum, addOnId) => {
+      const addOn = addOnOptions.find((a) => a.id === addOnId);
+      return sum + (addOn ? addOn.price : 0);
+    }, 0);
+    return acc + (item.basePrice + addOnsPrice) * item.quantity;
+  }, 0);
+
+  const discount = couponApplied ? subtotal * COUPON_DISCOUNT : 0;
+  const total = subtotal - discount;
+
+  const applyCoupon = (code: string) => {
+    if (code === COUPON_CODE) {
+      setCouponApplied(true);
+      alert("Coupon applied successfully!");
+    } else {
+      alert("Invalid coupon code.");
+    }
+  };
+
+  const handleSubmitOrder = (info: any) => {
+    // Guardar orden en localStorage simulando DB
+    const orderNo = Date.now().toString().slice(-5);
+    localStorage.setItem(
+      `order-${orderNo}`,
+      JSON.stringify({ items: orderItems, info, subtotal, discount, total })
+    );
+
+    // Redirigir a página Thank You
+    window.location.href = `/thank-you?orderNo=${orderNo}`;
+  };
+
   return (
-    <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-4">Our Coffee Menu</h1>
-        {/* Aquí iría el listado de productos */}
+    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Menu */}
+      <div className="md:col-span-2 space-y-4">
+        <h2 className="text-2xl font-bold mb-2">Our Coffee Menu</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {drinkOptions.map((drink) => (
+            <DrinkCard
+              key={drink.id}
+              drink={drink}
+              addOns={addOnOptions}
+              onAddToOrder={handleAddToOrder}
+            />
+          ))}
+        </div>
       </div>
+
+      {/* Order Summary + Customer Info */}
       <div>
         <OrderSummary
           items={orderItems}
@@ -60,28 +108,19 @@ export default function OrderPage() {
           applyCoupon={applyCoupon}
           couponApplied={couponApplied}
           removeItem={removeItem}
-          addOnOptions={addOnOptions}
         />
-        {/* Customer Info */}
-        <div className="mt-4 border rounded-lg p-4">
-          <h2 className="font-semibold mb-2">Customer Information</h2>
-          <input className="w-full border p-2 mb-2 rounded" placeholder="Full Name" />
-          <input className="w-full border p-2 mb-2 rounded" placeholder="Email" />
-          <input className="w-full border p-2 mb-2 rounded" placeholder="Phone" />
-          <div className="mt-2">
-            <p className="font-bold mb-1">Delivery Method</p>
-            <div className="flex gap-4">
-              <label>
-                <input type="radio" name="delivery" defaultChecked /> Pickup
-              </label>
-              <label>
-                <input type="radio" name="delivery" /> Delivery
-              </label>
-            </div>
+        <div className="mt-6">
+          <CustomerInfoForm onSubmit={handleSubmitOrder} />
+          <div className="mt-4 text-sm text-center">
+            <p className="font-bold">The Neighborhood Coffee</p>
+            <p>12821 Little Misty Ln</p>
+            <p>El Paso, Texas 79938</p>
+            <p>+1 (915) 401-5547</p>
+            <p className="mt-2 italic text-[#E5A645]">
+              <strong>We’re open weekdays, except Sundays</strong> <br />
+              6:00 AM – 11:00 AM
+            </p>
           </div>
-          <button className="mt-4 w-full bg-[#1D9099] hover:bg-[#00454E] text-white p-2 rounded">
-            Submit Order
-          </button>
         </div>
       </div>
     </div>
