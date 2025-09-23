@@ -1,9 +1,12 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { cartItems } = useCart();
+  const location = useLocation();
+
+  const isAdminPage = location.pathname.startsWith("/admin");
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -14,21 +17,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <img src="/logo.png" alt="The Neighborhood Coffee" className="h-10" />
             <span className="font-semibold text-lg">The Neighborhood Coffee</span>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm">
-            <div className="text-gray-700">
-              📍 123 Main St, El Paso, TX  
-              <br /> ⏰ Mon–Sat 6:00 AM – 11:00 AM  
-              <br /> 💳 We accept Zelle, Cash & Card
-            </div>
-            <Link to="/cart" className="relative">
-              🛒
-              {cartItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2">
-                  {cartItems.length}
-                </span>
-              )}
-            </Link>
-          </nav>
+
+          {!isAdminPage && (
+            <nav className="flex items-center space-x-6 text-sm">
+              <div className="text-gray-700">
+                📍 123 Main St, El Paso, TX  
+                <br /> ⏰ Mon–Sat 6:00 AM – 11:00 AM  
+                <br /> 💳 We accept Zelle, Cash & Card
+              </div>
+              <Link to="/cart" className="relative">
+                🛒
+                {cartItems?.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2">
+                    {cartItems?.length || 0}
+                  </span>
+                )}
+              </Link>
+            </nav>
+          )}
         </div>
         <div className="bg-gray-100 text-center py-1 text-xs italic text-gray-600">
           It is not coffee… it’s a neighborhood ritual ☕
