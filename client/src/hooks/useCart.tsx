@@ -19,6 +19,7 @@ export function useCart() {
 
     updateCount();
 
+    // Escucha cambios en localStorage
     window.addEventListener("storage", updateCount);
     return () => window.removeEventListener("storage", updateCount);
   }, []);
