@@ -1,39 +1,58 @@
-import { ShoppingCart } from "lucide-react";
+// client/src/components/Header.tsx
+import { Link } from "react-router-dom";
+import { useCart } from "@/hooks/useCart";
 
-interface HeaderProps {
-  cartCount?: number;
-}
+export default function Header() {
+  const { cart } = useCart();
+  const cartCount = cart?.length ?? 0;
 
-export default function Header({ cartCount = 0 }: HeaderProps) {
   return (
-    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-      <div className="container mx-auto flex justify-between items-center px-4 py-3">
-        {/* Logo + Tagline */}
-        <div className="flex items-center gap-3">
+    <header className="bg-white shadow-sm">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2">
           <img
-            src="/attached_assets/tnclogo.png"
+            src="/tnclogo.png"
             alt="The Neighborhood Coffee"
-            className="h-12 w-auto"
+            className="h-8"
           />
-          <p className="italic text-[#E5A645] text-sm">
-            More than coffee, it's a neighborhood tradition
-          </p>
-        </div>
+        </Link>
 
-        {/* Carrito */}
-        <div className="relative">
-          <a
-            href="#order-form"
-            className="relative flex items-center justify-center"
+        {/* Nav */}
+        <nav className="flex items-center gap-6">
+          <Link to="/order" className="hover:text-green-700 font-medium">
+            Order Online
+          </Link>
+          <Link to="/contact" className="hover:text-green-700 font-medium">
+            Contact
+          </Link>
+
+          {/* Cart */}
+          <Link
+            to="/order"
+            className="relative inline-flex items-center p-2 hover:text-green-700"
           >
-            <ShoppingCart className="h-7 w-7 text-[#1D9099]" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A1 1 0 007.5 17h9.55a1 1 0 00.9-.55L21 9M7 13h10"
+              />
+            </svg>
             {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full px-2 py-0.5">
                 {cartCount}
               </span>
             )}
-          </a>
-        </div>
+          </Link>
+        </nav>
       </div>
     </header>
   );
