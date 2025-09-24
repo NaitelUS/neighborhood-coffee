@@ -1,179 +1,100 @@
+// client/src/components/MenuItem.tsx
 import { useState } from "react";
+import { MenuItem as Item, addOnOptions } from "@/data/menuData";
 import { useCart } from "@/hooks/useCart";
 
-interface MenuItemProps {
-  name: string;
-  descriptionHot?: string;
-  descriptionIced?: string;
-  description?: string;
-  price: number;
-  imageHot?: string;
-  imageIced?: string;
-  image?: string;
-  variants?: string[];
-  addOns?: { name: string; price: number }[];
-  type?: "drink" | "empanada";
+interface Props {
+  item: Item;
 }
 
-export default function MenuItem({
-  name,
-  descriptionHot,
-  descriptionIced,
-  description,
-  price,
-  imageHot,
-  imageIced,
-  image,
-  variants,
-  addOns,
-  type = "drink",
-}: MenuItemProps) {
+export default function MenuItem({ item }: Props) {
   const { addToCart } = useCart();
-  const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState(
-    type === "drink" ? "Hot" : variants?.[0]
+  const [selectedOption, setSelectedOption] = useState(
+    item.options ? item.options[0] : undefined
   );
-  const [selectedAddOns, setSelectedAddOns] = useState<
-    { name: string; price: number }[]
-  >([]);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
 
-  const toggleAddOn = (addOn: { name: string; price: number }) => {
+  const handleAddOnChange = (id: string) => {
     setSelectedAddOns((prev) =>
-      prev.find((a) => a.name === addOn.name)
-        ? prev.filter((a) => a.name !== addOn.name)
-        : [...prev, addOn]
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
   };
 
   const handleAddToCart = () => {
-    const item = {
-      name,
-      description:
-        selectedVariant === "Hot"
-          ? descriptionHot ?? description
-          : selectedVariant === "Iced"
-          ? descriptionIced ?? description
-          : description,
-      price,
-      image:
-        selectedVariant === "Hot"
-          ? imageHot ?? image ?? ""
-          : selectedVariant === "Iced"
-          ? imageIced ?? image ?? ""
-          : image ?? "",
+    addToCart({
+      ...item,
+      option: selectedOption,
       quantity,
-      variant: selectedVariant,
       addOns: selectedAddOns,
-    };
-    addToCart(item);
-    setQuantity(1);
-    setSelectedAddOns([]);
+    });
   };
 
   return (
-    <div className="border rounded p-4 bg-white shadow">
-      <h3 className="font-bold text-lg">{name}</h3>
+    <div className="border rounded-lg shadow-sm p-4">
+      <img
+        src={`/attached_assets/${item.image}`}
+        alt={item.name}
+        className="w-full h-40 object-cover rounded"
+      />
+      <h3 className="font-semibold text-lg mt-2">{item.name}</h3>
+      <p className="text-sm text-gray-600">{item.description}</p>
+      <p className="font-bold mt-1">${item.price.toFixed(2)}</p>
 
-      {/* Imagen */}
-      {selectedVariant === "Hot" && imageHot && (
-        <img
-          src={imageHot}
-          alt={`${name} Hot`}
-          className="w-32 h-32 object-cover rounded my-2"
-        />
-      )}
-      {selectedVariant === "Iced" && imageIced && (
-        <img
-          src={imageIced}
-          alt={`${name} Iced`}
-          className="w-32 h-32 object-cover rounded my-2"
-        />
-      )}
-      {!["Hot", "Iced"].includes(selectedVariant ?? "") && image && (
-        <img
-          src={image}
-          alt={name}
-          className="w-32 h-32 object-cover rounded my-2"
-        />
-      )}
-
-      {/* Descripción */}
-      <p className="text-sm text-gray-600 mb-2">
-        {selectedVariant === "Hot"
-          ? descriptionHot ?? description
-          : selectedVariant === "Iced"
-          ? descriptionIced ?? description
-          : description}
-      </p>
-
-      {/* Variantes */}
-      {variants && variants.length > 0 && (
-        <div className="mb-2">
-          <span className="text-sm font-medium block mb-1">Choose:</span>
-          <div className="flex gap-2">
-            {variants.map((variant) => (
-              <button
-                key={variant}
-                onClick={() => setSelectedVariant(variant)}
-                className={`px-2 py-1 border rounded text-sm ${
-                  selectedVariant === variant
-                    ? "bg-emerald-600 text-white"
-                    : "bg-gray-100"
-                }`}
-              >
-                {variant}
-              </button>
-            ))}
-          </div>
+      {item.options && (
+        <div className="flex gap-2 mt-2">
+          {item.options.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setSelectedOption(opt)}
+              className={`px-3 py-1 rounded border ${
+                selectedOption === opt ? "bg-teal-600 text-white" : ""
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Add-ons */}
-      {addOns && addOns.length > 0 && (
-        <div className="mb-2">
-          <span className="text-sm font-medium block mb-1">Add-ons:</span>
-          <div className="flex flex-wrap gap-2">
-            {addOns.map((addOn, index) => (
-              <button
-                key={index}
-                onClick={() => toggleAddOn(addOn)}
-                className={`px-2 py-1 border rounded text-xs ${
-                  selectedAddOns.find((a) => a.name === addOn.name)
-                    ? "bg-emerald-600 text-white"
-                    : "bg-gray-100"
-                }`}
-              >
-                {addOn.name} (+${addOn.price.toFixed(2)})
-              </button>
-            ))}
-          </div>
+      {item.id !== "golden" && item.id !== "empanada" && (
+        <div className="mt-2">
+          <p className="font-medium text-sm">Customize your drink:</p>
+          {addOnOptions.map((a) => (
+            <label key={a.id} className="flex items-center text-sm">
+              <input
+                type="checkbox"
+                checked={selectedAddOns.includes(a.id)}
+                onChange={() => handleAddOnChange(a.id)}
+                className="mr-2"
+              />
+              {a.name} (+${a.price.toFixed(2)})
+            </label>
+          ))}
         </div>
       )}
 
-      {/* Cantidad */}
-      <div className="flex items-center gap-2 mb-2">
+      {item.id === "empanada" && (
+        <div className="mt-2 text-sm text-gray-700">
+          Choose your flavor: {item.options?.join(" / ")}
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          type="number"
+          min={1}
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          className="w-16 border rounded px-2 py-1"
+        />
         <button
-          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-          className="px-2 py-1 bg-gray-200 rounded"
+          onClick={handleAddToCart}
+          className="flex-1 bg-teal-600 text-white px-4 py-2 rounded"
         >
-          -
-        </button>
-        <span>{quantity}</span>
-        <button
-          onClick={() => setQuantity((q) => q + 1)}
-          className="px-2 py-1 bg-gray-200 rounded"
-        >
-          +
+          Add to Order
         </button>
       </div>
-
-      {/* Botón Add to Order */}
-      <button
-        onClick={handleAddToCart}
-        className="w-full bg-emerald-600 text-white py-1 rounded hover:bg-emerald-700"
-      >
-        Add to Order
-      </button>
     </div>
   );
 }
