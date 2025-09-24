@@ -16,13 +16,46 @@ export default function CustomerInfoForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (cart.length === 0) {
       alert("Your cart is empty!");
       return;
     }
 
-    const orderId = Math.floor(Math.random() * 100000);
+    if (deliveryMethod === "Delivery" && !address.trim()) {
+      alert("Please provide a delivery address.");
+      return;
+    }
+
+    // Generar número de orden
+    const orderId = Math.floor(Math.random() * 100000).toString();
+
+    // Preparar objeto de orden
+    const newOrder = {
+      id: orderId,
+      customerName: name,
+      items: cart.map((item) => {
+        const option = item.option ? ` (${item.option})` : "";
+        return `${item.name}${option} x${item.quantity}`;
+      }),
+      total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      status: "Received",
+      phone,
+      email,
+      address: deliveryMethod === "Delivery" ? address : "Pickup",
+      notes,
+    };
+
+    // Guardar en localStorage
+    const saved = localStorage.getItem("orders");
+    const orders = saved ? JSON.parse(saved) : [];
+    orders.push(newOrder);
+    localStorage.setItem("orders", JSON.stringify(orders));
+
+    // Limpiar carrito
     clearCart();
+
+    // Redirigir a página Thank You
     navigate(`/thank-you/${orderId}`);
   };
 
