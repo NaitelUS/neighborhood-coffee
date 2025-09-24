@@ -12,7 +12,7 @@ export default function Header() {
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           <img
-            src="/tnclogo.png"
+            src="/attached_Assets/tnclogo.png"
             alt="The Neighborhood Coffee"
             className="h-8"
           />
