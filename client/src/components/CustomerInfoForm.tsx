@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
+import { addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 
 export default function CustomerInfoForm() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function CustomerInfoForm() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [coupon, setCoupon] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,22 +32,38 @@ export default function CustomerInfoForm() {
     // Generar número de orden
     const orderId = Math.floor(Math.random() * 100000).toString();
 
-    // Calcular total
-    const total = (cart ?? []).reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    // Calcular subtotal (con add-ons)
+    const subtotal = (cart ?? []).reduce((sum, item) => {
+      const addOnsTotal =
+        item.addOns?.reduce((aSum, addOnId) => {
+          const addOn = addOnOptions.find((o) => o.id === addOnId);
+          return aSum + (addOn ? addOn.price : 0);
+        }, 0) ?? 0;
+
+      return sum + (item.price + addOnsTotal) * item.quantity;
+    }, 0);
+
+    // Aplicar cupón
+    let discount = 0;
+    if (coupon.trim().toUpperCase() === COUPON_CODE) {
+      discount = subtotal * COUPON_DISCOUNT;
+    }
+    const total = subtotal - discount;
 
     // Preparar objeto de orden
     const newOrder = {
       id: orderId,
       customerName: name,
-      items: (cart ?? []).map((item) => {
-        const option = item.option ? ` (${item.option})` : "";
-        return `${item.name}${option} x${item.quantity}`;
-      }),
+      items: (cart ?? []).map((item) => ({
+        name: item.name,
+        option: item.option,
+        quantity: item.quantity,
+        addOns: item.addOns,
+      })),
+      subtotal,
+      discount,
       total,
-      status: "Received",
+      status: "Pending",
       phone,
       email,
       address: deliveryMethod === "Delivery" ? address : "Pickup",
@@ -149,6 +167,17 @@ export default function CustomerInfoForm() {
           onChange={(e) => setNotes(e.target.value)}
           className="border rounded px-2 py-1"
           placeholder="Special instructions (e.g., no sugar, ring the bell)"
+        />
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm">Coupon</label>
+        <input
+          type="text"
+          value={coupon}
+          onChange={(e) => setCoupon(e.target.value)}
+          className="border rounded px-2 py-1"
+          placeholder="Enter coupon"
         />
       </div>
 
