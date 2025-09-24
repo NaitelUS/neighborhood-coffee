@@ -72,4 +72,19 @@ const ThankYou: React.FC = () => {
         <div className="flex justify-between font-semibold text-base border-t pt-2 mt-2">
           <span>Total</span>
           <span>${total}</span>
-        <
+        </div>
+      </div>
+
+      <div className="text-center">
+        <Link
+          to={`/orders-status/${id}`}
+          className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"
+        >
+          View Order Status
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default ThankYou;
