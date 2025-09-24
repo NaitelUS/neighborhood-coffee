@@ -18,9 +18,9 @@ export default function CustomerInfoForm() {
     e.preventDefault();
 
     if (!cart || cart.length === 0) {
-     alert("Your cart is empty!");
-     return;
-  }
+      alert("Your cart is empty!");
+      return;
+    }
 
     if (deliveryMethod === "Delivery" && !address.trim()) {
       alert("Please provide a delivery address.");
@@ -30,15 +30,21 @@ export default function CustomerInfoForm() {
     // Generar número de orden
     const orderId = Math.floor(Math.random() * 100000).toString();
 
+    // Calcular total
+    const total = (cart ?? []).reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
     // Preparar objeto de orden
     const newOrder = {
       id: orderId,
       customerName: name,
-      items: cart.map((item) => {
+      items: (cart ?? []).map((item) => {
         const option = item.option ? ` (${item.option})` : "";
         return `${item.name}${option} x${item.quantity}`;
       }),
-      total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      total,
       status: "Received",
       phone,
       email,
