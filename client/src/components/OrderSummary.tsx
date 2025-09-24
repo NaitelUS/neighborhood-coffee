@@ -1,31 +1,33 @@
 // client/src/components/OrderSummary.tsx
 import { useCart } from "@/hooks/useCart";
-import { COUPON_CODE, COUPON_DISCOUNT, addOnOptions } from "@/data/menuData";
+import { addOnOptions } from "@/data/menuData";
 import { useState } from "react";
+import { coupons } from "@/data/coupons";
 
 export default function OrderSummary() {
   const { cart, removeFromCart } = useCart();
   const [coupon, setCoupon] = useState("");
-  const [discountApplied, setDiscountApplied] = useState(false);
+  const [discountApplied, setDiscountApplied] = useState<number>(0);
 
   const subtotal = (cart ?? []).reduce((sum, item) => {
-  const addOnsTotal = item.addOns?.reduce((aSum, addOnId) => {
-    const addOn = addOnOptions.find((o) => o.id === addOnId);
-    return aSum + (addOn ? addOn.price : 0);
-  }, 0) ?? 0;
+    const addOnsTotal =
+      item.addOns?.reduce((aSum, addOnId) => {
+        const addOn = addOnOptions.find((o) => o.id === addOnId);
+        return aSum + (addOn ? addOn.price : 0);
+      }, 0) ?? 0;
 
-  return sum + (item.price + addOnsTotal) * item.quantity;
+    return sum + (item.price + addOnsTotal) * item.quantity;
   }, 0);
 
-  const discount = discountApplied ? subtotal * COUPON_DISCOUNT : 0;
-  const total = subtotal - discount;
+  const total = subtotal - discountApplied;
 
   const applyCoupon = () => {
-    if (coupon.trim().toUpperCase() === COUPON_CODE) {
-      setDiscountApplied(true);
+    const normalized = coupon.trim().toUpperCase();
+    if (coupons[normalized]) {
+      setDiscountApplied(subtotal * coupons[normalized]);
     } else {
       alert("Invalid coupon code");
-      setDiscountApplied(false);
+      setDiscountApplied(0);
     }
   };
 
@@ -33,11 +35,11 @@ export default function OrderSummary() {
     <div className="border rounded-lg shadow-sm p-4 mb-4">
       <h3 className="font-bold text-lg mb-2">Your Order</h3>
 
-      {cart.length === 0 ? (
+      {(cart ?? []).length === 0 ? (
         <p className="text-sm text-gray-500">Your cart is empty.</p>
       ) : (
         <ul className="divide-y">
-          {cart.map((item, idx) => (
+          {(cart ?? []).map((item, idx) => (
             <li key={idx} className="py-2">
               <div className="flex justify-between">
                 <div>
@@ -78,10 +80,10 @@ export default function OrderSummary() {
         <span>Subtotal</span>
         <span>${subtotal.toFixed(2)}</span>
       </div>
-      {discountApplied && (
+      {discountApplied > 0 && (
         <div className="flex justify-between text-green-600">
-          <span>Coupon ({COUPON_CODE})</span>
-          <span>- ${discount.toFixed(2)}</span>
+          <span>Coupon applied</span>
+          <span>- ${discountApplied.toFixed(2)}</span>
         </div>
       )}
       <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
