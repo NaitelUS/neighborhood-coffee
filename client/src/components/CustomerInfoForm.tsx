@@ -17,10 +17,10 @@ export default function CustomerInfoForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (cart.length === 0) {
-      alert("Your cart is empty!");
-      return;
-    }
+    if (!cart || cart.length === 0) {
+     alert("Your cart is empty!");
+     return;
+  }
 
     if (deliveryMethod === "Delivery" && !address.trim()) {
       alert("Please provide a delivery address.");
