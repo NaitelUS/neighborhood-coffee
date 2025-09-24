@@ -23,7 +23,6 @@ type Order = {
 export default function AdminOrders() {
   const { cartItems, discount } = useCart();
 
-  // Simulación de orden inicial con items actuales del carrito
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "1001",
@@ -36,9 +35,9 @@ export default function AdminOrders() {
       subtotal: cartItems.reduce(
         (acc, item) =>
           acc +
-          ((item.price ?? 0) * item.quantity) +
+          ((item.price ?? 0) * (item.quantity ?? 1)) +
           ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
-            item.quantity),
+            (item.quantity ?? 1)),
         0
       ),
       discount: discount ?? 0,
@@ -46,9 +45,9 @@ export default function AdminOrders() {
         cartItems.reduce(
           (acc, item) =>
             acc +
-            ((item.price ?? 0) * item.quantity) +
+            ((item.price ?? 0) * (item.quantity ?? 1)) +
             ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
-              item.quantity),
+              (item.quantity ?? 1)),
           0
         ) - (discount ?? 0),
     },
@@ -109,7 +108,7 @@ export default function AdminOrders() {
                 {order.items.map((item, idx) => (
                   <li key={idx} className="py-2 flex justify-between">
                     <div>
-                      {item.quantity}× {item.name}
+                      {item.quantity ?? 1}× {item.name}
                       {item.variant ? ` — ${item.variant}` : ""}
                       {item.addOns && item.addOns.length > 0 && (
                         <ul className="ml-4 text-xs text-gray-600 list-disc">
@@ -121,7 +120,9 @@ export default function AdminOrders() {
                         </ul>
                       )}
                     </div>
-                    <span>${((item.price ?? 0) * item.quantity).toFixed(2)}</span>
+                    <span>
+                      ${(((item.price ?? 0) * (item.quantity ?? 1))).toFixed(2)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -137,13 +138,4 @@ export default function AdminOrders() {
                 </div>
               )}
               <div className="flex justify-between font-semibold border-t pt-2 mt-2">
-                <span>Total</span>
-                <span>${(order.total ?? 0).toFixed(2)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+                <span>Total</sp
