@@ -1,23 +1,42 @@
+// client/src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Layout from "@/components/Layout";
+import Header from "@/components/Header";
 import OrderPage from "@/pages/OrderPage";
 import ThankYou from "@/pages/ThankYou";
-import OrderStatus from "@/pages/OrderStatus";
 import AdminOrders from "@/pages/AdminOrders";
 
 export default function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<OrderPage />} />
-          {/* Aseguramos ambas rutas */}
-          <Route path="/thank-you" element={<ThankYou />} />
-          <Route path="/thank-you/:id" element={<ThankYou />} />
-          <Route path="/orders-status/:id" element={<OrderStatus />} />
-          <Route path="/admin/orders" element={<AdminOrders />} />
-        </Routes>
-      </Layout>
+      <div className="flex flex-col min-h-screen">
+        {/* Header en todas las páginas */}
+        <Header />
+
+        <main className="flex-1 bg-gray-50">
+          <Routes>
+            {/* Página principal de pedidos */}
+            <Route path="/" element={<OrderPage />} />
+            <Route path="/order" element={<OrderPage />} />
+
+            {/* Página de confirmación */}
+            <Route path="/thank-you/:orderId" element={<ThankYou />} />
+
+            {/* Admin */}
+            <Route path="/admin" element={<AdminOrders />} />
+
+            {/* 404 fallback */}
+            <Route
+              path="*"
+              element={
+                <div className="p-10 text-center text-gray-600">
+                  <h1 className="text-2xl font-bold mb-4">Page not found</h1>
+                  <p>Oops, the page you are looking for doesn’t exist.</p>
+                </div>
+              }
+            />
+          </Routes>
+        </main>
+      </div>
     </Router>
   );
 }
