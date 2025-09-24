@@ -67,4 +67,31 @@ export const useCart = () => {
 
   const applyCoupon = (code: string) => {
     const normalized = code.trim().toUpperCase();
-    if (coupons[n]()
+    if (coupons[normalized]) {
+      const subtotal = cartItems.reduce(
+        (acc, item) =>
+          acc +
+          item.price * item.quantity +
+          ((item.addOns?.reduce((a, add) => a + add.price, 0) || 0) *
+            item.quantity),
+        0
+      );
+      const newDiscount = subtotal * coupons[normalized];
+      setDiscount(newDiscount);
+      setAppliedCoupon(normalized);
+    } else {
+      setDiscount(0);
+      setAppliedCoupon(null);
+    }
+  };
+
+  return {
+    cartItems,
+    addItem,
+    removeItem,
+    clearCart,
+    discount,
+    appliedCoupon,
+    applyCoupon,
+  };
+};
