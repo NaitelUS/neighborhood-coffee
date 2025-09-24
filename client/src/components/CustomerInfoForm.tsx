@@ -1,44 +1,75 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useCart } from "@/hooks/useCart";
 
-const CustomerInfoForm: React.FC = () => {
-  const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "delivery">(
-    "pickup"
-  );
+export default function CustomerInfoForm() {
+  const { submitOrder } = useCart();
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "delivery">("pickup");
   const [address, setAddress] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [time, setTime] = useState(() => {
+    const now = new Date();
+    return now.toTimeString().slice(0, 5);
+  });
+  const [coupon, setCoupon] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitOrder({
+      name,
+      phone,
+      deliveryMethod,
+      address,
+      date,
+      time,
+      coupon,
+    });
+  };
 
   return (
-    <div className="bg-white rounded-md shadow-md p-4">
-      <h2 className="text-lg font-semibold mb-3">Your Info</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white shadow rounded p-4 flex flex-col space-y-2"
+    >
+      <h3 className="font-semibold text-lg">Your Info</h3>
+
       <input
         type="text"
         placeholder="Full Name"
-        className="border rounded px-2 py-1 w-full mb-3"
-      />
-      <input
-        type="text"
-        placeholder="Phone Number"
-        className="border rounded px-2 py-1 w-full mb-3"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="border rounded p-2 text-sm"
+        required
       />
 
-      <p className="font-semibold mb-2">Delivery Method</p>
-      <div className="flex gap-4 mb-4">
-        <label>
+      <input
+        type="tel"
+        placeholder="Phone Number"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        className="border rounded p-2 text-sm"
+        required
+      />
+
+      <div className="text-sm font-medium mt-2">Delivery Method</div>
+      <div className="flex items-center space-x-4">
+        <label className="flex items-center space-x-1">
           <input
             type="radio"
-            value="pickup"
             checked={deliveryMethod === "pickup"}
             onChange={() => setDeliveryMethod("pickup")}
-          />{" "}
-          Pick Up
+          />
+          <span>Pickup</span>
         </label>
-        <label>
+        <label className="flex items-center space-x-1">
           <input
             type="radio"
-            value="delivery"
             checked={deliveryMethod === "delivery"}
             onChange={() => setDeliveryMethod("delivery")}
-          />{" "}
-          Delivery
+          />
+          <span>Delivery</span>
         </label>
       </div>
 
@@ -48,22 +79,41 @@ const CustomerInfoForm: React.FC = () => {
           placeholder="Delivery Address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          className="border rounded px-2 py-1 w-full mb-3"
+          className="border rounded p-2 text-sm"
+          required
         />
       )}
 
       <input
         type="date"
-        className="border rounded px-2 py-1 w-full mb-3"
-        defaultValue={new Date().toISOString().split("T")[0]}
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        className="border rounded p-2 text-sm"
+        required
       />
+
       <input
         type="time"
-        className="border rounded px-2 py-1 w-full mb-3"
-        defaultValue={new Date().toISOString().slice(11, 16)}
+        value={time}
+        onChange={(e) => setTime(e.target.value)}
+        className="border rounded p-2 text-sm"
+        required
       />
-    </div>
-  );
-};
 
-export default CustomerInfoForm;
+      <input
+        type="text"
+        placeholder="Enter coupon"
+        value={coupon}
+        onChange={(e) => setCoupon(e.target.value)}
+        className="border rounded p-2 text-sm"
+      />
+
+      <button
+        type="submit"
+        className="w-full bg-teal-700 text-white py-2 rounded hover:bg-teal-800 transition mt-2"
+      >
+        Submit Order
+      </button>
+    </form>
+  );
+}
