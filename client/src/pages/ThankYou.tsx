@@ -2,20 +2,20 @@ import React from "react";
 import { useCart } from "@/hooks/useCart";
 import { Link, useParams } from "react-router-dom";
 
-const ThankYou: React.FC = () => {
+export default function ThankYou() {
   const { cartItems, discount } = useCart();
   const { id } = useParams<{ id: string }>();
 
   const subtotal = cartItems.reduce(
     (acc, item) =>
       acc +
-      (item.price ?? 0) * item.quantity +
+      ((item.price ?? 0) * item.quantity) +
       ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
         item.quantity),
     0
   );
 
-  const total = (subtotal - (discount ?? 0));
+  const total = subtotal - (discount ?? 0);
 
   return (
     <div className="bg-white rounded-md shadow-md p-6 max-w-xl mx-auto mt-6">
@@ -30,25 +30,25 @@ const ThankYou: React.FC = () => {
         {cartItems.length > 0 ? (
           <ul className="divide-y divide-gray-200">
             {cartItems.map((item, idx) => (
-              <li key={idx} className="py-2">
-                <div className="flex justify-between">
+              <li key={idx} className="py-2 flex justify-between">
+                <div>
                   <span>
                     {item.quantity}× {item.name}
                     {item.variant ? ` — ${item.variant}` : ""}
-                    {item.addOns?.length ? (
-                      <ul className="ml-4 text-xs text-gray-600 list-disc">
-                        {item.addOns.map((add, i) => (
-                          <li key={i}>
-                            {add.name} (+${(add.price ?? 0).toFixed(2)})
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
                   </span>
-                  <span className="font-medium">
-                    ${((item.price ?? 0) * item.quantity).toFixed(2)}
-                  </span>
+                  {item.addOns && item.addOns.length > 0 && (
+                    <ul className="ml-4 text-xs text-gray-600 list-disc">
+                      {item.addOns.map((add, i) => (
+                        <li key={i}>
+                          {add.name} (+${(add.price ?? 0).toFixed(2)})
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
+                <span className="font-medium">
+                  ${((item.price ?? 0) * item.quantity).toFixed(2)}
+                </span>
               </li>
             ))}
           </ul>
@@ -84,6 +84,4 @@ const ThankYou: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default ThankYou;
+}
