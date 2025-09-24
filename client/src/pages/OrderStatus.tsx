@@ -1,86 +1,72 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { addOnOptions } from "@/data/menuData";
+import { useCart } from "@/hooks/useCart";
 
 export default function OrderStatus() {
   const { id } = useParams<{ id: string }>();
-  const [order, setOrder] = useState<any>(null);
+  const { cartItems, discount } = useCart();
+  const [status, setStatus] = useState("Received");
 
   useEffect(() => {
-    if (!id) return;
-    const raw = localStorage.getItem(`order-${id}`);
-    if (!raw) return;
+    // Aquí podrías llamar a tu backend para obtener el estado real
+    // Por ahora lo simulamos
+    setTimeout(() => setStatus("In Process"), 2000);
+  }, []);
 
-    const parsed = JSON.parse(raw);
-    const normalized = (parsed.items || []).map((it: any) => {
-      const ids = Array.isArray(it.addOns) ? it.addOns : [];
-      const objects =
-        ids.length && typeof ids[0] === "string"
-          ? ids
-              .map((aid: string) => addOnOptions.find((a) => a.id === aid))
-              .filter(Boolean)
-              .map((a) => ({ id: a!.id, name: a!.name, price: a!.price }))
-          : ids;
-      return { ...it, addOns: objects || [] };
-    });
+  const subtotal = cartItems.reduce(
+    (acc, item) =>
+      acc +
+      item.price * item.quantity +
+      ((item.addOns?.reduce((a, add) => a + add.price, 0) || 0) * item.quantity),
+    0
+  );
 
-    setOrder({ ...parsed, items: normalized });
-  }, [id]);
-
-  if (!order) return <p className="p-6">Order not found.</p>;
+  const total = (subtotal - discount).toFixed(2);
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-2">Order Status</h1>
-      <p className="mb-1">Order <strong>#{id}</strong></p>
-      <p className="mb-4">Current status: <strong>{order.status || "☕ Received"}</strong></p>
+    <div className="max-w-xl mx-auto bg-white rounded-md shadow-md p-6 mt-6">
+      <h1 className="text-2xl font-bold mb-4">Order Status</h1>
+      <p className="mb-4">
+        Order Number: <span className="text-emerald-700 font-semibold">#{id}</span>
+      </p>
+      <p className="mb-6">
+        Current Status: <span className="font-semibold">{status}</span>
+      </p>
 
-      <div className="border rounded-lg shadow-md p-4">
-        <h2 className="text-lg font-semibold mb-2">Order Summary</h2>
-        <ul className="space-y-3">
-          {order.items.map((item: any, idx: number) => {
-            const addOnTotal = (item.addOns || []).reduce((s: number, a: any) => s + Number(a.price || 0), 0);
-            const lineTotal = (Number(item.basePrice || 0) + addOnTotal) * Number(item.quantity || 0);
-            return (
-              <li key={idx} className="border-b pb-2 last:border-none last:pb-0">
-                <div className="flex justify-between">
-                  <span>
-                    {item.quantity}× {item.name}
-                    {item.temperature && ` (${item.temperature})`}
-                    {item.option && ` - ${item.option}`}
-                  </span>
-                  <span>${lineTotal.toFixed(2)}</span>
-                </div>
-                {(item.addOns && item.addOns.length > 0) && (
-                  <ul className="ml-4 list-disc text-sm text-gray-700">
-                    {item.addOns.map((a: any) => (
-                      <li key={a.id}>
-                        {a.name} (+${Number(a.price || 0).toFixed(2)})
-                      </li>
+      <ul className="divide-y divide-gray-200 mb-4">
+        {cartItems.map((item, idx) => (
+          <li key={idx} className="py-2">
+            <div className="flex justify-between">
+              <span>
+                {item.quantity}× {item.name}
+                {item.variant ? ` — ${item.variant}` : ""}
+                {item.addOns?.length ? (
+                  <ul className="ml-4 text-xs text-gray-600 list-disc">
+                    {item.addOns.map((add, i) => (
+                      <li key={i}>{add.name} (+${add.price.toFixed(2)})</li>
                     ))}
                   </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className="mt-4 text-sm space-y-1">
-          <div className="flex justify-between">
-            <span>Subtotal:</span>
-            <span>${Number(order.subtotal || 0).toFixed(2)}</span>
-          </div>
-          {Number(order.discount || 0) > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>Discount:</span>
-              <span>- ${Number(order.discount || 0).toFixed(2)}</span>
+                ) : null}
+              </span>
+              <span>${(item.price * item.quantity).toFixed(2)}</span>
             </div>
-          )}
-          <div className="flex justify-between font-bold text-base border-t pt-2">
-            <span>Total:</span>
-            <span>${Number(order.total || 0).toFixed(2)}</span>
-          </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex justify-between text-sm">
+        <span>Subtotal</span>
+        <span>${subtotal.toFixed(2)}</span>
+      </div>
+      {discount > 0 && (
+        <div className="flex justify-between text-sm text-green-600">
+          <span>Discount</span>
+          <span>- ${discount.toFixed(2)}</span>
         </div>
+      )}
+      <div className="flex justify-between font-semibold text-base border-t pt-2 mt-2">
+        <span>Total</span>
+        <span>${total}</span>
       </div>
     </div>
   );
