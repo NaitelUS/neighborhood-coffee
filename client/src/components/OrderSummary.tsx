@@ -1,8 +1,7 @@
 // client/src/components/OrderSummary.tsx
 import { useCart } from "@/hooks/useCart";
-import { addOnOptions } from "@/data/menuData";
+import { addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 import { useState } from "react";
-import { coupons } from "@/data/coupons";
 
 export default function OrderSummary() {
   const { cart, removeFromCart } = useCart();
@@ -23,8 +22,8 @@ export default function OrderSummary() {
 
   const applyCoupon = () => {
     const normalized = coupon.trim().toUpperCase();
-    if (coupons[normalized]) {
-      setDiscountApplied(subtotal * coupons[normalized]);
+    if (normalized === COUPON_CODE) {
+      setDiscountApplied(subtotal * COUPON_DISCOUNT);
     } else {
       alert("Invalid coupon code");
       setDiscountApplied(0);
