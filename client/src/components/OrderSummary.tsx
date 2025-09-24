@@ -1,40 +1,48 @@
-import React from "react";
 import { useCart } from "@/hooks/useCart";
 
 export default function OrderSummary() {
   const { cartItems, subtotal, discount, total, removeFromCart } = useCart();
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="text-lg font-semibold mb-3">Your Order</h2>
+    <div className="border rounded p-4 shadow bg-white">
+      <h2 className="text-lg font-bold mb-2">Your Order</h2>
 
       {cartItems.length === 0 ? (
-        <p className="text-sm text-gray-500">No items in cart</p>
+        <p className="text-gray-500 text-sm">Your cart is empty.</p>
       ) : (
-        <ul className="divide-y divide-gray-200 mb-3">
-          {cartItems.map((item, idx) => (
+        <ul className="space-y-2">
+          {cartItems.map((item, index) => (
             <li
-              key={idx}
-              className="flex justify-between items-start py-2 text-sm"
+              key={index}
+              className="border-b pb-2 flex justify-between items-start"
             >
               <div>
-                {item.quantity ?? 1}× {item.name}
-                {item.variant ? ` — ${item.variant}` : ""}
+                <p className="font-medium">
+                  {item.name} {item.variant && `(${item.variant})`}
+                </p>
                 {item.addOns && item.addOns.length > 0 && (
-                  <ul className="ml-4 text-xs text-gray-600 list-disc">
-                    {item.addOns.map((add, i) => (
+                  <ul className="ml-4 list-disc text-sm text-gray-600">
+                    {item.addOns.map((a, i) => (
                       <li key={i}>
-                        {add.name} (+${(add.price ?? 0).toFixed(2)})
+                        {a.name} (+${(a.price ?? 0).toFixed(2)})
                       </li>
                     ))}
                   </ul>
                 )}
+                <p className="text-sm text-gray-500">
+                  Qty: {item.quantity} × ${(item.price ?? 0).toFixed(2)}
+                </p>
               </div>
               <div className="text-right">
-                ${(((item.price ?? 0) * (item.quantity ?? 1))).toFixed(2)}
+                <p className="font-semibold">
+                  ${(((item.price ?? 0) * item.quantity) +
+                    (item.addOns?.reduce((sum, a) => sum + (a.price ?? 0), 0) ??
+                      0)
+                  ).toFixed(2)}
+                </p>
                 <button
-                  onClick={() => removeFromCart(idx)}
-                  className="ml-2 text-red-500 hover:underline text-xs"
+                  onClick={() => removeFromCart(item.name, item.variant)}
+                  className="text-xs text-red-500 hover:underline"
                 >
                   Remove
                 </button>
@@ -44,19 +52,22 @@ export default function OrderSummary() {
         </ul>
       )}
 
-      <div className="flex justify-between text-sm">
-        <span>Subtotal</span>
-        <span>${(subtotal ?? 0).toFixed(2)}</span>
-      </div>
-      {discount > 0 && (
-        <div className="flex justify-between text-sm text-green-600">
-          <span>Discount</span>
-          <span>- ${(discount ?? 0).toFixed(2)}</span>
+      {/* Totales */}
+      <div className="mt-4 space-y-1 text-sm">
+        <div className="flex justify-between">
+          <span>Subtotal</span>
+          <span>${(subtotal ?? 0).toFixed(2)}</span>
         </div>
-      )}
-      <div className="flex justify-between font-semibold border-t pt-2 mt-2">
-        <span>Total</span>
-        <span>${(total ?? 0).toFixed(2)}</span>
+        {discount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span>Discount</span>
+            <span>- ${(discount ?? 0).toFixed(2)}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-semibold border-t pt-2 mt-2">
+          <span>Total</span>
+          <span>${(total ?? 0).toFixed(2)}</span>
+        </div>
       </div>
     </div>
   );
