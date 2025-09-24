@@ -1,73 +1,110 @@
+// client/src/components/OrderSummary.tsx
 import { useCart } from "@/hooks/useCart";
+import { COUPON_CODE, COUPON_DISCOUNT, addOnOptions } from "@/data/menuData";
+import { useState } from "react";
 
 export default function OrderSummary() {
-  const { cartItems, subtotal, discount, total, removeFromCart } = useCart();
+  const { cart, removeFromCart } = useCart();
+  const [coupon, setCoupon] = useState("");
+  const [discountApplied, setDiscountApplied] = useState(false);
+
+  const subtotal = cart.reduce((sum, item) => {
+    const addOnsTotal = item.addOns?.reduce((aSum, addOnId) => {
+      const addOn = addOnOptions.find((o) => o.id === addOnId);
+      return aSum + (addOn ? addOn.price : 0);
+    }, 0) ?? 0;
+
+    return sum + (item.price + addOnsTotal) * item.quantity;
+  }, 0);
+
+  const discount = discountApplied ? subtotal * COUPON_DISCOUNT : 0;
+  const total = subtotal - discount;
+
+  const applyCoupon = () => {
+    if (coupon.trim().toUpperCase() === COUPON_CODE) {
+      setDiscountApplied(true);
+    } else {
+      alert("Invalid coupon code");
+      setDiscountApplied(false);
+    }
+  };
 
   return (
-    <div className="border rounded p-4 shadow bg-white">
-      <h2 className="text-lg font-bold mb-2">Your Order</h2>
+    <div className="border rounded-lg shadow-sm p-4 mb-4">
+      <h3 className="font-bold text-lg mb-2">Your Order</h3>
 
-      {cartItems.length === 0 ? (
-        <p className="text-gray-500 text-sm">Your cart is empty.</p>
+      {cart.length === 0 ? (
+        <p className="text-sm text-gray-500">Your cart is empty.</p>
       ) : (
-        <ul className="space-y-2">
-          {cartItems.map((item, index) => (
-            <li
-              key={index}
-              className="border-b pb-2 flex justify-between items-start"
-            >
-              <div>
-                <p className="font-medium">
-                  {item.name} {item.variant && `(${item.variant})`}
-                </p>
-                {item.addOns && item.addOns.length > 0 && (
-                  <ul className="ml-4 list-disc text-sm text-gray-600">
-                    {item.addOns.map((a, i) => (
-                      <li key={i}>
-                        {a.name} (+${(a.price ?? 0).toFixed(2)})
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-sm text-gray-500">
-                  Qty: {item.quantity} × ${(item.price ?? 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold">
-                  ${(((item.price ?? 0) * item.quantity) +
-                    (item.addOns?.reduce((sum, a) => sum + (a.price ?? 0), 0) ??
-                      0)
-                  ).toFixed(2)}
-                </p>
-                <button
-                  onClick={() => removeFromCart(item.name, item.variant)}
-                  className="text-xs text-red-500 hover:underline"
-                >
-                  Remove
-                </button>
+        <ul className="divide-y">
+          {cart.map((item, idx) => (
+            <li key={idx} className="py-2">
+              <div className="flex justify-between">
+                <div>
+                  <span className="font-medium">
+                    {item.name} {item.option ? `(${item.option})` : ""}
+                  </span>
+                  <div className="text-xs text-gray-600">
+                    Qty: {item.quantity}
+                  </div>
+                  {item.addOns?.length > 0 && (
+                    <div className="text-xs text-gray-500">
+                      Add-ons:{" "}
+                      {item.addOns
+                        .map(
+                          (id) =>
+                            addOnOptions.find((a) => a.id === id)?.name || id
+                        )
+                        .join(", ")}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  ${(item.price * item.quantity).toFixed(2)}
+                  <button
+                    className="ml-2 text-red-500 text-xs"
+                    onClick={() => removeFromCart(idx)}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      {/* Totales */}
-      <div className="mt-4 space-y-1 text-sm">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span>${(subtotal ?? 0).toFixed(2)}</span>
+      <div className="flex justify-between font-semibold border-t pt-2 mt-2">
+        <span>Subtotal</span>
+        <span>${subtotal.toFixed(2)}</span>
+      </div>
+      {discountApplied && (
+        <div className="flex justify-between text-green-600">
+          <span>Coupon ({COUPON_CODE})</span>
+          <span>- ${discount.toFixed(2)}</span>
         </div>
-        {discount > 0 && (
-          <div className="flex justify-between text-green-600">
-            <span>Discount</span>
-            <span>- ${(discount ?? 0).toFixed(2)}</span>
-          </div>
-        )}
-        <div className="flex justify-between font-semibold border-t pt-2 mt-2">
-          <span>Total</span>
-          <span>${(total ?? 0).toFixed(2)}</span>
-        </div>
+      )}
+      <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+        <span>Total</span>
+        <span>${total.toFixed(2)}</span>
+      </div>
+
+      {/* Coupon field */}
+      <div className="flex mt-3 gap-2">
+        <input
+          type="text"
+          value={coupon}
+          onChange={(e) => setCoupon(e.target.value)}
+          placeholder="Enter coupon"
+          className="flex-1 border px-2 py-1 rounded"
+        />
+        <button
+          type="button"
+          onClick={applyCoupon}
+          className="bg-green-600 text-white px-3 rounded"
+        >
+          Apply
+        </button>
       </div>
     </div>
   );
