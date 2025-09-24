@@ -1,99 +1,63 @@
+// client/src/hooks/useCart.ts
 import { useState, useEffect } from "react";
-import { coupons } from "@/data/coupons";
 
 export interface CartItem {
+  id: string;
   name: string;
-  description: string;
   price: number;
-  image: string;
   quantity: number;
-  variant?: string;
-  addOns?: { name: string; price: number }[];
+  option?: string; // Hot / Iced, Apple / Pineapple, etc.
+  addOns?: string[]; // IDs de add-ons seleccionados
 }
 
 export function useCart() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [subtotal, setSubtotal] = useState(0);
-  const [discount, setDiscount] = useState(0);
-  const [total, setTotal] = useState(0);
-
-  // 🔄 Cargar carrito desde localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("current-order");
-    if (saved) {
-      setCartItems(JSON.parse(saved));
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("current-order");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Error parsing cart from localStorage:", e);
+      return [];
     }
-  }, []);
+  });
 
-  // 💾 Guardar cambios en localStorage y recalcular totales
+  // Sync cart con localStorage
   useEffect(() => {
-    localStorage.setItem("current-order", JSON.stringify(cartItems));
-    calculateTotals();
-  }, [cartItems]);
+    localStorage.setItem("current-order", JSON.stringify(cart));
+  }, [cart]);
 
-  // 📊 Calcular subtotal, descuento y total
-  const calculateTotals = () => {
-    const sub = cartItems.reduce((acc, item) => {
-      const base = (item.price ?? 0) * (item.quantity ?? 1);
-      const addOnTotal =
-        item.addOns?.reduce((a, o) => a + (o.price ?? 0), 0) ?? 0;
-      return acc + base + addOnTotal;
-    }, 0);
-
-    setSubtotal(sub);
-    setTotal(sub - discount);
-  };
-
-  // ➕ Agregar al carrito
   const addToCart = (item: CartItem) => {
-    setCartItems((prev) => {
-      const existing = prev.find(
-        (i) => i.name === item.name && i.variant === item.variant
+    setCart((prev) => {
+      const existingIndex = prev.findIndex(
+        (i) => i.id === item.id && i.option === item.option
       );
-      if (existing) {
-        return prev.map((i) =>
-          i.name === item.name && i.variant === item.variant
-            ? { ...i, quantity: i.quantity + item.quantity }
-            : i
-        );
+
+      if (existingIndex !== -1) {
+        // Si ya existe, actualiza cantidad
+        const updated = [...prev];
+        updated[existingIndex].quantity += item.quantity;
+        updated[existingIndex].addOns = [
+          ...(updated[existingIndex].addOns || []),
+          ...(item.addOns || []),
+        ];
+        return updated;
       }
       return [...prev, item];
     });
   };
 
-  // ➖ Remover del carrito
-  const removeFromCart = (name: string, variant?: string) => {
-    setCartItems((prev) =>
-      prev.filter(
-        (i) => !(i.name === name && i.variant === variant)
-      )
-    );
+  const removeFromCart = (index: number) => {
+    setCart((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // 🏷️ Aplicar cupón
-  const applyCoupon = (code: string) => {
-    const normalized = code.trim().toUpperCase();
-    if (coupons[normalized]) {
-      setDiscount(subtotal * coupons[normalized]);
-    } else {
-      setDiscount(0);
-    }
-  };
-
-  // 🧹 Vaciar carrito
   const clearCart = () => {
-    setCartItems([]);
-    setDiscount(0);
+    setCart([]);
   };
 
   return {
-    cartItems,
-    subtotal,
-    discount,
-    total,
+    cart: cart ?? [], // siempre un array seguro
     addToCart,
     removeFromCart,
-    applyCoupon,
     clearCart,
   };
 }
