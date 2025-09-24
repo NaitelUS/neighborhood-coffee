@@ -2,13 +2,23 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+interface OrderItem {
+  name: string;
+  option?: string;
+  quantity: number;
+  addOns?: string[];
+}
+
 interface Order {
   id: string;
   customerName: string;
-  items: string[];
+  items: OrderItem[];
+  subtotal: number;
+  discount: number;
   total: number;
   status: string;
   address?: string;
+  notes?: string;
 }
 
 export default function OrderStatus() {
@@ -58,9 +68,31 @@ export default function OrderStatus() {
         <p>
           <strong>Customer:</strong> {order.customerName}
         </p>
+        <div>
+          <strong>Items:</strong>
+          <ul className="list-disc list-inside text-sm">
+            {order.items.map((item, idx) => (
+              <li key={idx}>
+                {item.name}
+                {item.option ? ` (${item.option})` : ""} × {item.quantity}
+                {item.addOns && item.addOns.length > 0 && (
+                  <span className="text-gray-500">
+                    {" "}
+                    – Add-ons: {item.addOns.join(", ")}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
         <p>
-          <strong>Items:</strong> {order.items.join(", ")}
+          <strong>Subtotal:</strong> ${order.subtotal.toFixed(2)}
         </p>
+        {order.discount > 0 && (
+          <p className="text-green-600">
+            <strong>Discount:</strong> - ${order.discount.toFixed(2)}
+          </p>
+        )}
         <p>
           <strong>Total:</strong> ${order.total.toFixed(2)}
         </p>
@@ -71,6 +103,11 @@ export default function OrderStatus() {
         {order.address && (
           <p>
             <strong>Delivery Address:</strong> {order.address}
+          </p>
+        )}
+        {order.notes && (
+          <p>
+            <strong>Notes:</strong> {order.notes}
           </p>
         )}
       </div>
