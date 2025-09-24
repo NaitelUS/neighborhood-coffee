@@ -1,123 +1,99 @@
-// src/data/menuData.ts
+export interface MenuItemData {
+  name: string;
+  descriptionHot?: string;
+  descriptionIced?: string;
+  description?: string;
+  price: number;
+  imageHot?: string;
+  imageIced?: string;
+  image?: string;
+  variants?: string[];
+  addOns?: { name: string; price: number }[];
+  type?: "drink" | "empanada";
+}
 
-export const menuData = [
+// 🔧 Add-ons globales (excepto Golden Coffee y Empanadas)
+const defaultAddOns = [
+  { name: "Extra Espresso Shot", price: 1.0 },
+  { name: "Oat Milk", price: 0.75 },
+  { name: "Vanilla Syrup", price: 0.5 },
+  { name: "Caramel Syrup", price: 0.5 },
+  { name: "Hazelnut Syrup", price: 0.5 },
+  { name: "Whipped Cream", price: 0.5 },
+];
+
+export const menuData: MenuItemData[] = [
   {
     name: "Americano",
-    variants: {
-      hot: {
-        description: "Rich espresso shots with hot water, creating a smooth and bold coffee experience.",
-        image: "/attached_assets/americano_hot.png",
-        price: 3.75,
-      },
-      iced: {
-        description: "Bold espresso poured over cold water and ice for a refreshing kick.",
-        image: "/attached_assets/americano_iced.png",
-        price: 3.75,
-      },
-    },
-    addOns: [
-      { name: "Extra Espresso Shot", price: 1.0 },
-      { name: "Oat Milk", price: 0.75 },
-      { name: "Vanilla Syrup", price: 0.5 },
-      { name: "Caramel Syrup", price: 0.5 },
-      { name: "Hazelnut Syrup", price: 0.5 },
-      { name: "Whipped Cream", price: 0.5 },
-    ],
+    descriptionHot: "Smooth and bold hot Americano.",
+    descriptionIced: "Refreshing iced Americano.",
+    price: 2.99,
+    imageHot: "/attached_assets/americano_hot.png",
+    imageIced: "/attached_assets/americano_cold.png",
+    variants: ["Hot", "Iced"],
+    addOns: defaultAddOns,
+    type: "drink",
   },
   {
     name: "Latte",
-    variants: {
-      hot: {
-        description: "Perfectly steamed milk combined with our signature espresso for a creamy, comforting drink.",
-        image: "/attached_assets/latte_hot.png",
-        price: 4.5,
-      },
-      iced: {
-        description: "Iced latte with smooth espresso and cold milk served over ice.",
-        image: "/attached_assets/latte_iced.png",
-        price: 4.5,
-      },
-    },
-    addOns: [
-      { name: "Extra Espresso Shot", price: 1.0 },
-      { name: "Oat Milk", price: 0.75 },
-      { name: "Vanilla Syrup", price: 0.5 },
-      { name: "Caramel Syrup", price: 0.5 },
-      { name: "Hazelnut Syrup", price: 0.5 },
-      { name: "Whipped Cream", price: 0.5 },
-    ],
+    descriptionHot: "Creamy hot latte with rich espresso and milk.",
+    descriptionIced: "Iced latte with espresso and chilled milk.",
+    price: 3.99,
+    imageHot: "/attached_assets/latte_hot.png",
+    imageIced: "/attached_assets/latte_cold.png",
+    variants: ["Hot", "Iced"],
+    addOns: defaultAddOns,
+    type: "drink",
+  },
+  {
+    name: "Cappuccino",
+    descriptionHot: "Classic hot cappuccino with frothy milk foam.",
+    descriptionIced: "Iced cappuccino with milk and espresso.",
+    price: 3.99,
+    imageHot: "/attached_assets/cappuccino_hot.png",
+    imageIced: "/attached_assets/cappuccino_cold.png",
+    variants: ["Hot", "Iced"],
+    addOns: defaultAddOns,
+    type: "drink",
   },
   {
     name: "Mocha",
-    variants: {
-      hot: {
-        description: "Espresso and steamed milk blended with rich chocolate, topped with whipped cream.",
-        image: "/attached_assets/mocha_hot.png",
-        price: 4.75,
-      },
-      iced: {
-        description: "Chilled mocha with espresso, milk, and chocolate over ice.",
-        image: "/attached_assets/mocha_iced.png",
-        price: 4.75,
-      },
-    },
-    addOns: [
-      { name: "Extra Espresso Shot", price: 1.0 },
-      { name: "Oat Milk", price: 0.75 },
-      { name: "Vanilla Syrup", price: 0.5 },
-      { name: "Caramel Syrup", price: 0.5 },
-      { name: "Hazelnut Syrup", price: 0.5 },
-      { name: "Whipped Cream", price: 0.5 },
-    ],
+    descriptionHot: "Hot mocha with rich chocolate and espresso.",
+    descriptionIced: "Iced mocha with espresso, milk, and chocolate.",
+    price: 4.49,
+    imageHot: "/attached_assets/mocha_hot.png",
+    imageIced: "/attached_assets/mocha_cold.png",
+    variants: ["Hot", "Iced"],
+    addOns: defaultAddOns,
+    type: "drink",
   },
   {
     name: "Caramel Macchiato",
-    variants: {
-      hot: {
-        description: "Velvety steamed milk with espresso, topped with foamy milk and caramel drizzle.",
-        image: "/attached_assets/machiatto_hot.png",
-        price: 4.75,
-      },
-      iced: {
-        description: "Chilled espresso layered with milk and ice, finished with caramel drizzle.",
-        image: "/attached_assets/machiatto_cold.png",
-        price: 4.75,
-      },
-    },
-    addOns: [
-      { name: "Extra Espresso Shot", price: 1.0 },
-      { name: "Oat Milk", price: 0.75 },
-      { name: "Vanilla Syrup", price: 0.5 },
-      { name: "Caramel Syrup", price: 0.5 },
-      { name: "Hazelnut Syrup", price: 0.5 },
-      { name: "Whipped Cream", price: 0.5 },
-    ],
+    descriptionHot: "Hot caramel macchiato with espresso, milk, and caramel drizzle.",
+    descriptionIced: "Iced caramel macchiato with espresso, milk, and caramel drizzle.",
+    price: 4.49,
+    imageHot: "/attached_assets/machiatto_hot.png",
+    imageIced: "/attached_assets/machiatto_cold.png",
+    variants: ["Hot", "Iced"],
+    addOns: defaultAddOns,
+    type: "drink",
   },
   {
     name: "Golden Coffee",
-    variants: {
-      hot: {
-        description: "Unique turmeric-infused latte with warm spices for a cozy flavor.",
-        image: "/attached_assets/golden_coffee.png",
-        price: 5.0,
-      },
-    },
-    addOns: [],
+    description: "Turmeric-infused coffee blend with spices and milk.",
+    price: 4.99,
+    image: "/attached_assets/golden_coffee.png",
+    variants: ["Hot"],
+    addOns: [], // ❌ sin add-ons
+    type: "drink",
   },
   {
     name: "Empanada",
-    variants: {
-      apple: {
-        description: "Freshly baked apple empanada with a golden crust.",
-        image: "/attached_assets/empanada_apple.png",
-        price: 2.5,
-      },
-      pineapple: {
-        description: "Sweet pineapple empanada with a golden crust.",
-        image: "/attached_assets/empanada_pineapple.png",
-        price: 2.5,
-      },
-    },
-    addOns: [],
+    description: "Freshly baked empanadas filled with sweet fruit.",
+    price: 2.49,
+    image: "/attached_assets/empanada.png",
+    variants: ["Apple", "Pineapple"],
+    addOns: [], // ❌ sin add-ons
+    type: "empanada",
   },
 ];
