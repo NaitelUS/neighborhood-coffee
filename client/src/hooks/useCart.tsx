@@ -8,6 +8,7 @@ export interface AddOn {
 
 export interface CartItem {
   name: string;
+  variant?: "Hot" | "Iced";
   price: number;
   quantity: number;
   addOns?: AddOn[];
@@ -18,7 +19,6 @@ export const useCart = () => {
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-  // Load cart from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("current-order");
     if (stored) {
@@ -33,7 +33,6 @@ export const useCart = () => {
     }
   }, []);
 
-  // Save cart to localStorage on every change
   useEffect(() => {
     localStorage.setItem(
       "current-order",
@@ -43,20 +42,14 @@ export const useCart = () => {
 
   const addItem = (item: CartItem) => {
     setCartItems((prev) => {
-      const existing = prev.find((p) => p.name === item.name);
-      if (existing) {
-        return prev.map((p) =>
-          p.name === item.name
-            ? { ...p, quantity: p.quantity + item.quantity }
-            : p
-        );
-      }
       return [...prev, item];
     });
   };
 
-  const removeItem = (name: string) => {
-    setCartItems((prev) => prev.filter((p) => p.name !== name));
+  const removeItem = (name: string, variant?: "Hot" | "Iced") => {
+    setCartItems((prev) =>
+      prev.filter((p) => !(p.name === name && p.variant === variant))
+    );
   };
 
   const clearCart = () => {
