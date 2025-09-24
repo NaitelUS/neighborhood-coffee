@@ -1,27 +1,28 @@
 // client/src/pages/OrderPage.tsx
-import MenuItem from "@/components/MenuItem";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
-import { menuItems } from "@/data/menuData";
+import { useCart } from "@/hooks/useCart";
 
 export default function OrderPage() {
+  const { cart } = useCart();
+
   return (
-    <div className="container mx-auto flex gap-6 mt-8">
-      <div className="w-2/3">
-        <h2 className="text-xl font-bold mb-4">Our Coffee Menu</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Select your drink or pastry, customize it, and add to order.
-        </p>
-        <div className="grid grid-cols-2 gap-4">
-          {menuItems.map((item) => (
-            <MenuItem key={item.id} item={item} />
-          ))}
-        </div>
-      </div>
-      <div className="w-1/3">
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Place Your Order</h1>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Resumen del pedido */}
         <OrderSummary />
+
+        {/* Formulario de cliente */}
         <CustomerInfoForm />
       </div>
+
+      {(cart ?? []).length === 0 && (
+        <p className="text-gray-500 mt-6 text-sm text-center">
+          Your cart is empty. Please add items to continue.
+        </p>
+      )}
     </div>
   );
 }
