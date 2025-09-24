@@ -25,12 +25,14 @@ const OrderSummary: React.FC = () => {
                 {item.addOns?.length ? (
                   <ul className="ml-4 text-xs text-gray-600 list-disc">
                     {item.addOns.map((add, i) => (
-                      <li key={i}>{add.name} (+${add.price.toFixed(2)})</li>
+                      <li key={i}>
+                        {add.name} (+${(add.price ?? 0).toFixed(2)})
+                      </li>
                     ))}
                   </ul>
                 ) : null}
               </span>
-              <span>${(item.price * item.quantity).toFixed(2)}</span>
+              <span>${((item.price ?? 0) * item.quantity).toFixed(2)}</span>
             </li>
           ))}
         </ul>
@@ -38,17 +40,17 @@ const OrderSummary: React.FC = () => {
 
       <div className="flex justify-between text-sm">
         <span>Subtotal</span>
-        <span>${subtotal.toFixed(2)}</span>
+        <span>${(subtotal ?? 0).toFixed(2)}</span>
       </div>
       {discount > 0 && (
         <div className="flex justify-between text-sm text-green-600">
           <span>Discount</span>
-          <span>- ${discount.toFixed(2)}</span>
+          <span>- ${(discount ?? 0).toFixed(2)}</span>
         </div>
       )}
       <div className="flex justify-between font-semibold border-t pt-2 mt-2">
         <span>Total</span>
-        <span>${total.toFixed(2)}</span>
+        <span>${(total ?? 0).toFixed(2)}</span>
       </div>
 
       <div className="flex mt-3 gap-2">
