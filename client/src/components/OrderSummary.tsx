@@ -20,6 +20,11 @@ export default function OrderSummary() {
           <div key={idx} className="flex justify-between text-sm border-b pb-1">
             <div>
               <span>{item.name}</span>
+              {item.variant && (
+                <span className="ml-1 text-xs text-gray-500">
+                  ({item.variant})
+                </span>
+              )}
               {item.addOns && item.addOns.length > 0 && (
                 <em className="block text-xs text-gray-500">
                   + {item.addOns.map((a) => a.name).join(", ")}
@@ -27,7 +32,7 @@ export default function OrderSummary() {
               )}
             </div>
             <span>
-              ${(item.price * item.quantity ?? 0).toFixed(2)}
+              ${(((item.price ?? 0) * (item.quantity ?? 1))).toFixed(2)}
             </span>
           </div>
         ))
