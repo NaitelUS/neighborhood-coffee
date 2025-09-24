@@ -16,7 +16,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <img
-              src="/attached_assets/logo.png"
+              src="/attached_assets/tnclogo.png"
               alt="The Neighborhood Coffee"
               className="h-10"
             />
