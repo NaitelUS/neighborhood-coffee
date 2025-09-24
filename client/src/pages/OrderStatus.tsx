@@ -1,49 +1,78 @@
 // client/src/pages/OrderStatus.tsx
-import { useParams, Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+
+interface Order {
+  id: string;
+  customerName: string;
+  items: string[];
+  total: number;
+  status: string;
+  address?: string;
+}
 
 export default function OrderStatus() {
   const { id } = useParams<{ id: string }>();
-  const [status, setStatus] = useState("Received");
+  const [order, setOrder] = useState<Order | null>(null);
 
-  // Simula cambios de estado automáticos
+  // Cargar orden por ID
+  const loadOrder = () => {
+    const saved = localStorage.getItem("orders");
+    if (saved) {
+      const orders: Order[] = JSON.parse(saved);
+      const found = orders.find((o) => o.id === id);
+      setOrder(found || null);
+    }
+  };
+
   useEffect(() => {
-    const steps = ["Received", "In Progress", "Ready", "Out for Delivery", "Completed"];
-    let index = 0;
+    loadOrder();
+
+    // Refrescar cada 3s en caso de cambios desde Admin
     const interval = setInterval(() => {
-      index++;
-      if (index < steps.length) {
-        setStatus(steps[index]);
-      } else {
-        clearInterval(interval);
-      }
-    }, 5000); // cambia cada 5 segundos
+      loadOrder();
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [id]);
+
+  if (!order) {
+    return (
+      <div className="max-w-xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold">Order Not Found</h1>
+        <p className="text-gray-500 mt-2">
+          We couldn't find an order with ID: {id}
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 text-center">
+    <div className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Order Status</h1>
 
-      {id && (
-        <p className="text-md mb-4">
-          <span className="font-semibold">Order Number:</span> {id}
+      <div className="border rounded-lg p-4 space-y-2">
+        <p>
+          <strong>Order ID:</strong> {order.id}
         </p>
-      )}
-
-      <div className="p-4 border rounded-lg shadow-md bg-gray-50">
-        <p className="text-lg font-semibold">Current Status:</p>
-        <p className="text-green-700 text-xl mt-2">{status}</p>
-      </div>
-
-      <div className="mt-8">
-        <Link
-          to="/"
-          className="text-blue-600 hover:underline text-sm"
-        >
-          ← Back to Menu
-        </Link>
+        <p>
+          <strong>Customer:</strong> {order.customerName}
+        </p>
+        <p>
+          <strong>Items:</strong> {order.items.join(", ")}
+        </p>
+        <p>
+          <strong>Total:</strong> ${order.total.toFixed(2)}
+        </p>
+        <p>
+          <strong>Status:</strong>{" "}
+          <span className="text-blue-600 font-semibold">{order.status}</span>
+        </p>
+        {order.address && (
+          <p>
+            <strong>Delivery Address:</strong> {order.address}
+          </p>
+        )}
       </div>
     </div>
   );
