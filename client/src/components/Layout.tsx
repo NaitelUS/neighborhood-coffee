@@ -1,68 +1,44 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useCart } from "../hooks/useCart";
+import { Link } from "react-router-dom";
+import { useCart } from "@/hooks/useCart";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { cartItems } = useCart();
-  const location = useLocation();
-
-  const isAdminPage = location.pathname.startsWith("/admin");
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <img
-              src="/attached_assets/tnclogo.png"
-              alt="The Neighborhood Coffee"
-              className="h-10"
-            />
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <header className="flex items-center justify-between px-4 py-2 shadow-md bg-white sticky top-0 z-50">
+        <img
+          src="/attached_assets/tnclogo.png"
+          alt="The Neighborhood Coffee"
+          className="h-10"
+        />
+        <div className="relative">
+          <Link to="/order">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="h-7 w-7 text-gray-700"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.25 2.25h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25h10.721c.873 0 1.636-.564 1.894-1.395l2.382-7.617A.75.75 0 0021.75 4.5H5.016M7.5 14.25L5.016 4.5M7.5 14.25L6.375 18m0 0a2.25 2.25 0 104.5 0m-4.5 0h4.5m6.375-3.75L17.625 18m0 0a2.25 2.25 0 104.5 0m-4.5 0h4.5"
+              />
+            </svg>
+            {cartItems.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
+                {cartItems.length}
+              </span>
+            )}
           </Link>
-
-          {/* Info (solo en páginas no admin) */}
-          {!isAdminPage && (
-            <div className="text-right text-xs text-gray-700 leading-tight">
-              <div className="font-semibold">The Neighborhood Coffee</div>
-              <div>📍 123 Main St, El Paso, TX</div>
-              <div>📞 (915) 555-1234</div>
-              <div>⏰ Mon–Sat 6:00 AM – 11:00 AM</div>
-              <div>💳 We accept Zelle, Cash & Card</div>
-            </div>
-          )}
-
-          {/* Cart (oculto en admin) */}
-          {!isAdminPage && (
-            <nav className="flex items-center space-x-6 text-sm">
-              <Link to="/cart" className="relative">
-                🛒
-                {cartItems?.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2">
-                    {cartItems?.length || 0}
-                  </span>
-                )}
-              </Link>
-            </nav>
-          )}
         </div>
-
-        {/* Tagline */}
-        {!isAdminPage && (
-          <div className="bg-gray-100 text-center py-1 text-xs italic text-gray-600">
-            It is not coffee… it’s a neighborhood ritual ☕
-          </div>
-        )}
       </header>
 
-      {/* Main */}
-      <main className="flex-1 pt-28 pb-10">{children}</main>
-
-      {/* Footer */}
-      <footer className="bg-gray-100 text-center text-xs text-gray-500 py-4">
-        © {new Date().getFullYear()} The Neighborhood Coffee. All rights reserved.
-      </footer>
+      <main className="flex-1 p-4">{children}</main>
     </div>
   );
 };
