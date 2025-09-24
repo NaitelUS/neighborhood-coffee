@@ -8,13 +8,13 @@ export default function OrderSummary() {
   const [coupon, setCoupon] = useState("");
   const [discountApplied, setDiscountApplied] = useState(false);
 
-  const subtotal = cart.reduce((sum, item) => {
-    const addOnsTotal = item.addOns?.reduce((aSum, addOnId) => {
-      const addOn = addOnOptions.find((o) => o.id === addOnId);
-      return aSum + (addOn ? addOn.price : 0);
-    }, 0) ?? 0;
+  const subtotal = (cart ?? []).reduce((sum, item) => {
+  const addOnsTotal = item.addOns?.reduce((aSum, addOnId) => {
+    const addOn = addOnOptions.find((o) => o.id === addOnId);
+    return aSum + (addOn ? addOn.price : 0);
+  }, 0) ?? 0;
 
-    return sum + (item.price + addOnsTotal) * item.quantity;
+  return sum + (item.price + addOnsTotal) * item.quantity;
   }, 0);
 
   const discount = discountApplied ? subtotal * COUPON_DISCOUNT : 0;
