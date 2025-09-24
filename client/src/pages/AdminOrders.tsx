@@ -20,8 +20,10 @@ type Order = {
   total: number;
 };
 
-const AdminOrders: React.FC = () => {
+export default function AdminOrders() {
   const { cartItems, discount } = useCart();
+
+  // Simulación de orden inicial con items actuales del carrito
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "1001",
@@ -34,7 +36,7 @@ const AdminOrders: React.FC = () => {
       subtotal: cartItems.reduce(
         (acc, item) =>
           acc +
-          (item.price ?? 0) * item.quantity +
+          ((item.price ?? 0) * item.quantity) +
           ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
             item.quantity),
         0
@@ -44,7 +46,7 @@ const AdminOrders: React.FC = () => {
         cartItems.reduce(
           (acc, item) =>
             acc +
-            (item.price ?? 0) * item.quantity +
+            ((item.price ?? 0) * item.quantity) +
             ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
               item.quantity),
           0
@@ -106,10 +108,10 @@ const AdminOrders: React.FC = () => {
               <ul className="divide-y divide-gray-200 mb-3">
                 {order.items.map((item, idx) => (
                   <li key={idx} className="py-2 flex justify-between">
-                    <span>
+                    <div>
                       {item.quantity}× {item.name}
                       {item.variant ? ` — ${item.variant}` : ""}
-                      {item.addOns?.length ? (
+                      {item.addOns && item.addOns.length > 0 && (
                         <ul className="ml-4 text-xs text-gray-600 list-disc">
                           {item.addOns.map((add, i) => (
                             <li key={i}>
@@ -117,8 +119,8 @@ const AdminOrders: React.FC = () => {
                             </li>
                           ))}
                         </ul>
-                      ) : null}
-                    </span>
+                      )}
+                    </div>
                     <span>${((item.price ?? 0) * item.quantity).toFixed(2)}</span>
                   </li>
                 ))}
@@ -144,6 +146,4 @@ const AdminOrders: React.FC = () => {
       )}
     </div>
   );
-};
-
-export default AdminOrders;
+}
