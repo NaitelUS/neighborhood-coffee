@@ -1,5 +1,5 @@
 import React from "react";
-import { useCart } from "../hooks/useCart";
+import { useCart } from "@/hooks/useCart";
 import { Link, useParams } from "react-router-dom";
 
 const ThankYou: React.FC = () => {
@@ -9,19 +9,18 @@ const ThankYou: React.FC = () => {
   const subtotal = cartItems.reduce(
     (acc, item) =>
       acc +
-      item.price * item.quantity +
-      ((item.addOns?.reduce((a, add) => a + add.price, 0) || 0) * item.quantity),
+      (item.price ?? 0) * item.quantity +
+      ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
+        item.quantity),
     0
   );
 
-  const total = (subtotal - discount).toFixed(2);
+  const total = (subtotal - (discount ?? 0));
 
   return (
     <div className="bg-white rounded-md shadow-md p-6 max-w-xl mx-auto mt-6">
       <h1 className="text-2xl font-bold text-center mb-4">🎉 Thank You!</h1>
-      <p className="text-center mb-6">
-        Your order has been placed successfully.
-      </p>
+      <p className="text-center mb-6">Your order has been placed successfully.</p>
 
       <div className="bg-gray-50 border rounded-md p-4 mb-6">
         <p className="font-semibold mb-2">
@@ -40,14 +39,14 @@ const ThankYou: React.FC = () => {
                       <ul className="ml-4 text-xs text-gray-600 list-disc">
                         {item.addOns.map((add, i) => (
                           <li key={i}>
-                            {add.name} (+${add.price.toFixed(2)})
+                            {add.name} (+${(add.price ?? 0).toFixed(2)})
                           </li>
                         ))}
                       </ul>
                     ) : null}
                   </span>
                   <span className="font-medium">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    ${((item.price ?? 0) * item.quantity).toFixed(2)}
                   </span>
                 </div>
               </li>
@@ -59,19 +58,19 @@ const ThankYou: React.FC = () => {
 
         <div className="flex justify-between text-sm mt-3">
           <span>Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <span>${(subtotal ?? 0).toFixed(2)}</span>
         </div>
 
         {discount > 0 && (
           <div className="flex justify-between text-sm text-green-600">
             <span>Discount</span>
-            <span>- ${discount.toFixed(2)}</span>
+            <span>- ${(discount ?? 0).toFixed(2)}</span>
           </div>
         )}
 
         <div className="flex justify-between font-semibold text-base border-t pt-2 mt-2">
           <span>Total</span>
-          <span>${total}</span>
+          <span>${(total ?? 0).toFixed(2)}</span>
         </div>
       </div>
 
