@@ -10,7 +10,7 @@ type Order = {
   status: "Received" | "In Process" | "Ready" | "Delivered";
   items: {
     name: string;
-    variant?: "Hot" | "Iced";
+    variant?: string;
     quantity: number;
     price: number;
     addOns?: { name: string; price: number }[];
@@ -21,7 +21,6 @@ type Order = {
 };
 
 const AdminOrders: React.FC = () => {
-  // Simulación local (en real vendría de la API/backend)
   const { cartItems, discount } = useCart();
   const [orders, setOrders] = useState<Order[]>([
     {
@@ -35,18 +34,21 @@ const AdminOrders: React.FC = () => {
       subtotal: cartItems.reduce(
         (acc, item) =>
           acc +
-          item.price * item.quantity +
-          ((item.addOns?.reduce((a, add) => a + add.price, 0) || 0) * item.quantity),
+          (item.price ?? 0) * item.quantity +
+          ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
+            item.quantity),
         0
       ),
-      discount,
-      total: cartItems.reduce(
-        (acc, item) =>
-          acc +
-          item.price * item.quantity +
-          ((item.addOns?.reduce((a, add) => a + add.price, 0) || 0) * item.quantity),
-        0
-      ) - discount,
+      discount: discount ?? 0,
+      total:
+        cartItems.reduce(
+          (acc, item) =>
+            acc +
+            (item.price ?? 0) * item.quantity +
+            ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
+              item.quantity),
+          0
+        ) - (discount ?? 0),
     },
   ]);
 
@@ -111,30 +113,30 @@ const AdminOrders: React.FC = () => {
                         <ul className="ml-4 text-xs text-gray-600 list-disc">
                           {item.addOns.map((add, i) => (
                             <li key={i}>
-                              {add.name} (+${add.price.toFixed(2)})
+                              {add.name} (+${(add.price ?? 0).toFixed(2)})
                             </li>
                           ))}
                         </ul>
                       ) : null}
                     </span>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span>${((item.price ?? 0) * item.quantity).toFixed(2)}</span>
                   </li>
                 ))}
               </ul>
 
               <div className="flex justify-between text-sm">
                 <span>Subtotal</span>
-                <span>${order.subtotal.toFixed(2)}</span>
+                <span>${(order.subtotal ?? 0).toFixed(2)}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Discount</span>
-                  <span>- ${order.discount.toFixed(2)}</span>
+                  <span>- ${(order.discount ?? 0).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold border-t pt-2 mt-2">
                 <span>Total</span>
-                <span>${order.total.toFixed(2)}</span>
+                <span>${(order.total ?? 0).toFixed(2)}</span>
               </div>
             </div>
           ))}
