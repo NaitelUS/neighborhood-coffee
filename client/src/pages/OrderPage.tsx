@@ -2,35 +2,33 @@ import React, { useState } from "react";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { useCart } from "@/hooks/useCart";
-import { COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 
 export default function OrderPage() {
-  const { cartItems, addToCart, subtotal, discount, total, applyCoupon } =
-    useCart();
-
+  const { cartItems, applyCoupon } = useCart();
   const [couponInput, setCouponInput] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "delivery">(
     "pickup"
   );
   const [address, setAddress] = useState("");
 
-  const handleAddToCart = (item: any) => {
-    addToCart(item);
-  };
-
+  // Aplicar cupón
   const handleCoupon = () => {
-    if (couponInput.trim().toUpperCase() === COUPON_CODE) {
-      applyCoupon(COUPON_DISCOUNT);
-    } else {
-      alert("Invalid coupon code");
+    if (couponInput.trim() !== "") {
+      applyCoupon(couponInput);
     }
   };
 
+  // Enviar orden
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (cartItems.length === 0) {
       alert("Please add items to your order before submitting.");
+      return;
+    }
+
+    if (deliveryMethod === "delivery" && !address.trim()) {
+      alert("Please enter a delivery address.");
       return;
     }
 
@@ -40,13 +38,13 @@ export default function OrderPage() {
 
   return (
     <div className="max-w-6xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Menu placeholder */}
+      {/* Placeholder de menú */}
       <div className="md:col-span-2">
         <h1 className="text-2xl font-bold mb-4">Our Coffee Menu</h1>
         <p className="text-gray-600 mb-6">
           Select your drink or pastry, customize it, and add to order.
         </p>
-        {/* Aquí deberías renderizar <MenuItem /> con props */}
+        {/* Aquí se renderizan los <MenuItem /> según tu menú */}
       </div>
 
       {/* Sidebar */}
@@ -108,10 +106,10 @@ export default function OrderPage() {
           )}
         </div>
 
-        {/* Customer info */}
+        {/* Customer Info */}
         <CustomerInfoForm />
 
-        {/* Submit button */}
+        {/* Submit */}
         <button
           onClick={handleSubmit}
           className="mt-4 w-full bg-emerald-600 text-white py-2 rounded hover:bg-emerald-700"
