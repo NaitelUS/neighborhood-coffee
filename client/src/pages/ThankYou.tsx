@@ -4,7 +4,7 @@ import { useCart } from "../hooks/useCart";
 
 const ThankYou: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { cartItems = [], discount = 0 } = useCart();
+  const { cartItems = [], discount = 0, appliedCoupon } = useCart();
 
   const subtotal = cartItems.reduce(
     (acc, item) =>
@@ -52,10 +52,12 @@ const ThankYou: React.FC = () => {
       </div>
 
       {discount > 0 && (
-        <div className="flex justify-between text-sm text-green-600 mb-1">
-          <span>Discount (Coupon)</span>
-          <span>- ${discount.toFixed(2)}</span>
-        </div>
+        <>
+          <div className="flex justify-between text-sm text-green-600 mb-1">
+            <span>Discount ({appliedCoupon})</span>
+            <span>- ${discount.toFixed(2)}</span>
+          </div>
+        </>
       )}
 
       <div className="flex justify-between font-semibold text-base border-t pt-2 mb-6">
