@@ -7,7 +7,6 @@ const OrderSummary: React.FC = () => {
   const [coupon, setCoupon] = useState("");
   const [error, setError] = useState("");
 
-  // Calcular subtotal
   const subtotal = cartItems.reduce(
     (acc, item) =>
       acc +
@@ -32,13 +31,14 @@ const OrderSummary: React.FC = () => {
     <div className="bg-white rounded-md shadow-md p-4">
       <h2 className="text-lg font-semibold mb-3">Your Order</h2>
 
-      {cartItems && cartItems.length > 0 ? (
+      {cartItems.length > 0 ? (
         <ul className="divide-y divide-gray-200 mb-3">
           {cartItems.map((item, idx) => (
             <li key={idx} className="py-2">
               <div className="flex justify-between">
                 <span>
                   {item.quantity}× {item.name}
+                  {item.variant ? ` — ${item.variant}` : ""}
                   {item.addOns?.length ? (
                     <ul className="ml-4 text-xs text-gray-600 list-disc">
                       {item.addOns.map((add, i) => (
@@ -65,7 +65,7 @@ const OrderSummary: React.FC = () => {
 
       {discount > 0 && (
         <div className="flex justify-between text-sm text-green-600 mb-1">
-          <span>Discount (Coupon)</span>
+          <span>Discount</span>
           <span>- ${discount.toFixed(2)}</span>
         </div>
       )}
@@ -86,7 +86,7 @@ const OrderSummary: React.FC = () => {
         />
         <button
           onClick={handleApplyCoupon}
-          className="bg-brown-600 hover:bg-brown-700 text-white px-3 py-1 rounded"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded"
         >
           Apply
         </button>
