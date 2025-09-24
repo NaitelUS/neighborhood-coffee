@@ -1,76 +1,110 @@
-export const drinkOptions = [
+export interface Variant {
+  description: string;
+  image: string;
+  price: number;
+}
+
+export interface MenuItemData {
+  name: string;
+  variants: {
+    hot: Variant;
+    iced?: Variant;
+  };
+  addOns?: { name: string; price: number }[];
+}
+
+export const menuData: MenuItemData[] = [
   {
-    id: "americano",
     name: "Americano",
-    basePrice: 3.75,
-    description: "Rich espresso shots with hot water, creating a smooth and bold coffee experience.",
-    images: {
-      hot: "/attached_assets/Hot_Americano_Coffee_511b6324.png",
-      iced: "/attached_assets/Iced_Americano_Coffee_57bcec89.png",
+    variants: {
+      hot: {
+        description:
+          "Rich espresso shots blended with hot water, delivering a bold and smooth hot coffee experience.",
+        image: "/attached_assets/americano_hot.jpg",
+        price: 3.75,
+      },
+      iced: {
+        description:
+          "Bold espresso poured over chilled water and ice for a smooth, refreshing coffee experience.",
+        image: "/attached_assets/americano_iced.jpg",
+        price: 3.75,
+      },
     },
+    addOns: [
+      { name: "Extra Shot", price: 1.0 },
+      { name: "Almond Milk", price: 0.75 },
+      { name: "Oat Milk", price: 0.75 },
+    ],
   },
   {
-    id: "latte",
     name: "Latte",
-    basePrice: 4.5,
-    description: "Perfectly steamed milk combined with our signature espresso for a creamy, comforting drink.",
-    images: {
-      hot: "/attached_assets/Hot_Latte_Coffee_c0cec515.png",
-      iced: "/attached_assets/Iced_Latte_Coffee_ebf0391f.png",
+    variants: {
+      hot: {
+        description:
+          "Perfectly steamed milk combined with espresso for a creamy, comforting hot latte.",
+        image: "/attached_assets/latte_hot.jpg",
+        price: 4.5,
+      },
+      iced: {
+        description:
+          "Smooth espresso poured over cold milk and ice, for a refreshing and creamy iced latte.",
+        image: "/attached_assets/latte_iced.jpg",
+        price: 4.5,
+      },
     },
+    addOns: [
+      { name: "Vanilla Syrup", price: 0.5 },
+      { name: "Caramel Syrup", price: 0.5 },
+      { name: "Soy Milk", price: 0.75 },
+    ],
   },
   {
-    id: "mocha",
-    name: "Mocha",
-    basePrice: 5.25,
-    description: "A delightful blend of rich espresso, steamed milk, and decadent chocolate, topped with whipped cream.",
-    images: {
-      hot: "/attached_assets/Hot_Mocha_Coffee_0428bb6d.png",
-      iced: "/attached_assets/Iced_Mocha_Coffee_8dea2fdb.png",
+    name: "Caramel Macchiato",
+    variants: {
+      hot: {
+        description:
+          "Velvety steamed milk combined with rich espresso, finished with a warm caramel drizzle on top of foamy milk for a smooth and indulgent treat.",
+        image: "/attached_assets/machiatto_hot.png",
+        price: 4.5,
+      },
+      iced: {
+        description:
+          "Chilled espresso layered with creamy milk over ice, topped with a sweet caramel drizzle for a refreshing balance of bold and smooth flavors.",
+        image: "/attached_assets/machiatto_cold.png",
+        price: 4.5,
+      },
     },
+    addOns: [
+      { name: "Extra Shot", price: 1.0 },
+      { name: "Almond Milk", price: 0.75 },
+      { name: "Oat Milk", price: 0.75 },
+    ],
   },
   {
-    id: "golden",
     name: "Golden Coffee",
-    basePrice: 4.75,
-    description: "A unique blend of coffee with turmeric and warming spices.",
-    images: {
-      hot: "/attached_assets/Hot_Golden_Coffee_d91f826e.png",
+    variants: {
+      hot: {
+        description:
+          "A unique blend of espresso and spices, crafted to deliver a smooth, golden-hued coffee with a warming finish.",
+        image: "/attached_assets/golden_coffee.jpg",
+        price: 5.0,
+      },
     },
+    addOns: [{ name: "Extra Shot", price: 1.0 }],
   },
   {
-    id: "cafeaulait",
-    name: "Café au Lait",
-    basePrice: 4.25,
-    description: "Traditional French-style coffee with equal parts strong coffee and steamed milk.",
-    images: {
-      hot: "/attached_assets/Hot_Café_au_Lait_8c8a1ed2.png",
-      iced: "/attached_assets/Iced_Café_au_Lait_60f2c4d8.png",
+    name: "Empanada",
+    variants: {
+      hot: {
+        description:
+          "Freshly baked empanadas with a golden crust, available in sweet and savory options.",
+        image: "/attached_assets/empanada.jpg",
+        price: 2.5,
+      },
     },
-  },
-  {
-    id: "empanada",
-    name: "Handcrafted Empanadas",
-    basePrice: 2.75,
-    description:
-      "Artisan empanada with a golden, flaky crust and sweet homemade fruit jam.",
-    options: ["Apple", "Pineapple"],
-    images: {
-      apple: "/attached_assets/Apple-Soon.png",
-      pineapple: "/attached_assets/Pineapple-Soon.png",
-    },
-    comingSoon: true,
+    addOns: [
+      { name: "Extra Cheese", price: 0.5 },
+      { name: "Spicy Salsa", price: 0.3 },
+    ],
   },
 ];
-
-export const addOnOptions = [
-  { id: "extraShot",    name: "Extra Espresso Shot", price: 0.75 },
-  { id: "oatMilk",      name: "Oat Milk",            price: 0.5  },
-  { id: "hazelnutSyrup",name: "Hazelnut Syrup",      price: 0.5  },
-  { id: "caramelSyrup", name: "Caramel Syrup",       price: 0.5  },
-  { id: "vanillaSyrup", name: "Vanilla Syrup",       price: 0.5  },
-  { id: "whippedCream", name: "Whipped Cream",       price: 0.5  },
-];
-
-export const COUPON_CODE = "NEIGHBOR15";
-export const COUPON_DISCOUNT = 0.15;
