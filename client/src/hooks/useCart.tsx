@@ -1,92 +1,70 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { coupons } from "../data/coupons";
 
-export interface CartAddOn { id: string; name: string; price: number }
-export interface CartItem {
-  id: string;
+export interface AddOn {
   name: string;
+  price: number;
+}
+
+export interface CartItem {
+  name: string;
+  price: number;
   quantity: number;
-  basePrice: number;
-  addOns: CartAddOn[];
-  temperature?: "hot" | "iced";
-  option?: string;
+  addOns?: AddOn[];
 }
 
-type CurrentOrder = { items: CartItem[] };
+export const useCart = () => {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [discount, setDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-function readCurrentOrder(): CurrentOrder {
-  try {
-    const raw = localStorage.getItem("current-order");
-    if (!raw) return { items: [] };
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return { items: parsed };              // formato viejo
-    if (parsed && Array.isArray(parsed.items)) return { items: parsed.items };
-    return { items: [] };
-  } catch {
-    return { items: [] };
-  }
-}
-
-function writeCurrentOrder(items: CartItem[]) {
-  localStorage.setItem("current-order", JSON.stringify({ items }));
-}
-
-export function useCart() {
-  const [items, setItems] = useState<CartItem[]>(() => readCurrentOrder().items);
-
-  // sync entre pestañas
+  // Load cart from localStorage
   useEffect(() => {
-    const onStorage = () => setItems(readCurrentOrder().items);
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    const stored = localStorage.getItem("current-order");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setCartItems(parsed.cartItems || []);
+        setDiscount(parsed.discount || 0);
+        setAppliedCoupon(parsed.appliedCoupon || null);
+      } catch (err) {
+        console.error("Error parsing current-order:", err);
+      }
+    }
   }, []);
 
-  // persistir
+  // Save cart to localStorage on every change
   useEffect(() => {
-    writeCurrentOrder(items);
-  }, [items]);
+    localStorage.setItem(
+      "current-order",
+      JSON.stringify({ cartItems, discount, appliedCoupon })
+    );
+  }, [cartItems, discount, appliedCoupon]);
 
   const addItem = (item: CartItem) => {
-    // Normaliza addOns
-    const safeItem: CartItem = {
-      ...item,
-      addOns: Array.isArray(item.addOns) ? item.addOns : [],
-      quantity: Number(item.quantity || 1),
-      basePrice: Number(item.basePrice || 0),
-    };
-
-    setItems((prev) => {
-      const idx = prev.findIndex(
-        (p) =>
-          p.id === safeItem.id &&
-          p.temperature === safeItem.temperature &&
-          p.option === safeItem.option &&
-          JSON.stringify(p.addOns) === JSON.stringify(safeItem.addOns)
-      );
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], quantity: next[idx].quantity + safeItem.quantity };
-        return next;
+    setCartItems((prev) => {
+      const existing = prev.find((p) => p.name === item.name);
+      if (existing) {
+        return prev.map((p) =>
+          p.name === item.name
+            ? { ...p, quantity: p.quantity + item.quantity }
+            : p
+        );
       }
-      return [...prev, safeItem];
+      return [...prev, item];
     });
   };
 
-  const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
-
-  const clearCart = () => {
-    setItems([]);
-    localStorage.removeItem("current-order");
+  const removeItem = (name: string) => {
+    setCartItems((prev) => prev.filter((p) => p.name !== name));
   };
 
-  const subtotal = items.reduce(
-    (acc, it) =>
-      acc +
-      (Number(it.basePrice || 0) + it.addOns.reduce((s, a) => s + Number(a.price || 0), 0)) *
-        Number(it.quantity || 0),
-    0
-  );
+  const clearCart = () => {
+    setCartItems([]);
+    setDiscount(0);
+    setAppliedCoupon(null);
+  };
 
-  const totalItems = items.reduce((acc, it) => acc + Number(it.quantity || 0), 0);
-
-  return { items, addItem, removeItem, clearCart, subtotal, totalItems };
-}
+  const applyCoupon = (code: string) => {
+    const normalized = code.trim().toUpperCase();
+    if (coupons[n]()
