@@ -9,9 +9,9 @@ export default function ThankYou() {
   const subtotal = cartItems.reduce(
     (acc, item) =>
       acc +
-      ((item.price ?? 0) * item.quantity) +
+      ((item.price ?? 0) * (item.quantity ?? 1)) +
       ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
-        item.quantity),
+        (item.quantity ?? 1)),
     0
   );
 
@@ -47,7 +47,7 @@ export default function ThankYou() {
                   )}
                 </div>
                 <span className="font-medium">
-                  ${((item.price ?? 0) * item.quantity).toFixed(2)}
+                  ${(((item.price ?? 0) * (item.quantity ?? 1))).toFixed(2)}
                 </span>
               </li>
             ))}
