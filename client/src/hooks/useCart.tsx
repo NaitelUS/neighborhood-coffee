@@ -8,7 +8,7 @@ export function useCart() {
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-  // Inicializar desde localStorage
+  // Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -20,17 +20,23 @@ export function useCart() {
     }
   }, []);
 
-  // Guardar en localStorage
+  // Save to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // Agregar ítem al carrito
+  // Add item
   const addItem = (item: any) => {
-    setCartItems((prev) => [...prev, item]);
+    if (!item || !item.name) return;
+    setCartItems((prev) => [...prev, { ...item, price: item.price ?? 0, quantity: item.quantity ?? 1 }]);
   };
 
-  // Limpiar carrito
+  // Remove item by index
+  const removeFromCart = (index: number) => {
+    setCartItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Clear cart
   const clearCart = () => {
     setCartItems([]);
     setDiscount(0);
@@ -38,16 +44,16 @@ export function useCart() {
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  // Aplicar cupón
+  // Apply coupon
   const applyCoupon = (code: string) => {
     const normalized = code.trim().toUpperCase();
     if (coupons[normalized]) {
       const subtotalCalc = cartItems.reduce(
         (acc, item) =>
           acc +
-          ((item.price ?? 0) * item.quantity) +
+          ((item.price ?? 0) * (item.quantity ?? 1)) +
           ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
-            item.quantity),
+            (item.quantity ?? 1)),
         0
       );
       setDiscount(subtotalCalc * coupons[normalized]);
@@ -58,13 +64,13 @@ export function useCart() {
     }
   };
 
-  // Calcular totales
+  // Totals
   const subtotal = cartItems.reduce(
     (acc, item) =>
       acc +
-      ((item.price ?? 0) * item.quantity) +
+      ((item.price ?? 0) * (item.quantity ?? 1)) +
       ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
-        item.quantity),
+        (item.quantity ?? 1)),
     0
   );
   const total = subtotal - (discount ?? 0);
@@ -86,13 +92,14 @@ export function useCart() {
 
     clearCart();
 
-    // Redirigir a página Thank You
+    // Redirect to Thank You page
     window.location.href = `/thank-you/${orderId}`;
   };
 
   return {
     cartItems,
     addItem,
+    removeFromCart,
     clearCart,
     subtotal,
     discount,
