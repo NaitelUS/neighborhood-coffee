@@ -33,7 +33,7 @@ export default function MenuItem({ item }: Props) {
   return (
     <div className="border rounded-lg shadow-sm p-4">
       <img
-        src={`/attached_assets/${item.image}`}
+        src={item.image}
         alt={item.name}
         className="w-full h-40 object-cover rounded"
       />
@@ -41,6 +41,7 @@ export default function MenuItem({ item }: Props) {
       <p className="text-sm text-gray-600">{item.description}</p>
       <p className="font-bold mt-1">${item.price.toFixed(2)}</p>
 
+      {/* Opciones Hot/Iced o Apple/Pineapple */}
       {item.options && (
         <div className="flex gap-2 mt-2">
           {item.options.map((opt) => (
@@ -57,6 +58,7 @@ export default function MenuItem({ item }: Props) {
         </div>
       )}
 
+      {/* Add-ons solo para bebidas (excepto Golden y Empanada) */}
       {item.id !== "golden" && item.id !== "empanada" && (
         <div className="mt-2">
           <p className="font-medium text-sm">Customize your drink:</p>
@@ -71,12 +73,6 @@ export default function MenuItem({ item }: Props) {
               {a.name} (+${a.price.toFixed(2)})
             </label>
           ))}
-        </div>
-      )}
-
-      {item.id === "empanada" && (
-        <div className="mt-2 text-sm text-gray-700">
-          Choose your flavor: {item.options?.join(" / ")}
         </div>
       )}
 
