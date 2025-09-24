@@ -23,6 +23,7 @@ type Order = {
 export default function AdminOrders() {
   const { cartItems, discount } = useCart();
 
+  // Simulación de orden inicial con items actuales del carrito
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "1001",
@@ -138,4 +139,13 @@ export default function AdminOrders() {
                 </div>
               )}
               <div className="flex justify-between font-semibold border-t pt-2 mt-2">
-                <span>Total</sp
+                <span>Total</span>
+                <span>${(order.total ?? 0).toFixed(2)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
