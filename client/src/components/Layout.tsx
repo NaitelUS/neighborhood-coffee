@@ -22,7 +22,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             />
           </Link>
 
-          {/* Cart (hidden in admin pages) */}
+          {/* Info (solo en páginas no admin) */}
+          {!isAdminPage && (
+            <div className="text-right text-xs text-gray-700 leading-tight">
+              <div className="font-semibold">The Neighborhood Coffee</div>
+              <div>📍 123 Main St, El Paso, TX</div>
+              <div>📞 (915) 555-1234</div>
+              <div>⏰ Mon–Sat 6:00 AM – 11:00 AM</div>
+              <div>💳 We accept Zelle, Cash & Card</div>
+            </div>
+          )}
+
+          {/* Cart (oculto en admin) */}
           {!isAdminPage && (
             <nav className="flex items-center space-x-6 text-sm">
               <Link to="/cart" className="relative">
@@ -36,10 +47,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </nav>
           )}
         </div>
+
+        {/* Tagline */}
+        {!isAdminPage && (
+          <div className="bg-gray-100 text-center py-1 text-xs italic text-gray-600">
+            It is not coffee… it’s a neighborhood ritual ☕
+          </div>
+        )}
       </header>
 
       {/* Main */}
-      <main className="flex-1 pt-24 pb-10">{children}</main>
+      <main className="flex-1 pt-28 pb-10">{children}</main>
 
       {/* Footer */}
       <footer className="bg-gray-100 text-center text-xs text-gray-500 py-4">
