@@ -1,76 +1,56 @@
 import { useState, useEffect } from "react";
-import { coupons } from "../data/coupons";
+import { coupons } from "@/data/coupons";
 
-export interface AddOn {
-  name: string;
-  price: number;
-}
+const STORAGE_KEY = "current-order";
 
-export interface CartItem {
-  name: string;
-  variant?: "Hot" | "Iced";
-  price: number;
-  quantity: number;
-  addOns?: AddOn[];
-}
-
-export const useCart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+export function useCart() {
+  const [cartItems, setCartItems] = useState<any[]>([]);
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
+  // Inicializar desde localStorage
   useEffect(() => {
-    const stored = localStorage.getItem("current-order");
-    if (stored) {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
       try {
-        const parsed = JSON.parse(stored);
-        setCartItems(parsed.cartItems || []);
-        setDiscount(parsed.discount || 0);
-        setAppliedCoupon(parsed.appliedCoupon || null);
-      } catch (err) {
-        console.error("Error parsing current-order:", err);
+        setCartItems(JSON.parse(saved));
+      } catch {
+        setCartItems([]);
       }
     }
   }, []);
 
+  // Guardar en localStorage
   useEffect(() => {
-    localStorage.setItem(
-      "current-order",
-      JSON.stringify({ cartItems, discount, appliedCoupon })
-    );
-  }, [cartItems, discount, appliedCoupon]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
+  }, [cartItems]);
 
-  const addItem = (item: CartItem) => {
-    setCartItems((prev) => {
-      return [...prev, item];
-    });
+  // Agregar ítem al carrito
+  const addItem = (item: any) => {
+    setCartItems((prev) => [...prev, item]);
   };
 
-  const removeItem = (name: string, variant?: "Hot" | "Iced") => {
-    setCartItems((prev) =>
-      prev.filter((p) => !(p.name === name && p.variant === variant))
-    );
-  };
-
+  // Limpiar carrito
   const clearCart = () => {
     setCartItems([]);
     setDiscount(0);
     setAppliedCoupon(null);
+    localStorage.removeItem(STORAGE_KEY);
   };
 
+  // Aplicar cupón
   const applyCoupon = (code: string) => {
     const normalized = code.trim().toUpperCase();
     if (coupons[normalized]) {
-      const subtotal = cartItems.reduce(
+      const subtotalCalc = cartItems.reduce(
         (acc, item) =>
           acc +
-          item.price * item.quantity +
-          ((item.addOns?.reduce((a, add) => a + add.price, 0) || 0) *
+          ((item.price ?? 0) * item.quantity) +
+          ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
             item.quantity),
         0
       );
-      const newDiscount = subtotal * coupons[normalized];
-      setDiscount(newDiscount);
+      setDiscount(subtotalCalc * coupons[normalized]);
       setAppliedCoupon(normalized);
     } else {
       setDiscount(0);
@@ -78,13 +58,46 @@ export const useCart = () => {
     }
   };
 
+  // Calcular totales
+  const subtotal = cartItems.reduce(
+    (acc, item) =>
+      acc +
+      ((item.price ?? 0) * item.quantity) +
+      ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
+        item.quantity),
+    0
+  );
+  const total = subtotal - (discount ?? 0);
+
+  // Submit order
+  const submitOrder = (customer: any) => {
+    const orderId = Math.floor(Math.random() * 100000).toString();
+    const order = {
+      id: orderId,
+      customer,
+      items: cartItems,
+      subtotal,
+      discount,
+      total,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log("Order submitted:", order);
+
+    clearCart();
+
+    // Redirigir a página Thank You
+    window.location.href = `/thank-you/${orderId}`;
+  };
+
   return {
     cartItems,
     addItem,
-    removeItem,
     clearCart,
+    subtotal,
     discount,
-    appliedCoupon,
+    total,
     applyCoupon,
+    submitOrder,
   };
-};
+}
