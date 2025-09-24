@@ -1,147 +1,68 @@
 import React, { useState } from "react";
-import { coupons } from "../data/coupons";
-import { useCart } from "../hooks/useCart";
 
-interface CustomerInfo {
-  name: string;
-  phone: string;
-  address: string;
-  date: string;
-  time: string;
-}
-
-const CustomerInfoForm: React.FC<{ onSubmit: (info: CustomerInfo) => void }> = ({
-  onSubmit,
-}) => {
-  const [form, setForm] = useState<CustomerInfo>({
-    name: "",
-    phone: "",
-    address: "",
-    date: "",
-    time: "",
-  });
-  const [coupon, setCoupon] = useState("");
-  const [error, setError] = useState<string>("");
-
-  const { applyCoupon } = useCart();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const orderDate = new Date(`${form.date}T${form.time}`);
-    const now = new Date();
-
-    // Bloqueo fechas pasadas
-    if (orderDate < now) {
-      setError("😅 Sorry, you can't order in the past!");
-      return;
-    }
-
-    // Bloqueo domingos
-    if (orderDate.getDay() === 0) {
-      setError("🚫 We rest on Sundays – see you Monday morning!");
-      return;
-    }
-
-    // Validación horario
-    const hour = orderDate.getHours();
-    if (hour < 6 || hour >= 11) {
-      setError("⏰ Orders only accepted between 6:00 AM and 11:00 AM.");
-      return;
-    }
-
-    setError("");
-    onSubmit(form);
-  };
-
-  const handleApplyCoupon = () => {
-    const normalized = coupon.trim().toUpperCase();
-    if (coupons[normalized]) {
-      applyCoupon(normalized);
-    } else {
-      setError("⚠️ Invalid coupon code");
-    }
-  };
+const CustomerInfoForm: React.FC = () => {
+  const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "delivery">(
+    "pickup"
+  );
+  const [address, setAddress] = useState("");
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-md p-4 space-y-3">
-      <h2 className="text-lg font-semibold">Your Info</h2>
-
-      {error && <div className="text-red-600 text-sm">{error}</div>}
-
+    <div className="bg-white rounded-md shadow-md p-4">
+      <h2 className="text-lg font-semibold mb-3">Your Info</h2>
       <input
         type="text"
-        name="name"
         placeholder="Full Name"
-        value={form.name}
-        onChange={handleChange}
-        required
-        className="w-full border px-3 py-2 rounded"
-      />
-      <input
-        type="tel"
-        name="phone"
-        placeholder="Phone Number"
-        value={form.phone}
-        onChange={handleChange}
-        required
-        className="w-full border px-3 py-2 rounded"
+        className="border rounded px-2 py-1 w-full mb-3"
       />
       <input
         type="text"
-        name="address"
-        placeholder="Delivery Address"
-        value={form.address}
-        onChange={handleChange}
-        required
-        className="w-full border px-3 py-2 rounded"
+        placeholder="Phone Number"
+        className="border rounded px-2 py-1 w-full mb-3"
       />
+
+      <p className="font-semibold mb-2">Delivery Method</p>
+      <div className="flex gap-4 mb-4">
+        <label>
+          <input
+            type="radio"
+            value="pickup"
+            checked={deliveryMethod === "pickup"}
+            onChange={() => setDeliveryMethod("pickup")}
+          />{" "}
+          Pick Up
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="delivery"
+            checked={deliveryMethod === "delivery"}
+            onChange={() => setDeliveryMethod("delivery")}
+          />{" "}
+          Delivery
+        </label>
+      </div>
+
+      {deliveryMethod === "delivery" && (
+        <input
+          type="text"
+          placeholder="Delivery Address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          className="border rounded px-2 py-1 w-full mb-3"
+        />
+      )}
+
       <input
         type="date"
-        name="date"
-        value={form.date}
-        onChange={handleChange}
-        required
-        className="w-full border px-3 py-2 rounded"
+        className="border rounded px-2 py-1 w-full mb-3"
+        defaultValue={new Date().toISOString().split("T")[0]}
       />
       <input
         type="time"
-        name="time"
-        value={form.time}
-        onChange={handleChange}
-        required
-        className="w-full border px-3 py-2 rounded"
+        className="border rounded px-2 py-1 w-full mb-3"
+        defaultValue={new Date().toISOString().slice(11, 16)}
       />
-
-      {/* Coupon Input */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Enter coupon"
-          value={coupon}
-          onChange={(e) => setCoupon(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-        />
-        <button
-          type="button"
-          onClick={handleApplyCoupon}
-          className="bg-brown-600 hover:bg-brown-700 text-white px-4 py-2 rounded"
-        >
-          Apply
-        </button>
-      </div>
-
-      <button
-        type="submit"
-        className="bg-brown-600 hover:bg-brown-700 text-white px-4 py-2 rounded w-full"
-      >
-        Place Order
-      </button>
-    </form>
+    </div>
   );
 };
 
