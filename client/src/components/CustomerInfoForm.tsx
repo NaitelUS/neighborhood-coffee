@@ -1,76 +1,124 @@
+// client/src/components/CustomerInfoForm.tsx
 import { useState } from "react";
-
-interface CustomerInfo {
-  name: string;
-  phone: string;
-  email: string;
-  notes: string;
-}
+import { useCart } from "@/hooks/useCart";
+import { useNavigate } from "react-router-dom";
 
 export default function CustomerInfoForm() {
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: "",
-    phone: "",
-    email: "",
-    notes: "",
-  });
+  const navigate = useNavigate();
+  const { cart, clearCart } = useCart();
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setCustomerInfo((prev) => ({ ...prev, [name]: value }));
+  const [deliveryMethod, setDeliveryMethod] = useState("Pickup");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cart.length === 0) {
+      alert("Your cart is empty!");
+      return;
+    }
+
+    const orderId = Math.floor(Math.random() * 100000);
+    clearCart();
+    navigate(`/thank-you/${orderId}`);
   };
 
   return (
-    <div className="mt-4 border rounded p-4 bg-white shadow">
-      <h2 className="text-lg font-bold mb-2">Customer Info</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="border rounded-lg shadow-sm p-4 space-y-3"
+    >
+      <h3 className="font-bold text-lg mb-2">Customer Info</h3>
 
-      {/* Nombre */}
-      <label className="block text-sm font-medium">Name</label>
-      <input
-        type="text"
-        name="name"
-        value={customerInfo.name}
-        onChange={handleChange}
-        className="w-full border rounded px-2 py-1 mb-2"
-        placeholder="Your name"
-        required
-      />
+      <div className="flex flex-col">
+        <label className="text-sm">Name</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="border rounded px-2 py-1"
+        />
+      </div>
 
-      {/* Teléfono */}
-      <label className="block text-sm font-medium">Phone</label>
-      <input
-        type="tel"
-        name="phone"
-        value={customerInfo.phone}
-        onChange={handleChange}
-        className="w-full border rounded px-2 py-1 mb-2"
-        placeholder="Your phone number"
-        required
-      />
+      <div className="flex flex-col">
+        <label className="text-sm">Phone</label>
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+          className="border rounded px-2 py-1"
+        />
+      </div>
 
-      {/* Email */}
-      <label className="block text-sm font-medium">Email</label>
-      <input
-        type="email"
-        name="email"
-        value={customerInfo.email}
-        onChange={handleChange}
-        className="w-full border rounded px-2 py-1 mb-2"
-        placeholder="you@example.com"
-      />
+      <div className="flex flex-col">
+        <label className="text-sm">Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="border rounded px-2 py-1"
+        />
+      </div>
 
-      {/* Notas */}
-      <label className="block text-sm font-medium">Notes</label>
-      <textarea
-        name="notes"
-        value={customerInfo.notes}
-        onChange={handleChange}
-        className="w-full border rounded px-2 py-1"
-        rows={2}
-        placeholder="Special instructions (e.g., no sugar, ring the bell)"
-      />
-    </div>
+      {/* Delivery Method */}
+      <div>
+        <label className="font-medium text-sm">Delivery Method</label>
+        <div className="flex gap-4 mt-1">
+          <label>
+            <input
+              type="radio"
+              name="deliveryMethod"
+              value="Pickup"
+              checked={deliveryMethod === "Pickup"}
+              onChange={(e) => setDeliveryMethod(e.target.value)}
+            />{" "}
+            Pickup
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="deliveryMethod"
+              value="Delivery"
+              checked={deliveryMethod === "Delivery"}
+              onChange={(e) => setDeliveryMethod(e.target.value)}
+            />{" "}
+            Delivery
+          </label>
+        </div>
+      </div>
+
+      {deliveryMethod === "Delivery" && (
+        <div className="flex flex-col">
+          <label className="text-sm">Delivery Address</label>
+          <input
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="border rounded px-2 py-1"
+            required={deliveryMethod === "Delivery"}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-col">
+        <label className="text-sm">Notes</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="border rounded px-2 py-1"
+          placeholder="Special instructions (e.g., no sugar, ring the bell)"
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="w-full bg-green-600 text-white py-2 rounded font-semibold"
+      >
+        Submit Order
+      </button>
+    </form>
   );
 }
