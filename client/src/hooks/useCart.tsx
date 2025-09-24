@@ -1,110 +1,99 @@
 import { useState, useEffect } from "react";
 import { coupons } from "@/data/coupons";
 
-const STORAGE_KEY = "current-order";
+export interface CartItem {
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  quantity: number;
+  variant?: string;
+  addOns?: { name: string; price: number }[];
+}
 
 export function useCart() {
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [subtotal, setSubtotal] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
 
-  // Load from localStorage
+  // 🔄 Cargar carrito desde localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem("current-order");
     if (saved) {
-      try {
-        setCartItems(JSON.parse(saved));
-      } catch {
-        setCartItems([]);
-      }
+      setCartItems(JSON.parse(saved));
     }
   }, []);
 
-  // Save to localStorage
+  // 💾 Guardar cambios en localStorage y recalcular totales
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
+    localStorage.setItem("current-order", JSON.stringify(cartItems));
+    calculateTotals();
   }, [cartItems]);
 
-  // Add item
-  const addItem = (item: any) => {
-    if (!item || !item.name) return;
-    setCartItems((prev) => [...prev, { ...item, price: item.price ?? 0, quantity: item.quantity ?? 1 }]);
+  // 📊 Calcular subtotal, descuento y total
+  const calculateTotals = () => {
+    const sub = cartItems.reduce((acc, item) => {
+      const base = (item.price ?? 0) * (item.quantity ?? 1);
+      const addOnTotal =
+        item.addOns?.reduce((a, o) => a + (o.price ?? 0), 0) ?? 0;
+      return acc + base + addOnTotal;
+    }, 0);
+
+    setSubtotal(sub);
+    setTotal(sub - discount);
   };
 
-  // Remove item by index
-  const removeFromCart = (index: number) => {
-    setCartItems((prev) => prev.filter((_, i) => i !== index));
+  // ➕ Agregar al carrito
+  const addToCart = (item: CartItem) => {
+    setCartItems((prev) => {
+      const existing = prev.find(
+        (i) => i.name === item.name && i.variant === item.variant
+      );
+      if (existing) {
+        return prev.map((i) =>
+          i.name === item.name && i.variant === item.variant
+            ? { ...i, quantity: i.quantity + item.quantity }
+            : i
+        );
+      }
+      return [...prev, item];
+    });
   };
 
-  // Clear cart
-  const clearCart = () => {
-    setCartItems([]);
-    setDiscount(0);
-    setAppliedCoupon(null);
-    localStorage.removeItem(STORAGE_KEY);
+  // ➖ Remover del carrito
+  const removeFromCart = (name: string, variant?: string) => {
+    setCartItems((prev) =>
+      prev.filter(
+        (i) => !(i.name === name && i.variant === variant)
+      )
+    );
   };
 
-  // Apply coupon
+  // 🏷️ Aplicar cupón
   const applyCoupon = (code: string) => {
     const normalized = code.trim().toUpperCase();
     if (coupons[normalized]) {
-      const subtotalCalc = cartItems.reduce(
-        (acc, item) =>
-          acc +
-          ((item.price ?? 0) * (item.quantity ?? 1)) +
-          ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
-            (item.quantity ?? 1)),
-        0
-      );
-      setDiscount(subtotalCalc * coupons[normalized]);
-      setAppliedCoupon(normalized);
+      setDiscount(subtotal * coupons[normalized]);
     } else {
       setDiscount(0);
-      setAppliedCoupon(null);
     }
   };
 
-  // Totals
-  const subtotal = cartItems.reduce(
-    (acc, item) =>
-      acc +
-      ((item.price ?? 0) * (item.quantity ?? 1)) +
-      ((item.addOns?.reduce((a, add) => a + (add.price ?? 0), 0) || 0) *
-        (item.quantity ?? 1)),
-    0
-  );
-  const total = subtotal - (discount ?? 0);
-
-  // Submit order
-  const submitOrder = (customer: any) => {
-    const orderId = Math.floor(Math.random() * 100000).toString();
-    const order = {
-      id: orderId,
-      customer,
-      items: cartItems,
-      subtotal,
-      discount,
-      total,
-      createdAt: new Date().toISOString(),
-    };
-
-    console.log("Order submitted:", order);
-
-    clearCart();
-
-    // Redirect to Thank You page
-    window.location.href = `/thank-you/${orderId}`;
+  // 🧹 Vaciar carrito
+  const clearCart = () => {
+    setCartItems([]);
+    setDiscount(0);
   };
 
   return {
     cartItems,
-    addItem,
-    removeFromCart,
-    clearCart,
     subtotal,
     discount,
     total,
+    addToCart,
+    removeFromCart,
     applyCoupon,
-    submitOrder,
+    clearCart,
   };
 }
