@@ -1,133 +1,179 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useCart } from "@/hooks/useCart";
 
-type AddOn = {
+interface MenuItemProps {
   name: string;
+  descriptionHot?: string;
+  descriptionIced?: string;
+  description?: string;
   price: number;
-};
-
-type MenuItemProps = {
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  variants?: string[]; // Hot / Iced, Apple / Pineapple, etc.
-  addOns?: AddOn[];
-};
+  imageHot?: string;
+  imageIced?: string;
+  image?: string;
+  variants?: string[];
+  addOns?: { name: string; price: number }[];
+  type?: "drink" | "empanada";
+}
 
 export default function MenuItem({
   name,
+  descriptionHot,
+  descriptionIced,
   description,
   price,
+  imageHot,
+  imageIced,
   image,
   variants,
   addOns,
+  type = "drink",
 }: MenuItemProps) {
-  const { addItem } = useCart();
-  const [selectedVariant, setSelectedVariant] = useState(
-    variants && variants.length > 0 ? variants[0] : undefined
-  );
-  const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
+  const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState(
+    type === "drink" ? "Hot" : variants?.[0]
+  );
+  const [selectedAddOns, setSelectedAddOns] = useState<
+    { name: string; price: number }[]
+  >([]);
 
-  const toggleAddOn = (addOn: AddOn) => {
-    if (selectedAddOns.find((a) => a.name === addOn.name)) {
-      setSelectedAddOns((prev) => prev.filter((a) => a.name !== addOn.name));
-    } else {
-      setSelectedAddOns((prev) => [...prev, addOn]);
-    }
+  const toggleAddOn = (addOn: { name: string; price: number }) => {
+    setSelectedAddOns((prev) =>
+      prev.find((a) => a.name === addOn.name)
+        ? prev.filter((a) => a.name !== addOn.name)
+        : [...prev, addOn]
+    );
   };
 
   const handleAddToCart = () => {
     const item = {
       name,
-      description,
+      description:
+        selectedVariant === "Hot"
+          ? descriptionHot ?? description
+          : selectedVariant === "Iced"
+          ? descriptionIced ?? description
+          : description,
       price,
-      image,
+      image:
+        selectedVariant === "Hot"
+          ? imageHot ?? image ?? ""
+          : selectedVariant === "Iced"
+          ? imageIced ?? image ?? ""
+          : image ?? "",
       quantity,
       variant: selectedVariant,
       addOns: selectedAddOns,
     };
-    addItem(item);
+    addToCart(item);
+    setQuantity(1);
+    setSelectedAddOns([]);
   };
 
   return (
-    <div className="border rounded-lg shadow-sm bg-white overflow-hidden">
-      <img src={image} alt={name} className="w-full h-40 object-cover" />
-      <div className="p-4">
-        <h3 className="text-lg font-bold">{name}</h3>
-        <p className="text-sm text-gray-600 mb-2">{description}</p>
-        <p className="font-semibold mb-2">${price.toFixed(2)}</p>
+    <div className="border rounded p-4 bg-white shadow">
+      <h3 className="font-bold text-lg">{name}</h3>
 
-        {/* Variantes */}
-        {variants && variants.length > 0 && (
-          <div className="mb-3">
-            <p className="text-sm font-medium mb-1">Options:</p>
-            <div className="flex gap-2">
-              {variants.map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setSelectedVariant(v)}
-                  className={`px-3 py-1 border rounded ${
-                    selectedVariant === v
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
+      {/* Imagen */}
+      {selectedVariant === "Hot" && imageHot && (
+        <img
+          src={imageHot}
+          alt={`${name} Hot`}
+          className="w-32 h-32 object-cover rounded my-2"
+        />
+      )}
+      {selectedVariant === "Iced" && imageIced && (
+        <img
+          src={imageIced}
+          alt={`${name} Iced`}
+          className="w-32 h-32 object-cover rounded my-2"
+        />
+      )}
+      {!["Hot", "Iced"].includes(selectedVariant ?? "") && image && (
+        <img
+          src={image}
+          alt={name}
+          className="w-32 h-32 object-cover rounded my-2"
+        />
+      )}
+
+      {/* Descripción */}
+      <p className="text-sm text-gray-600 mb-2">
+        {selectedVariant === "Hot"
+          ? descriptionHot ?? description
+          : selectedVariant === "Iced"
+          ? descriptionIced ?? description
+          : description}
+      </p>
+
+      {/* Variantes */}
+      {variants && variants.length > 0 && (
+        <div className="mb-2">
+          <span className="text-sm font-medium block mb-1">Choose:</span>
+          <div className="flex gap-2">
+            {variants.map((variant) => (
+              <button
+                key={variant}
+                onClick={() => setSelectedVariant(variant)}
+                className={`px-2 py-1 border rounded text-sm ${
+                  selectedVariant === variant
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-100"
+                }`}
+              >
+                {variant}
+              </button>
+            ))}
           </div>
-        )}
-
-        {/* Add-ons */}
-        {addOns && addOns.length > 0 && (
-          <div className="mb-3">
-            <p className="text-sm font-medium mb-1">Add-ons:</p>
-            <div className="flex flex-wrap gap-2">
-              {addOns.map((add) => (
-                <button
-                  key={add.name}
-                  onClick={() => toggleAddOn(add)}
-                  className={`px-2 py-1 text-xs border rounded ${
-                    selectedAddOns.find((a) => a.name === add.name)
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  {add.name} (+${add.price.toFixed(2)})
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Cantidad */}
-        <div className="flex items-center gap-3 mb-3">
-          <button
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            className="px-2 py-1 border rounded"
-          >
-            -
-          </button>
-          <span>{quantity}</span>
-          <button
-            onClick={() => setQuantity((q) => q + 1)}
-            className="px-2 py-1 border rounded"
-          >
-            +
-          </button>
         </div>
+      )}
 
-        {/* Botón */}
+      {/* Add-ons */}
+      {addOns && addOns.length > 0 && (
+        <div className="mb-2">
+          <span className="text-sm font-medium block mb-1">Add-ons:</span>
+          <div className="flex flex-wrap gap-2">
+            {addOns.map((addOn, index) => (
+              <button
+                key={index}
+                onClick={() => toggleAddOn(addOn)}
+                className={`px-2 py-1 border rounded text-xs ${
+                  selectedAddOns.find((a) => a.name === addOn.name)
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-100"
+                }`}
+              >
+                {addOn.name} (+${addOn.price.toFixed(2)})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cantidad */}
+      <div className="flex items-center gap-2 mb-2">
         <button
-          onClick={handleAddToCart}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded"
+          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+          className="px-2 py-1 bg-gray-200 rounded"
         >
-          Add to Order
+          -
+        </button>
+        <span>{quantity}</span>
+        <button
+          onClick={() => setQuantity((q) => q + 1)}
+          className="px-2 py-1 bg-gray-200 rounded"
+        >
+          +
         </button>
       </div>
+
+      {/* Botón Add to Order */}
+      <button
+        onClick={handleAddToCart}
+        className="w-full bg-emerald-600 text-white py-1 rounded hover:bg-emerald-700"
+      >
+        Add to Order
+      </button>
     </div>
   );
 }
