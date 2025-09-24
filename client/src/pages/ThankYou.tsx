@@ -70,4 +70,6 @@ const ThankYou: React.FC = () => {
         )}
 
         <div className="flex justify-between font-semibold text-base border-t pt-2 mt-2">
-          <s
+          <span>Total</span>
+          <span>${total}</span>
+        <
