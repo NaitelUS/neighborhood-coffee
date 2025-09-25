@@ -1,4 +1,3 @@
-// client/src/components/MenuItem.tsx
 import { useState } from "react";
 import { MenuItem as Item, addOnOptions } from "@/data/menuData";
 import { useCart } from "@/hooks/useCart";
@@ -14,6 +13,7 @@ export default function MenuItem({ item }: Props) {
   );
   const [quantity, setQuantity] = useState(1);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+  const [showAddOns, setShowAddOns] = useState(false);
 
   const handleAddOnChange = (id: string) => {
     setSelectedAddOns((prev) =>
@@ -58,21 +58,34 @@ export default function MenuItem({ item }: Props) {
         </div>
       )}
 
-      {/* Add-ons solo para bebidas (excepto Golden y Empanada) */}
+      {/* Add-ons toggle */}
       {item.id !== "golden" && item.id !== "empanada" && (
         <div className="mt-2">
-          <p className="font-medium text-sm">Customize your drink:</p>
-          {addOnOptions.map((a) => (
-            <label key={a.id} className="flex items-center text-sm">
-              <input
-                type="checkbox"
-                checked={selectedAddOns.includes(a.id)}
-                onChange={() => handleAddOnChange(a.id)}
-                className="mr-2"
-              />
-              {a.name} (+${a.price.toFixed(2)})
-            </label>
-          ))}
+          <label className="flex items-center text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={showAddOns}
+              onChange={() => setShowAddOns(!showAddOns)}
+              className="mr-2"
+            />
+            Customize my drink
+          </label>
+
+          {showAddOns && (
+            <div className="mt-2 space-y-1">
+              {addOnOptions.map((a) => (
+                <label key={a.id} className="flex items-center text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedAddOns.includes(a.id)}
+                    onChange={() => handleAddOnChange(a.id)}
+                    className="mr-2"
+                  />
+                  {a.name} (+${a.price.toFixed(2)})
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
