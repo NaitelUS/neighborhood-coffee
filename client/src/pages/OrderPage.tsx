@@ -1,4 +1,3 @@
-// client/src/pages/OrderPage.tsx
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { useCart } from "@/hooks/useCart";
@@ -10,16 +9,16 @@ export default function OrderPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6 text-center">Place Your Order</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">Our Menu</h1>
 
-      {/* Sección de menú */}
+      {/* Menu grid */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {menuData.map((item) => (
           <MenuItem key={item.id} item={item} />
         ))}
       </div>
 
-      {/* Resumen del pedido + Formulario */}
+      {/* Order summary + form */}
       <div className="grid md:grid-cols-2 gap-6">
         <OrderSummary />
         <CustomerInfoForm />
