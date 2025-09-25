@@ -1,4 +1,3 @@
-// client/src/components/OrderSummary.tsx
 import { useCart } from "@/hooks/useCart";
 import { addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 import { useState } from "react";
@@ -102,7 +101,12 @@ export default function OrderSummary() {
         <button
           type="button"
           onClick={applyCoupon}
-          className="bg-green-600 text-white px-3 rounded"
+          disabled={discountApplied > 0}
+          className={`px-3 rounded text-white ${
+            discountApplied > 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-600"
+          }`}
         >
           Apply
         </button>
