@@ -12,8 +12,12 @@ export interface CartItem {
 
 export function useCart() {
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem("current-order");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("current-order");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   useEffect(() => {
