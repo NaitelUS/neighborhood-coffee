@@ -5,7 +5,7 @@ export default function Header() {
   const { cart } = useCart();
 
   return (
-    <header className="flex items-center justify-between p-4 border-b bg-white">
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 border-b bg-white shadow">
       {/* Logo */}
       <Link to="/order">
         <img
@@ -15,7 +15,7 @@ export default function Header() {
         />
       </Link>
 
-      {/* Cart icon */}
+      {/* Cart */}
       <Link to="/order" className="relative">
         <span className="text-2xl">🛒</span>
         {(cart ?? []).length > 0 && (
