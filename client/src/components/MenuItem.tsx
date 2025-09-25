@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MenuItem as Item, addOnOptions } from "@/data/menuData";
+import { MenuItem as Item, addOnOptions, MenuItemOption } from "@/data/menuData";
 import { useCart } from "@/hooks/useCart";
 
 interface Props {
@@ -8,9 +8,9 @@ interface Props {
 
 export default function MenuItem({ item }: Props) {
   const { addToCart } = useCart();
-  const [selectedOption, setSelectedOption] = useState(
-    item.options ? item.options[0] : undefined
-  );
+  const [selectedOption, setSelectedOption] = useState<
+    string | MenuItemOption | undefined
+  >(item.options ? item.options[0] : undefined);
   const [quantity, setQuantity] = useState(1);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [showAddOns, setShowAddOns] = useState(false);
@@ -24,16 +24,25 @@ export default function MenuItem({ item }: Props) {
   const handleAddToCart = () => {
     addToCart({
       ...item,
-      option: selectedOption,
+      option: typeof selectedOption === "string" ? selectedOption : selectedOption?.label,
       quantity,
       addOns: selectedAddOns,
+      image:
+        typeof selectedOption === "object" && selectedOption?.image
+          ? selectedOption.image
+          : item.image,
     });
   };
+
+  const currentImage =
+    typeof selectedOption === "object" && selectedOption?.image
+      ? selectedOption.image
+      : item.image;
 
   return (
     <div className="border rounded-lg shadow-sm p-4">
       <img
-        src={item.image}
+        src={currentImage}
         alt={item.name}
         className="w-full h-40 object-cover rounded"
       />
@@ -41,18 +50,23 @@ export default function MenuItem({ item }: Props) {
       <p className="text-sm text-gray-600">{item.description}</p>
       <p className="font-bold mt-1">${item.price.toFixed(2)}</p>
 
-      {/* Opciones Hot/Iced o Apple/Pineapple */}
+      {/* Hot/Iced o Apple/Pineapple */}
       {item.options && (
         <div className="flex gap-2 mt-2">
           {item.options.map((opt) => (
             <button
-              key={opt}
+              key={typeof opt === "string" ? opt : opt.label}
               onClick={() => setSelectedOption(opt)}
               className={`px-3 py-1 rounded border ${
-                selectedOption === opt ? "bg-teal-600 text-white" : ""
+                (typeof selectedOption === "string"
+                  ? selectedOption
+                  : selectedOption?.label) ===
+                (typeof opt === "string" ? opt : opt.label)
+                  ? "bg-teal-600 text-white"
+                  : ""
               }`}
             >
-              {opt}
+              {typeof opt === "string" ? opt : opt.label}
             </button>
           ))}
         </div>
