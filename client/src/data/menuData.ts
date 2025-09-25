@@ -1,12 +1,15 @@
-// client/src/data/menuData.ts
+export interface MenuItemOption {
+  label: string;
+  image: string;
+}
 
 export interface MenuItem {
   id: string;
   name: string;
   description: string;
   price: number;
-  image: string;
-  options?: string[];
+  image: string; // imagen por defecto
+  options?: (string | MenuItemOption)[];
 }
 
 export interface AddOn {
@@ -25,7 +28,10 @@ export const menuData: MenuItem[] = [
     description: "Rich espresso shots with hot water for a bold coffee.",
     price: 3.75,
     image: "/attached_assets/americano_hot.png",
-    options: ["Hot", "Iced"],
+    options: [
+      { label: "Hot", image: "/attached_assets/americano_hot.png" },
+      { label: "Iced", image: "/attached_assets/americano_iced.png" },
+    ],
   },
   {
     id: "latte",
@@ -33,7 +39,10 @@ export const menuData: MenuItem[] = [
     description: "Perfectly steamed milk with our espresso for a creamy drink.",
     price: 4.5,
     image: "/attached_assets/latte_hot.png",
-    options: ["Hot", "Iced"],
+    options: [
+      { label: "Hot", image: "/attached_assets/latte_hot.png" },
+      { label: "Iced", image: "/attached_assets/latte_iced.png" },
+    ],
   },
   {
     id: "mocha",
@@ -41,7 +50,10 @@ export const menuData: MenuItem[] = [
     description: "Espresso, chocolate, and steamed milk topped with whipped cream.",
     price: 4.75,
     image: "/attached_assets/mocha_hot.png",
-    options: ["Hot", "Iced"],
+    options: [
+      { label: "Hot", image: "/attached_assets/mocha_hot.png" },
+      { label: "Iced", image: "/attached_assets/mocha_iced.png" },
+    ],
   },
   {
     id: "macchiato",
@@ -49,7 +61,10 @@ export const menuData: MenuItem[] = [
     description: "Velvety espresso layered with steamed milk and caramel drizzle.",
     price: 4.75,
     image: "/attached_assets/machiatto_hot.png",
-    options: ["Hot", "Iced"],
+    options: [
+      { label: "Hot", image: "/attached_assets/machiatto_hot.png" },
+      { label: "Iced", image: "/attached_assets/machiatto_iced.png" },
+    ],
   },
   {
     id: "golden",
@@ -64,7 +79,10 @@ export const menuData: MenuItem[] = [
     description: "Flaky pastry filled with sweet fruit filling.",
     price: 2.5,
     image: "/attached_assets/empanada_apple.png",
-    options: ["Apple", "Pineapple"],
+    options: [
+      { label: "Apple", image: "/attached_assets/empanada_apple.png" },
+      { label: "Pineapple", image: "/attached_assets/empanada_pineapple.png" },
+    ],
   },
 ];
 
