@@ -1,4 +1,19 @@
-export async function handler() {
+import type { Handler } from "@netlify/functions";
+
+interface AirtableRecord<T> {
+  id: string;
+  fields: T;
+}
+
+interface Product {
+  name: string;
+  price: number;
+  description?: string;
+  image_url?: string;
+  active?: boolean;
+}
+
+const handler: Handler = async () => {
   try {
     const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_PRODUCTS}`;
 
@@ -12,9 +27,10 @@ export async function handler() {
       throw new Error(`Airtable error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      records: AirtableRecord<Product>[];
+    };
 
-    // Opcional: transformar el formato para simplificar en el frontend
     const products = data.records.map((rec) => ({
       id: rec.id,
       ...rec.fields,
@@ -24,11 +40,13 @@ export async function handler() {
       statusCode: 200,
       body: JSON.stringify(products),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching products:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }),
     };
   }
-}
+};
+
+export { handler };
