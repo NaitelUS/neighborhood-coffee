@@ -1,9 +1,5 @@
 import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
-
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+import { base } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {

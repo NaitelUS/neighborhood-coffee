@@ -1,14 +1,10 @@
 import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
-
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+import { base } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {
     const records = await base(process.env.AIRTABLE_TABLE_COUPONS!)
-      .select({ filterByFormula: "{active}=TRUE()" }) // Solo cupones activos
+      .select({ filterByFormula: "{active}=TRUE()" })
       .all();
 
     const coupons = records.map((record) => ({

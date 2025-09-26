@@ -1,9 +1,5 @@
 import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
-
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+import { base } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {
@@ -13,8 +9,8 @@ const handler: Handler = async () => {
 
     const productOptions = records.map((record) => ({
       id: record.id,
-      product: record.get("product"), // referencia a Products
-      value: record.get("value"), // Hot, Iced, Apple, Pineapple, etc.
+      product: record.get("product"),
+      value: record.get("value"),
       extra_price: record.get("extra_price"),
       active: record.get("active"),
     }));

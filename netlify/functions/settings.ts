@@ -1,9 +1,5 @@
 import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
-
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+import { base } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {
@@ -13,11 +9,11 @@ const handler: Handler = async () => {
 
     const settings = records.map((record) => ({
       id: record.id,
-      day: record.get("day"), // día de la semana
+      day: record.get("day"),
       open_time: record.get("open_time"),
       close_time: record.get("close_time"),
-      closed: record.get("closed"), // boolean
-      banner: record.get("banner"), // mensaje opcional
+      closed: record.get("closed"),
+      banner: record.get("banner"),
     }));
 
     return {

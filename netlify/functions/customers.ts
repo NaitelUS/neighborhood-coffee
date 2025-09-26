@@ -3,27 +3,28 @@ import { base } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {
-    const records = await base(process.env.AIRTABLE_TABLE_USERS!)
+    const records = await base(process.env.AIRTABLE_TABLE_CUSTOMERS!)
       .select()
       .all();
 
-    const users = records.map((record) => ({
+    const customers = records.map((record) => ({
       id: record.id,
       name: record.get("name"),
-      role: record.get("role"),
       email: record.get("email"),
-      active: record.get("active"),
+      phone: record.get("phone"),
+      contact_me: record.get("contact_me"),
+      created_at: record.get("created_at"),
     }));
 
     return {
       statusCode: 200,
-      body: JSON.stringify(users),
+      body: JSON.stringify(customers),
     };
   } catch (error) {
     console.error(error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Error fetching users" }),
+      body: JSON.stringify({ error: "Error fetching customers" }),
     };
   }
 };
