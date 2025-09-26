@@ -10,11 +10,9 @@ const handler: Handler = async () => {
     const orderItems = records.map((record) => ({
       id: record.id,
       order: record.get("order"),
-      product: record.get("product"),
-      quantity: record.get("quantity"),
-      addons: record.get("addons"),
+      unit_price: record.get("unit_price"),
       options: record.get("options"),
-      price: record.get("price"),
+      add_ons: record.get("add_ons"),
     }));
 
     return {
