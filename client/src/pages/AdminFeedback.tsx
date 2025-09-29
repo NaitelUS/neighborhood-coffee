@@ -11,7 +11,6 @@ export default function AdminFeedback() {
       try {
         const res = await fetch("/.netlify/functions/feedback");
         const data = await res.json();
-
         setFeedbacks(data);
 
         if (data.length > 0) {
@@ -31,13 +30,44 @@ export default function AdminFeedback() {
     fetchFeedback();
   }, []);
 
+  const exportCSV = () => {
+    if (!feedbacks.length) return alert("No feedback to export.");
+
+    const headers = ["Order", "Rating", "Comment", "Created"];
+    const rows = feedbacks.map((f) => [
+      f.Order && typeof f.Order === "object" ? f.Order[0] : f.Order || "",
+      f.Rating || "",
+      f.Comment || "",
+      f.Created || "",
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
+
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `feedback_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return <p className="text-center mt-10 text-gray-500">Loading feedback...</p>;
   }
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Customer Feedback</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Customer Feedback</h1>
+        <button
+          onClick={exportCSV}
+          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+        >
+          ⬇ Export CSV
+        </button>
+      </div>
 
       {feedbacks.length === 0 ? (
         <p className="text-gray-500">No feedback yet.</p>
