@@ -1,64 +1,46 @@
-import { Handler } from "@netlify/functions";
-import { base } from "../lib/airtableClient";
+import type { Handler } from "@netlify/functions";
+import Airtable from "airtable";
 
-// ✅ Headers JSON + CORS
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-};
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
 
-const handler: Handler = async () => {
+const TABLE = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+
+export const handler: Handler = async (event) => {
   try {
-    // ✅ 1. Verificamos variable de entorno
-    const tableName = process.env.AIRTABLE_TABLE_ORDERS;
-    if (!tableName) {
-      console.error("❌ Falta AIRTABLE_TABLE_ORDERS en variables de entorno");
+    const { id } = event.queryStringParameters || {};
+
+    if (id) {
+      // 🧩 Obtener orden específica por ID
+      const record = await base(TABLE).find(id);
       return {
-        statusCode: 500,
-        headers: JSON_HEADERS,
+        statusCode: 200,
         body: JSON.stringify({
-          error: "Missing AIRTABLE_TABLE_ORDERS env var",
+          id: record.id,
+          ...record.fields,
         }),
+        headers: { "Content-Type": "application/json" },
+      };
+    } else {
+      // 📋 Listar todas las órdenes
+      const records = await base(TABLE)
+        .select({ sort: [{ field: "Created", direction: "desc" }] })
+        .all();
+
+      const data = records.map((r) => ({
+        id: r.id,
+        ...r.fields,
+      }));
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
       };
     }
-
-    // ✅ 2. Consultamos Airtable
-    const records = await base(tableName)
-      .select()
-      .all();
-
-    // ✅ 3. Mapeamos los campos de la tabla
-    const orders = records.map((record) => ({
-      id: record.id,
-      order_number: record.get("order_number") ?? null,
-      customer: record.get("customer") ?? null,
-      total: record.get("total") ?? null,
-      status: record.get("status") ?? null,
-      coupon: record.get("coupon") ?? null,
-      scheduled_for: record.get("scheduled_for") ?? null,
-      created_at: record.get("created_at") ?? null,
-    }));
-
-    // ✅ 4. Devolvemos respuesta exitosa
-    return {
-      statusCode: 200,
-      headers: JSON_HEADERS,
-      body: JSON.stringify(orders),
-    };
-  } catch (error) {
-    console.error("❌ Error fetching orders:", error);
-
-    // 🚨 5. Manejo de errores controlado
-    return {
-      statusCode: 500,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({
-        error: "Error fetching orders",
-        message: (error as Error).message,
-      }),
-    };
+  } catch (error: any) {
+    console.error("Error fetching orders:", error);
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };
-
-// ✅ 6. Export correcto
-export { handler };
