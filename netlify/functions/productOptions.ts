@@ -7,7 +7,7 @@ const handler: Handler = async () => {
       .select({ filterByFormula: "{active}=TRUE()" })
       .all();
 
-    const productOptions = records.map((record) => ({
+    const options = records.map((record) => ({
       id: record.id,
       product: record.get("product"),
       value: record.get("value"),
@@ -17,10 +17,10 @@ const handler: Handler = async () => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify(productOptions),
+      body: JSON.stringify(options),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching product options:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching product options" }),
