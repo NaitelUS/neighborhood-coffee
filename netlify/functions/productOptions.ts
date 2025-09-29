@@ -22,13 +22,17 @@ const handler: Handler = async () => {
       };
     }
 
-    // ✅ 2. Consultar Airtable con filtro de activos
+    console.log(`🧩 Consultando tabla: ${tableName}`);
+
+    // ✅ 2. Consultar Airtable (solo activos)
     const records = await base(tableName)
       .select({ filterByFormula: "{active}=TRUE()" })
       .all();
 
+    console.log(`📦 Registros encontrados: ${records.length}`);
+
     // ✅ 3. Mapeo de registros
-    const options = records.map((record) => ({
+    const productOptions = records.map((record) => ({
       id: record.id,
       product: record.get("product") ?? null,
       value: record.get("value") ?? null,
@@ -36,26 +40,31 @@ const handler: Handler = async () => {
       active: record.get("active") ?? null,
     }));
 
+    // Si no hay registros, devuelve mensaje vacío (útil para debug)
+    if (productOptions.length === 0) {
+      console.warn("⚠️ No se encontraron registros activos en ProductOptions");
+    }
+
     // ✅ 4. Respuesta exitosa
     return {
       statusCode: 200,
       headers: JSON_HEADERS,
-      body: JSON.stringify(options),
+      body: JSON.stringify(productOptions),
     };
   } catch (error) {
-    console.error("❌ Error fetching product options:", error);
+    console.error("❌ Error fetching ProductOptions:", error);
 
-    // 🚨 5. Manejo controlado de error
+    // 🚨 5. Manejo controlado del error
     return {
       statusCode: 500,
       headers: JSON_HEADERS,
       body: JSON.stringify({
-        error: "Error fetching product options",
+        error: "Error fetching ProductOptions",
         message: (error as Error).message,
       }),
     };
   }
 };
 
-// ✅ 6. Exportación nombrada correcta
+// ✅ 6. Export correcto
 export { handler };
