@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import Airtable from "airtable";
-import twilio from "twilio";
+// import twilio from "twilio";
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
