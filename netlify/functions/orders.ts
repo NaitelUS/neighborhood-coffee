@@ -10,10 +10,8 @@ const handler: Handler = async () => {
     const orders = records.map((record) => ({
       id: record.id,
       customer: record.get("customer"),
-      coupon: record.get("coupon"),
       total: record.get("total"),
       status: record.get("status"),
-      scheduled_for: record.get("scheduled_for"),
       created_at: record.get("created_at"),
     }));
 
