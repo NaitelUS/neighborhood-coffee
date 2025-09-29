@@ -1,35 +1,16 @@
 import { useEffect, useState } from "react";
 
-interface Product {
-  id: string;
-  Name: string;
-  Description?: string;
-  Price?: number;
-  Image?: string;
-}
-
 export default function AdminProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [creating, setCreating] = useState(false);
 
   const fetchProducts = async () => {
     try {
       const res = await fetch("/.netlify/functions/products");
       const data = await res.json();
-
-      // ✅ Estructura real: array plano con minúsculas
-      const records = Array.isArray(data) ? data : [];
-
-      const formatted = records.map((r: any) => ({
-        id: r.id,
-        Name: r.name || "Unnamed",
-        Description: r.description || "",
-        Price: r.price || 0,
-        Image: r.image_url || "",
-      }));
-
-      setProducts(formatted);
+      setProducts(data);
     } catch (err) {
       console.error("Error fetching products:", err);
     } finally {
@@ -41,135 +22,206 @@ export default function AdminProducts() {
     fetchProducts();
   }, []);
 
-  const handleChange = (id: string, field: keyof Product, value: string | number) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    );
-  };
-
-  const handleSave = async (id: string) => {
-    const product = products.find((p) => p.id === id);
-    if (!product) return;
-
-    setSaving(true);
+  const handleSave = async (product: any) => {
     try {
       const res = await fetch("/.netlify/functions/products-update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: product.id,
-          fields: {
-            name: product.Name,
-            description: product.Description,
-            price: Number(product.Price),
-            image_url: product.Image,
-          },
-        }),
+        body: JSON.stringify(product),
       });
 
-      if (!res.ok) throw new Error("Error saving product");
-      alert(`✅ Saved changes for ${product.Name}`);
+      if (!res.ok) throw new Error("Failed to update product");
+
+      alert("✅ Product updated successfully!");
+      fetchProducts();
     } catch (err) {
       console.error(err);
-      alert("Error saving product");
-    } finally {
-      setSaving(false);
+      alert("❌ Error updating product");
     }
   };
 
-  if (loading) return <p className="p-6 text-gray-500">Loading products...</p>;
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const newProduct = {
+        name: "New Product",
+        description: "Describe this product...",
+        price: 0,
+        image_url: "",
+        active: false,
+      };
+
+      const res = await fetch("/.netlify/functions/products-new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newProduct),
+      });
+
+      if (!res.ok) throw new Error("Failed to create product");
+
+      alert("✅ New product added!");
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error creating product");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const filteredProducts = products.filter((p) => {
+    if (filter === "active") return p.active === true;
+    if (filter === "inactive") return p.active === false;
+    return true; // all
+  });
+
+  if (loading) return <p className="text-center mt-10">Loading products...</p>;
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Manage Products</h1>
-        <span className="text-sm text-gray-600">
-          ✅ Loaded {products.length} products from Database
-        </span>
+    <div className="max-w-5xl mx-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">🛠 Manage Products</h1>
+
+        {/* ➕ Add Product Button */}
+        <button
+          onClick={handleCreate}
+          disabled={creating}
+          className="bg-green-600 text-white px-4 py-2 rounded font-medium hover:bg-green-700 disabled:opacity-50"
+        >
+          {creating ? "Adding..." : "➕ Add Product"}
+        </button>
       </div>
 
-      {products.length === 0 ? (
-        <p className="text-gray-500 text-center">
-          No products found. Check your Database table name or API response.
+      {/* 🔍 Filter bar */}
+      <div className="flex justify-center gap-3 mb-6">
+        <button
+          onClick={() => setFilter("all")}
+          className={`px-3 py-1 rounded text-sm font-semibold ${
+            filter === "all"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setFilter("active")}
+          className={`px-3 py-1 rounded text-sm font-semibold ${
+            filter === "active"
+              ? "bg-green-600 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          Active
+        </button>
+        <button
+          onClick={() => setFilter("inactive")}
+          className={`px-3 py-1 rounded text-sm font-semibold ${
+            filter === "inactive"
+              ? "bg-red-600 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          Inactive
+        </button>
+      </div>
+
+      {/* 🧩 Product list */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {filteredProducts.map((product) => (
+          <div
+            key={product.id}
+            className={`border rounded-lg p-4 shadow-sm bg-white ${
+              product.active ? "" : "opacity-70"
+            }`}
+          >
+            <input
+              type="text"
+              defaultValue={product.name}
+              onChange={(e) => (product.name = e.target.value)}
+              className="font-semibold text-lg w-full mb-2 border-b"
+            />
+
+            <textarea
+              defaultValue={product.description}
+              onChange={(e) => (product.description = e.target.value)}
+              className="w-full text-sm border rounded p-2 mb-2"
+            />
+
+            <input
+              type="number"
+              defaultValue={product.price}
+              onChange={(e) =>
+                (product.price = parseFloat(e.target.value) || 0)
+              }
+              step="0.01"
+              className="border p-2 w-full text-sm mb-2"
+            />
+
+            <input
+              type="text"
+              defaultValue={product.image_url}
+              onChange={(e) => (product.image_url = e.target.value)}
+              placeholder="Image URL"
+              className="border p-2 w-full text-sm mb-2"
+            />
+
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                Active:
+              </label>
+              <input
+                type="checkbox"
+                checked={product.active}
+                onChange={async (e) => {
+                  const newValue = e.target.checked;
+                  try {
+                    const res = await fetch(
+                      "/.netlify/functions/products-update",
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          id: product.id,
+                          active: newValue,
+                        }),
+                      }
+                    );
+                    if (res.ok) {
+                      alert(
+                        `✅ Product ${
+                          newValue ? "activated" : "deactivated"
+                        } successfully`
+                      );
+                      fetchProducts();
+                    } else {
+                      const err = await res.json();
+                      alert("Error: " + err.error);
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert("Error updating product status");
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => handleSave(product)}
+                className="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700"
+              >
+                💾 Save
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredProducts.length === 0 && (
+        <p className="text-center text-gray-500 mt-6">
+          No products found for this filter.
         </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-200 text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-2">Name</th>
-                <th className="border p-2">Description</th>
-                <th className="border p-2">Price</th>
-                <th className="border p-2">Image URL</th>
-                <th className="border p-2">Preview</th>
-                <th className="border p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="border p-2">
-                    <input
-                      value={p.Name}
-                      onChange={(e) => handleChange(p.id, "Name", e.target.value)}
-                      className="border rounded w-full px-2 py-1 text-sm"
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <textarea
-                      value={p.Description || ""}
-                      onChange={(e) =>
-                        handleChange(p.id, "Description", e.target.value)
-                      }
-                      className="border rounded w-full px-2 py-1 text-sm"
-                      rows={2}
-                    />
-                  </td>
-                  <td className="border p-2 w-24">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={p.Price || ""}
-                      onChange={(e) =>
-                        handleChange(p.id, "Price", Number(e.target.value))
-                      }
-                      className="border rounded w-full px-2 py-1 text-sm"
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <input
-                      type="text"
-                      value={p.Image || ""}
-                      onChange={(e) => handleChange(p.id, "Image", e.target.value)}
-                      className="border rounded w-full px-2 py-1 text-sm"
-                      placeholder="https://..."
-                    />
-                  </td>
-                  <td className="border p-2 text-center">
-                    {p.Image ? (
-                      <img
-                        src={p.Image}
-                        alt={p.Name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    ) : (
-                      <span className="text-gray-400">No image</span>
-                    )}
-                  </td>
-                  <td className="border p-2 text-center">
-                    <button
-                      onClick={() => handleSave(p.id)}
-                      disabled={saving}
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
-                    >
-                      {saving ? "Saving..." : "Save"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
     </div>
   );
