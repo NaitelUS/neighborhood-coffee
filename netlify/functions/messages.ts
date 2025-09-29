@@ -20,7 +20,7 @@ const handler: Handler = async () => {
       body: JSON.stringify(messages),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching messages:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching messages" }),
