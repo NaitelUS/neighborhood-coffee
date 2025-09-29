@@ -1,0 +1,40 @@
+import { Handler } from "@netlify/functions";
+import { base } from "../lib/airtableClient";
+
+const handler: Handler = async () => {
+  try {
+    const records = await base(process.env.AIRTABLE_TABLE_COUPONS!)
+      .select({ filterByFormula: "{active}=TRUE()" })
+      .all();
+
+    const coupons = records.map((record) => ({
+      id: record.id,
+      code: record.get("code"),
+      discount: record.get("discount"),
+      active: record.get("active"),
+      expires_at: record.get("expires_at"),
+    }));
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*", // Permite pruebas desde cualquier origen
+      },
+      body: JSON.stringify(coupons),
+    };
+  } catch (error) {
+    console.error("Error fetching coupons:", error);
+
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({ error: "Error fetching coupons" }),
+    };
+  }
+};
+
+export { handler };
