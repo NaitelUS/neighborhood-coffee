@@ -1,12 +1,29 @@
+# --- Configuración de funciones ---
 [functions]
 directory = "netlify/functions"
 node_bundler = "esbuild"
 
+# --- Configuración de build ---
 [build]
   command = "npm install && npm run build"
   publish = "dist"
 
+# --- Redirección global para SPA (React/Vite) ---
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# --- Fix de rutas inconsistentes (case sensitive) ---
+# Esto garantiza que /orderItems y /orderitems apunten al mismo lugar
+[[redirects]]
+  from = "/.netlify/functions/orderitems"
+  to = "/.netlify/functions/orderItems"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/.netlify/functions/OrderItems"
+  to = "/.netlify/functions/orderItems"
+  status = 200
+  force = true
