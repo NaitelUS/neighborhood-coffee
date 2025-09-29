@@ -1,61 +1,109 @@
-import { Handler } from "@netlify/functions";
-import { base } from "../lib/airtableClient";
+import { useSearchParams, Link } from "react-router-dom";
+import { useState } from "react";
 
-// ✅ Headers globales (JSON + CORS)
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-};
+export default function Feedback() {
+  const [params] = useSearchParams();
+  const orderId = params.get("order");
 
-const handler: Handler = async () => {
-  try {
-    // ✅ 1. Verificar variable de entorno
-    const tableName = process.env.AIRTABLE_TABLE_FEEDBACK;
-    if (!tableName) {
-      console.error("❌ Falta AIRTABLE_TABLE_FEEDBACK en variables de entorno");
-      return {
-        statusCode: 500,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({
-          error: "Missing AIRTABLE_TABLE_FEEDBACK env var",
-        }),
-      };
+  const [rating, setRating] = useState<number>(0);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!rating) {
+      alert("Please select a rating.");
+      return;
     }
 
-    // ✅ 2. Consultar registros desde Airtable
-    const records = await base(tableName)
-      .select()
-      .all();
+    setLoading(true);
+    try {
+      const res = await fetch("/.netlify/functions/feedback-new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, rating, comment }),
+      });
 
-    // ✅ 3. Mapeo limpio de los campos
-    const feedback = records.map((record) => ({
-      id: record.id,
-      order_id: record.get("order_id") ?? null,
-      rating: record.get("rating") ?? null,
-      comments: record.get("comments") ?? null,
-      contact_me: record.get("contact_me") ?? null,
-    }));
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        const err = await res.json();
+        alert("Error: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting feedback");
+    }
+    setLoading(false);
+  };
 
-    // ✅ 4. Respuesta exitosa
-    return {
-      statusCode: 200,
-      headers: JSON_HEADERS,
-      body: JSON.stringify(feedback),
-    };
-  } catch (error) {
-    console.error("❌ Error fetching feedback:", error);
-
-    // 🚨 5. Respuesta controlada de error
-    return {
-      statusCode: 500,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({
-        error: "Error fetching feedback",
-        message: (error as Error).message,
-      }),
-    };
+  if (submitted) {
+    return (
+      <div className="max-w-md mx-auto text-center p-6">
+        <h1 className="text-2xl font-bold text-green-700 mb-3">
+          ✅ Thank you!
+        </h1>
+        <p className="text-gray-700 mb-4">
+          Your feedback helps us improve our service ☕
+        </p>
+        <Link
+          to="/"
+          className="text-blue-600 underline font-medium hover:text-blue-800"
+        >
+          Back to Home
+        </Link>
+      </div>
+    );
   }
-};
 
-// ✅ 6. Export correcta
-export { handler };
+  if (!orderId) {
+    return (
+      <div className="max-w-md mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold text-red-600 mb-2">Invalid Link</h1>
+        <p className="text-gray-600">
+          Feedback link must include an order ID.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl font-bold text-center mb-4">Rate Your Order</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex justify-center gap-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setRating(star)}
+              className={`text-3xl ${
+                rating >= star ? "text-yellow-400" : "text-gray-300"
+              }`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Leave an optional comment..."
+          className="w-full border rounded p-2 text-sm"
+          rows={3}
+        ></textarea>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-green-600 text-white font-semibold py-2 rounded hover:bg-green-700 transition"
+        >
+          {loading ? "Submitting..." : "Submit Feedback"}
+        </button>
+      </form>
+    </div>
+  );
+}
