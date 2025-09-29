@@ -9,10 +9,9 @@ const handler: Handler = async () => {
 
     const feedback = records.map((record) => ({
       id: record.id,
+      order_id: record.get("order_id"),
       rating: record.get("rating"),
-      comment: record.get("comment"),
-      contact: record.get("contact"),
-      created_at: record.get("created_at"),
+      comments: record.get("comments"),
     }));
 
     return {
@@ -20,7 +19,7 @@ const handler: Handler = async () => {
       body: JSON.stringify(feedback),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching feedback:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching feedback" }),
