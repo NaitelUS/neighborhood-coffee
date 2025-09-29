@@ -1,48 +1,27 @@
-// client/src/pages/OrderStatus.tsx
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-interface OrderItem {
-  name: string;
-  option?: string;
-  quantity: number;
-  addOns?: string[];
-}
-
-interface Order {
-  id: string;
-  customerName: string;
-  items: OrderItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  status: string;
-  address?: string;
-  notes?: string;
-}
-
 export default function OrderStatus() {
   const { id } = useParams<{ id: string }>();
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<any>(null);
+  const [items, setItems] = useState<any[]>([]);
 
-  // Cargar orden por ID
-  const loadOrder = () => {
-    const saved = localStorage.getItem("orders");
-    if (saved) {
-      const orders: Order[] = JSON.parse(saved);
-      const found = orders.find((o) => o.id === id);
-      setOrder(found || null);
+  const loadOrder = async () => {
+    try {
+      const [orderRes, itemsRes] = await Promise.all([
+        fetch(`/.netlify/functions/orders?id=${id}`).then((r) => r.json()),
+        fetch(`/.netlify/functions/orderitems?id=${id}`).then((r) => r.json()),
+      ]);
+      setOrder(orderRes);
+      setItems(itemsRes);
+    } catch (err) {
+      console.error("Error loading order:", err);
     }
   };
 
   useEffect(() => {
     loadOrder();
-
-    // Refrescar cada 3s en caso de cambios desde Admin
-    const interval = setInterval(() => {
-      loadOrder();
-    }, 3000);
-
+    const interval = setInterval(loadOrder, 5000);
     return () => clearInterval(interval);
   }, [id]);
 
@@ -68,31 +47,17 @@ export default function OrderStatus() {
         <p>
           <strong>Customer:</strong> {order.customerName}
         </p>
-        <div>
-          <strong>Items:</strong>
-          <ul className="list-disc list-inside text-sm">
-            {order.items.map((item, idx) => (
-              <li key={idx}>
-                {item.name}
-                {item.option ? ` (${item.option})` : ""} × {item.quantity}
-                {item.addOns && item.addOns.length > 0 && (
-                  <span className="text-gray-500">
-                    {" "}
-                    – Add-ons: {item.addOns.join(", ")}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p>
-          <strong>Subtotal:</strong> ${order.subtotal.toFixed(2)}
-        </p>
-        {order.discount > 0 && (
-          <p className="text-green-600">
-            <strong>Discount:</strong> - ${order.discount.toFixed(2)}
-          </p>
-        )}
+
+        <ul className="list-disc list-inside text-sm">
+          {items.map((it, idx) => (
+            <li key={idx}>
+              {it.productName}
+              {it.option ? ` (${it.option})` : ""} × {it.quantity}
+              {it.addOns && ` – ${it.addOns}`}
+            </li>
+          ))}
+        </ul>
+
         <p>
           <strong>Total:</strong> ${order.total.toFixed(2)}
         </p>
@@ -100,15 +65,16 @@ export default function OrderStatus() {
           <strong>Status:</strong>{" "}
           <span className="text-blue-600 font-semibold">{order.status}</span>
         </p>
-        {order.address && (
-          <p>
-            <strong>Delivery Address:</strong> {order.address}
-          </p>
-        )}
-        {order.notes && (
-          <p>
-            <strong>Notes:</strong> {order.notes}
-          </p>
+
+        {order.status === "Completed" && (
+          <div className="mt-3">
+            <a
+              href={`/feedback?order=${order.id}`}
+              className="text-green-600 underline font-semibold"
+            >
+              Leave Feedback
+            </a>
+          </div>
         )}
       </div>
     </div>
