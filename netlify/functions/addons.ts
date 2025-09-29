@@ -19,7 +19,7 @@ const handler: Handler = async () => {
       body: JSON.stringify(addons),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching addons:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching addons" }),
