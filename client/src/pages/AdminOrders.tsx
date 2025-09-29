@@ -42,51 +42,50 @@ export default function AdminOrders() {
     }
   };
 
+  const exportCSV = () => {
+    if (!orders.length) return alert("No orders to export.");
+
+    const headers = [
+      "Order ID",
+      "Customer",
+      "Phone",
+      "Email",
+      "Address",
+      "Status",
+      "Total",
+      "Discount",
+      "Subtotal",
+      "Created",
+    ];
+
+    const rows = orders.map((o) => [
+      o.id,
+      o.customerName || "",
+      o.phone || "",
+      o.email || "",
+      o.address || "",
+      o.status || "",
+      o.total || "",
+      o.discount || "",
+      o.subtotal || "",
+      o.Created || "",
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
+
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) return <p className="text-center mt-10">Loading orders...</p>;
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin – Orders</h1>
-
-      {orders.length === 0 ? (
-        <p className="text-gray-500">No orders yet.</p>
-      ) : (
-        <table className="w-full border-collapse border text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-3 py-2">Order ID</th>
-              <th className="border px-3 py-2">Customer</th>
-              <th className="border px-3 py-2">Total</th>
-              <th className="border px-3 py-2">Status</th>
-              <th className="border px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr key={o.id}>
-                <td className="border px-3 py-2">{o.id}</td>
-                <td className="border px-3 py-2">{o.customerName}</td>
-                <td className="border px-3 py-2 text-right">${o.total}</td>
-                <td className="border px-3 py-2 text-center">{o.status}</td>
-                <td className="border px-3 py-2 text-center">
-                  {ORDER_STATUSES.map(
-                    (s) =>
-                      s !== o.status && (
-                        <button
-                          key={s}
-                          onClick={() => updateStatus(o.id, s)}
-                          className="bg-blue-600 text-white px-2 py-1 rounded text-xs m-1 hover:bg-blue-700"
-                        >
-                          {s}
-                        </button>
-                      )
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2
