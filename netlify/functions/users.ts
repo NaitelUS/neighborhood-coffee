@@ -10,8 +10,8 @@ const handler: Handler = async () => {
     const users = records.map((record) => ({
       id: record.id,
       name: record.get("name"),
-      role: record.get("role"),
       email: record.get("email"),
+      role: record.get("role"),
       active: record.get("active"),
     }));
 
