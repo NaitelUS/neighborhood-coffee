@@ -7,22 +7,22 @@ const handler: Handler = async () => {
       .select()
       .all();
 
-    const orderItems = records.map((record) => ({
+    const items = records.map((record) => ({
       id: record.id,
       order: record.get("order"),
       product: record.get("product"),
-      quantity: record.get("qty"),
-      addons: record.get("add_ons"),
+      quantity: record.get("quantity"),
+      addons: record.get("addons"),
       options: record.get("options"),
-      price: record.get("unit_price"),
+      price: record.get("price"),
     }));
 
     return {
       statusCode: 200,
-      body: JSON.stringify(orderItems),
+      body: JSON.stringify(items),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching order items:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching order items" }),
