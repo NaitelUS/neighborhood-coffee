@@ -1,7 +1,7 @@
+// ✅ productoptions.ts (todo en minúsculas)
 import { Handler } from "@netlify/functions";
 import { base } from "../lib/airtableClient";
 
-// ✅ Cabeceras JSON + CORS
 const JSON_HEADERS = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
@@ -9,30 +9,25 @@ const JSON_HEADERS = {
 
 const handler: Handler = async () => {
   try {
-    // ✅ 1. Verificar variable de entorno
     const tableName = process.env.AIRTABLE_TABLE_PRODUCT_OPTIONS;
     if (!tableName) {
-      console.error("❌ Falta AIRTABLE_TABLE_PRODUCT_OPTIONS en variables de entorno");
+      console.error("❌ Falta AIRTABLE_TABLE_PRODUCT_OPTIONS");
       return {
         statusCode: 500,
         headers: JSON_HEADERS,
-        body: JSON.stringify({
-          error: "Missing AIRTABLE_TABLE_PRODUCT_OPTIONS env var",
-        }),
+        body: JSON.stringify({ error: "Missing env var" }),
       };
     }
 
     console.log(`🧩 Consultando tabla: ${tableName}`);
 
-    // ✅ 2. Consultar Airtable (solo activos)
     const records = await base(tableName)
       .select({ filterByFormula: "{active}=TRUE()" })
       .all();
 
     console.log(`📦 Registros encontrados: ${records.length}`);
 
-    // ✅ 3. Mapeo de registros
-    const productOptions = records.map((record) => ({
+    const productoptions = records.map((record) => ({
       id: record.id,
       product: record.get("product") ?? null,
       value: record.get("value") ?? null,
@@ -40,31 +35,26 @@ const handler: Handler = async () => {
       active: record.get("active") ?? null,
     }));
 
-    // Si no hay registros, devuelve mensaje vacío (útil para debug)
-    if (productOptions.length === 0) {
-      console.warn("⚠️ No se encontraron registros activos en ProductOptions");
+    if (productoptions.length === 0) {
+      console.warn("⚠️ No se encontraron registros activos en productoptions");
     }
 
-    // ✅ 4. Respuesta exitosa
     return {
       statusCode: 200,
       headers: JSON_HEADERS,
-      body: JSON.stringify(productOptions),
+      body: JSON.stringify(productoptions),
     };
   } catch (error) {
-    console.error("❌ Error fetching ProductOptions:", error);
-
-    // 🚨 5. Manejo controlado del error
+    console.error("❌ Error fetching productoptions:", error);
     return {
       statusCode: 500,
       headers: JSON_HEADERS,
       body: JSON.stringify({
-        error: "Error fetching ProductOptions",
+        error: "Error fetching productoptions",
         message: (error as Error).message,
       }),
     };
   }
 };
 
-// ✅ 6. Export correcto
 export { handler };
