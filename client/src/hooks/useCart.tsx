@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 export interface CartItem {
   id: string;
@@ -11,39 +11,19 @@ export interface CartItem {
 }
 
 export function useCart() {
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("current-order");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [cart, setCart] = useState<CartItem[]>([]);
 
-  useEffect(() => {
-    localStorage.setItem("current-order", JSON.stringify(cart));
-  }, [cart]);
+  const addToCart = useCallback((item: CartItem) => {
+    setCart((prev) => [...prev, item]);
+  }, []);
 
-  const addToCart = (item: CartItem) => {
-    setCart((prev) => {
-      const updated = [...prev, item];
-      localStorage.setItem("current-order", JSON.stringify(updated));
-      return updated;
-    });
-  };
+  const removeFromCart = useCallback((index: number) => {
+    setCart((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const removeFromCart = (index: number) => {
-    setCart((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-      localStorage.setItem("current-order", JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart([]);
-    localStorage.removeItem("current-order");
-  };
+  }, []);
 
   return { cart, addToCart, removeFromCart, clearCart };
 }
