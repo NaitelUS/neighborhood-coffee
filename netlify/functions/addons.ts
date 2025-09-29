@@ -10,7 +10,7 @@ const handler: Handler = async () => {
     const addons = records.map((record) => ({
       id: record.id,
       name: record.get("name"),
-      price: record.get("price"),
+      extra_price: record.get("extra_price"),
       active: record.get("active"),
     }));
 
