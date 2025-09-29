@@ -1,18 +1,11 @@
 import type { Handler } from "@netlify/functions";
 import Airtable from "airtable";
-import twilio from "twilio";
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
 
 const TABLE = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
-
-// ⚙️ Configurar cliente Twilio si las variables existen
-const twilioSID = process.env.TWILIO_ACCOUNT_SID;
-const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioFrom = process.env.TWILIO_FROM_PHONE;
-const client = twilioSID && twilioToken ? twilio(twilioSID, twilioToken) : null;
 
 export const handler: Handler = async (event) => {
   try {
@@ -62,6 +55,8 @@ export const handler: Handler = async (event) => {
 
     const order = { id: record[0].id, ...record[0].fields };
 
+    // 🚫 Twilio SMS deshabilitado temporalmente
+    /*
     // 2️⃣ Enviar SMS con Twilio (si está configurado)
     if (client && phone) {
       try {
@@ -75,6 +70,7 @@ export const handler: Handler = async (event) => {
         console.error("Error sending SMS:", smsErr.message);
       }
     }
+    */
 
     // 3️⃣ Responder al cliente
     return {
