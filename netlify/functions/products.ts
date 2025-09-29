@@ -21,7 +21,7 @@ const handler: Handler = async () => {
       body: JSON.stringify(products),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching products:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching products" }),
