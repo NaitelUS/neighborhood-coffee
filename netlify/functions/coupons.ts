@@ -17,12 +17,21 @@ const handler: Handler = async () => {
 
     return {
       statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*", // Permite pruebas desde cualquier origen
+      },
       body: JSON.stringify(coupons),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching coupons:", error);
+
     return {
       statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
       body: JSON.stringify({ error: "Error fetching coupons" }),
     };
   }
