@@ -4,7 +4,7 @@ import { base } from "../lib/airtableClient";
 const handler: Handler = async () => {
   try {
     const records = await base(process.env.AIRTABLE_TABLE_PRODUCT_OPTIONS!)
-      .select()
+      .select({ filterByFormula: "{active}=TRUE()" })
       .all();
 
     const productOptions = records.map((record) => ({
