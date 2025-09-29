@@ -3,10 +3,22 @@ import { base } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {
-    const records = await base(process.env.AIRTABLE_TABLE_ADDONS!)
+    // Verificar que la variable de entorno esté definida
+    const tableName = process.env.AIRTABLE_TABLE_ADDONS;
+    if (!tableName) {
+      console.error("❌ Variable AIRTABLE_TABLE_ADDONS no definida");
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Missing AIRTABLE_TABLE_ADDONS env var" }),
+      };
+    }
+
+    // Consultar Airtable con filtro de solo activos
+    const records = await base(tableName)
       .select({ filterByFormula: "{active}=TRUE()" })
       .all();
 
+    // Mapear los registros a un formato limpio
     const addons = records.map((record) => ({
       id: record.id,
       name: record.get("name"),
@@ -14,15 +26,27 @@ const handler: Handler = async () => {
       active: record.get("active"),
     }));
 
+    // Respuesta exitosa
     return {
       statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
       body: JSON.stringify(addons),
     };
   } catch (error) {
-    console.error("Error fetching addons:", error);
+    console.error("❌ Error fetching addons:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Error fetching addons" }),
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({
+        error: "Error fetching addons",
+        message: (error as Error).message,
+      }),
     };
   }
 };
