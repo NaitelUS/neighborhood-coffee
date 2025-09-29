@@ -18,7 +18,7 @@ const handler: Handler = async () => {
       body: JSON.stringify(settings),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching settings:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching settings" }),
