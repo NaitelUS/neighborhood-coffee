@@ -12,7 +12,6 @@ const handler: Handler = async () => {
       name: record.get("name"),
       email: record.get("email"),
       role: record.get("role"),
-      active: record.get("active"),
     }));
 
     return {
@@ -20,7 +19,7 @@ const handler: Handler = async () => {
       body: JSON.stringify(users),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching users:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching users" }),
