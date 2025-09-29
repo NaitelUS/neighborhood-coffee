@@ -12,7 +12,7 @@ const handler: Handler = async () => {
       name: record.get("name"),
       description: record.get("description"),
       price: record.get("price"),
-      image: record.get("image_url"),
+      image_url: record.get("image_url"),
       active: record.get("active"),
     }));
 
