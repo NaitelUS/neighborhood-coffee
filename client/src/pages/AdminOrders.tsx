@@ -1,24 +1,4 @@
-// client/src/pages/AdminOrders.tsx
 import { useState, useEffect } from "react";
-
-interface OrderItem {
-  name: string;
-  option?: string;
-  quantity: number;
-  addOns?: string[];
-}
-
-interface Order {
-  id: string;
-  customerName: string;
-  items: OrderItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  status: string;
-  address?: string;
-  notes?: string;
-}
 
 const ORDER_STATUSES = [
   "Pending",
@@ -26,37 +6,43 @@ const ORDER_STATUSES = [
   "Ready",
   "Out for Delivery",
   "Completed",
+  "Cancelled",
 ];
 
 export default function AdminOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Cargar órdenes de localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("orders");
-    if (saved) {
-      setOrders(JSON.parse(saved));
+  const loadOrders = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/.netlify/functions/orders");
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error("Error loading orders:", err);
     }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadOrders();
   }, []);
 
-  // Guardar en localStorage cuando cambian
-  useEffect(() => {
-    localStorage.setItem("orders", JSON.stringify(orders));
-  }, [orders]);
-
-  const advanceStatus = (orderId: string) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id === orderId) {
-          const currentIndex = ORDER_STATUSES.indexOf(order.status);
-          if (currentIndex < ORDER_STATUSES.length - 1) {
-            return { ...order, status: ORDER_STATUSES[currentIndex + 1] };
-          }
-        }
-        return order;
-      })
-    );
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      await fetch("/.netlify/functions/orders-update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      loadOrders();
+    } catch (err) {
+      console.error("Error updating status:", err);
+    }
   };
+
+  if (loading) return <p className="text-center mt-10">Loading orders...</p>;
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -68,58 +54,32 @@ export default function AdminOrders() {
         <table className="w-full border-collapse border text-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border px-3 py-2 text-left">Order ID</th>
-              <th className="border px-3 py-2 text-left">Customer</th>
-              <th className="border px-3 py-2 text-left">Items</th>
-              <th className="border px-3 py-2 text-right">Subtotal</th>
-              <th className="border px-3 py-2 text-right">Discount</th>
-              <th className="border px-3 py-2 text-right">Total</th>
-              <th className="border px-3 py-2 text-center">Status</th>
-              <th className="border px-3 py-2 text-center">Action</th>
+              <th className="border px-3 py-2">Order ID</th>
+              <th className="border px-3 py-2">Customer</th>
+              <th className="border px-3 py-2">Total</th>
+              <th className="border px-3 py-2">Status</th>
+              <th className="border px-3 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td className="border px-3 py-2">{order.id}</td>
-                <td className="border px-3 py-2">{order.customerName}</td>
-                <td className="border px-3 py-2">
-                  <ul className="list-disc list-inside">
-                    {order.items.map((item, idx) => (
-                      <li key={idx}>
-                        {item.name}
-                        {item.option ? ` (${item.option})` : ""} × {item.quantity}
-                        {item.addOns && item.addOns.length > 0 && (
-                          <span className="text-gray-500">
-                            {" "}
-                            – Add-ons: {item.addOns.join(", ")}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  {order.notes && (
-                    <p className="text-xs text-gray-500">Notes: {order.notes}</p>
-                  )}
-                </td>
-                <td className="border px-3 py-2 text-right">
-                  ${order.subtotal.toFixed(2)}
-                </td>
-                <td className="border px-3 py-2 text-right">
-                  {order.discount > 0 ? `- $${order.discount.toFixed(2)}` : "-"}
-                </td>
-                <td className="border px-3 py-2 text-right">
-                  ${order.total.toFixed(2)}
-                </td>
-                <td className="border px-3 py-2 text-center">{order.status}</td>
+            {orders.map((o) => (
+              <tr key={o.id}>
+                <td className="border px-3 py-2">{o.id}</td>
+                <td className="border px-3 py-2">{o.customerName}</td>
+                <td className="border px-3 py-2 text-right">${o.total}</td>
+                <td className="border px-3 py-2 text-center">{o.status}</td>
                 <td className="border px-3 py-2 text-center">
-                  {order.status !== "Completed" && (
-                    <button
-                      onClick={() => advanceStatus(order.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                    >
-                      Advance
-                    </button>
+                  {ORDER_STATUSES.map(
+                    (s) =>
+                      s !== o.status && (
+                        <button
+                          key={s}
+                          onClick={() => updateStatus(o.id, s)}
+                          className="bg-blue-600 text-white px-2 py-1 rounded text-xs m-1 hover:bg-blue-700"
+                        >
+                          {s}
+                        </button>
+                      )
                   )}
                 </td>
               </tr>
