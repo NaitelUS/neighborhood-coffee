@@ -2,92 +2,108 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 export default function ThankYou() {
-  const { id } = useParams<{ id: string }>();
+  const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<any>(null);
-  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
-
-    const loadOrder = async () => {
+    const fetchOrder = async () => {
+      if (!orderId) return;
       try {
-        const [orderRes, itemsRes] = await Promise.all([
-          fetch(`/.netlify/functions/orders?id=${id}`).then((r) => r.json()),
-          fetch(`/.netlify/functions/orderitems?id=${id}`).then((r) => r.json()),
-        ]);
-        setOrder(orderRes);
-        setItems(itemsRes);
+        const res = await fetch(
+          `/.netlify/functions/orders?id=${encodeURIComponent(orderId)}`
+        );
+        const data = await res.json();
+        setOrder(data[0] || null);
       } catch (err) {
-        console.error("Error loading order:", err);
+        console.error("Error fetching order:", err);
       }
+      setLoading(false);
     };
 
-    loadOrder();
-  }, [id]);
+    fetchOrder();
+  }, [orderId]);
 
-  if (!order) {
+  if (loading) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-2">Order not found</h1>
-        <p className="text-gray-500">Please verify your order number.</p>
+      <div className="max-w-lg mx-auto text-center p-10 text-gray-500">
+        Loading your order details...
       </div>
     );
   }
 
+  if (!orderId || !order) {
+    return (
+      <div className="max-w-lg mx-auto text-center p-10">
+        <h1 className="text-2xl font-bold text-red-600 mb-3">
+          Order Not Found
+        </h1>
+        <p className="text-gray-600 mb-4">
+          We couldn’t find your order information.
+        </p>
+        <Link
+          to="/"
+          className="text-blue-600 underline font-medium hover:text-blue-800"
+        >
+          Back to Home
+        </Link>
+      </div>
+    );
+  }
+
+  const total = order.Total || order.total || 0;
+  const discount = order.Discount || 0;
+  const subtotal = order.Subtotal || total;
+
   return (
-    <div className="max-w-2xl mx-auto p-6 text-center">
-      <h1 className="text-3xl font-bold text-green-700 mb-4">
+    <div className="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6 mt-10 text-center">
+      <h1 className="text-2xl font-bold text-green-700 mb-2">
         🎉 Thank You for Your Order!
       </h1>
 
-      <p className="text-lg text-gray-700 mb-6">
-        Your order <strong>#{order.id}</strong> has been placed successfully.
+      <p className="text-gray-700 mb-4">
+        Your order has been successfully submitted.
       </p>
 
-      <div className="border rounded-lg p-4 text-left mb-6 bg-gray-50">
-        <h2 className="font-semibold mb-2">Order Summary</h2>
-        <ul className="text-sm mb-2">
-          {items.map((it, idx) => (
-            <li key={idx}>
-              {it.productName}
-              {it.option ? ` (${it.option})` : ""} × {it.quantity}
-              {it.addOns && ` – ${it.addOns}`}
-            </li>
-          ))}
-        </ul>
-        <div className="flex justify-between text-sm">
-          <span>Subtotal:</span>
-          <span>${order.subtotal.toFixed(2)}</span>
-        </div>
-        {order.discount > 0 && (
-          <div className="flex justify-between text-sm text-green-600">
-            <span>Discount:</span>
-            <span>- ${order.discount.toFixed(2)}</span>
-          </div>
+      <div className="bg-gray-50 border rounded-lg p-4 mb-4 text-left">
+        <p className="text-sm">
+          <span className="font-semibold text-gray-800">Order ID:</span>{" "}
+          <span className="text-blue-600">{orderId}</span>
+        </p>
+        <p className="text-sm">
+          <span className="font-semibold text-gray-800">Subtotal:</span>{" "}
+          ${subtotal.toFixed(2)}
+        </p>
+        {discount > 0 && (
+          <p className="text-sm text-green-700">
+            Discount applied: {discount}%
+          </p>
         )}
-        <div className="flex justify-between font-semibold">
-          <span>Total:</span>
-          <span>${order.total.toFixed(2)}</span>
-        </div>
+        <p className="text-sm font-semibold text-gray-800">
+          Total: ${total.toFixed(2)}
+        </p>
       </div>
 
-      <p className="text-gray-600 mb-6">
-        We’ll notify you when your order is being prepared and ready.  
-        You can check your order status below 👇
-      </p>
-
-      {id && (
+      <div className="flex flex-col gap-3 mt-6">
         <Link
-          to={`/order-status/${id}`}
-          className="inline-block bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700 transition"
+          to={`/order-status/${orderId}`}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition"
         >
-          View Order Status
+          📦 Track Your Order
         </Link>
-      )}
 
-      <div className="mt-8">
-        <Link to="/" className="text-blue-600 hover:underline text-sm">
-          ← Back to Menu
+        <Link
+          to={`/feedback?order=${orderId}`}
+          className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded transition"
+        >
+          ⭐ Leave a Review
+        </Link>
+
+        <Link
+          to="/"
+          className="text-gray-600 underline text-sm hover:text-gray-800 mt-2"
+        >
+          Back to Menu
         </Link>
       </div>
     </div>
