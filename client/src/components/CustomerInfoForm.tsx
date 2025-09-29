@@ -3,180 +3,152 @@ import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
 
 export default function CustomerInfoForm() {
+  const { cart, clearCart, coupon, subtotal, discount, total } = useCart();
   const navigate = useNavigate();
-  const { cart, clearCart } = useCart();
 
-  const [deliveryMethod, setDeliveryMethod] = useState("Pickup");
-  const [name, setName] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
-  const [notes, setNotes] = useState("");
-  const [coupon, setCoupon] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!cart || cart.length === 0) {
-      alert("Your cart is empty!");
+    if (!customerName || cart.length === 0) {
+      setError("Please enter your name and add at least one item.");
       return;
     }
 
-    const subtotal = cart.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-
-    // Validate coupon
-    let discount = 0;
-    if (coupon.trim()) {
-      const res = await fetch("/.netlify/functions/coupons");
-      const coupons = await res.json();
-      const match = coupons.find(
-        (c: any) => c.code === coupon.trim().toUpperCase()
-      );
-      if (match) discount = subtotal * (match.discount / 100);
-    }
-
-    const total = subtotal - discount;
+    setLoading(true);
+    setError("");
 
     try {
-      // 1️⃣ Create main order in Airtable
+      // Paso 1️⃣: Crear orden principal
+      const orderPayload = {
+        customerName,
+        phone,
+        email,
+        address,
+        subtotal,
+        discount,
+        total,
+        couponCode: coupon?.code || "",
+      };
+
       const orderRes = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName: name,
-          phone,
-          email,
-          address: deliveryMethod === "Delivery" ? address : "Pickup",
-          notes,
-          subtotal,
-          discount,
-          total,
-        }),
+        body: JSON.stringify(orderPayload),
       });
 
-      const newOrder = await orderRes.json();
+      if (!orderRes.ok) {
+        const err = await orderRes.json();
+        throw new Error(err.error || "Error creating order");
+      }
 
-      // 2️⃣ Create order items
-      await Promise.all(
-        cart.map((item) =>
-          fetch("/.netlify/functions/orderitems-new", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: newOrder.id,
-              productName: item.name,
-              option: item.option,
-              quantity: item.quantity,
-              addOns: item.addOns?.join(", "),
-            }),
-          })
-        )
-      );
+      const orderData = await orderRes.json();
+      const orderId = orderData.id;
 
+      // Paso 2️⃣: Crear ítems del pedido
+      const itemsPayload = {
+        orderId,
+        items: cart.map((item) => ({
+          name: item.name,
+          qty: item.qty,
+          price: item.price,
+          option: item.option,
+          addons: item.addons || [],
+          subtotal: item.price * item.qty,
+        })),
+      };
+
+      const itemsRes = await fetch("/.netlify/functions/orderitems-new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(itemsPayload),
+      });
+
+      if (!itemsRes.ok) {
+        const err = await itemsRes.json();
+        throw new Error(err.error || "Error saving items");
+      }
+
+      // Paso 3️⃣: Redirigir al Thank You
       clearCart();
-      navigate(`/thank-you/${newOrder.id}`);
-    } catch (err) {
-      console.error("Error submitting order:", err);
-      alert("There was an issue submitting your order. Please try again.");
+      navigate(`/thank-you/${orderId}`);
+    } catch (err: any) {
+      console.error("Order submission failed:", err);
+      setError(err.message || "Something went wrong.");
     }
+
+    setLoading(false);
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="border rounded-lg shadow-sm p-4 space-y-3"
+      className="bg-white rounded-lg shadow-md p-4 space-y-4"
     >
-      <h3 className="font-bold text-lg mb-2">Customer Info</h3>
+      <h2 className="text-lg font-bold mb-2">Your Info</h2>
 
-      <label className="text-sm">Name</label>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-        className="border rounded px-2 py-1 w-full"
-      />
-
-      <label className="text-sm">Phone</label>
-      <input
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        required
-        className="border rounded px-2 py-1 w-full"
-      />
-
-      <label className="text-sm">Email</label>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        className="border rounded px-2 py-1 w-full"
-      />
-
-      {/* Delivery Method */}
-      <div>
-        <label className="font-medium text-sm">Delivery Method</label>
-        <div className="flex gap-4 mt-1">
-          <label>
-            <input
-              type="radio"
-              name="deliveryMethod"
-              value="Pickup"
-              checked={deliveryMethod === "Pickup"}
-              onChange={(e) => setDeliveryMethod(e.target.value)}
-            />{" "}
-            Pickup
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="deliveryMethod"
-              value="Delivery"
-              checked={deliveryMethod === "Delivery"}
-              onChange={(e) => setDeliveryMethod(e.target.value)}
-            />{" "}
-            Delivery
-          </label>
+      {error && (
+        <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-2 rounded">
+          {error}
         </div>
-      </div>
-
-      {deliveryMethod === "Delivery" && (
-        <>
-          <label className="text-sm">Delivery Address</label>
-          <input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="border rounded px-2 py-1 w-full"
-            required
-          />
-        </>
       )}
 
-      <label className="text-sm">Notes</label>
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        className="border rounded px-2 py-1 w-full"
-        placeholder="Special instructions (e.g., no sugar, ring the bell)"
-      />
+      <div>
+        <label className="block text-sm font-medium">Name *</label>
+        <input
+          type="text"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+          required
+          className="w-full border rounded px-3 py-2 text-sm"
+        />
+      </div>
 
-      <label className="text-sm">Coupon</label>
-      <input
-        type="text"
-        value={coupon}
-        onChange={(e) => setCoupon(e.target.value)}
-        className="border rounded px-2 py-1 w-full"
-        placeholder="Enter coupon"
-      />
+      <div>
+        <label className="block text-sm font-medium">Phone</label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="w-full border rounded px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border rounded px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Address</label>
+        <textarea
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          rows={2}
+          className="w-full border rounded px-3 py-2 text-sm"
+        />
+      </div>
 
       <button
         type="submit"
-        className="w-full bg-green-600 text-white py-2 rounded font-semibold"
+        disabled={loading}
+        className={`w-full font-semibold text-white py-2 rounded transition ${
+          loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+        }`}
       >
-        Submit Order
+        {loading ? "Submitting..." : "Submit Order"}
       </button>
     </form>
   );
