@@ -1,5 +1,4 @@
 import { useCart } from "@/hooks/useCart";
-import { addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 import { useState } from "react";
 
 export default function OrderSummary() {
@@ -9,23 +8,30 @@ export default function OrderSummary() {
 
   const subtotal = (cart ?? []).reduce((sum, item) => {
     const addOnsTotal =
-      item.addOns?.reduce((aSum, addOnId) => {
-        const addOn = addOnOptions.find((o) => o.id === addOnId);
-        return aSum + (addOn ? addOn.price : 0);
+      item.addOns?.reduce((aSum, addOn) => {
+        const price = Number(addOn?.price || 0);
+        return aSum + price;
       }, 0) ?? 0;
-
     return sum + (item.price + addOnsTotal) * item.quantity;
   }, 0);
 
   const total = subtotal - discountApplied;
 
-  const applyCoupon = () => {
-    const normalized = coupon.trim().toUpperCase();
-    if (normalized === COUPON_CODE) {
-      setDiscountApplied(subtotal * COUPON_DISCOUNT);
-    } else {
-      alert("Invalid coupon code");
-      setDiscountApplied(0);
+  const applyCoupon = async () => {
+    try {
+      const normalized = coupon.trim().toUpperCase();
+      const res = await fetch("/.netlify/functions/coupons");
+      const coupons = await res.json();
+      const found = coupons.find((c: any) => c.code === normalized);
+
+      if (found) {
+        setDiscountApplied(subtotal * (found.discount / 100));
+      } else {
+        alert("Invalid coupon");
+        setDiscountApplied(0);
+      }
+    } catch (err) {
+      console.error("Error applying coupon:", err);
     }
   };
 
@@ -49,13 +55,7 @@ export default function OrderSummary() {
                   </div>
                   {item.addOns?.length > 0 && (
                     <div className="text-xs text-gray-500">
-                      Add-ons:{" "}
-                      {item.addOns
-                        .map(
-                          (id) =>
-                            addOnOptions.find((a) => a.id === id)?.name || id
-                        )
-                        .join(", ")}
+                      Add-ons: {item.addOns.join(", ")}
                     </div>
                   )}
                 </div>
