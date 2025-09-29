@@ -12,7 +12,6 @@ const handler: Handler = async () => {
       name: record.get("name"),
       email: record.get("email"),
       phone: record.get("phone"),
-      contact_me: record.get("contact_me"),
       created_at: record.get("created_at"),
     }));
 
