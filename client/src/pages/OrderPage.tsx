@@ -1,11 +1,29 @@
+import { useEffect, useState } from "react";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 import { useCart } from "@/hooks/useCart";
-import { menuData } from "@/data/menuData";
 import MenuItem from "@/components/MenuItem";
 
 export default function OrderPage() {
   const { cart } = useCart();
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [addOns, setAddOns] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productsRes, addOnsRes] = await Promise.all([
+          fetch("/.netlify/functions/products").then((r) => r.json()),
+          fetch("/.netlify/functions/addons").then((r) => r.json()),
+        ]);
+        setMenuItems(productsRes);
+        setAddOns(addOnsRes);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -13,9 +31,13 @@ export default function OrderPage() {
 
       {/* Menu grid */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
-        {menuData.map((item) => (
-          <MenuItem key={item.id} item={item} />
-        ))}
+        {menuItems.length > 0 ? (
+          menuItems.map((item) => (
+            <MenuItem key={item.id} item={item} addOns={addOns} />
+          ))
+        ) : (
+          <p className="text-center text-gray-500">Loading menu...</p>
+        )}
       </div>
 
       {/* Order summary + form */}
