@@ -9,10 +9,10 @@ const handler: Handler = async () => {
 
     const orders = records.map((record) => ({
       id: record.id,
+      order_number: record.get("order_number"),
       customer: record.get("customer"),
       total: record.get("total"),
       status: record.get("status"),
-      created_at: record.get("created_at"),
     }));
 
     return {
@@ -20,7 +20,7 @@ const handler: Handler = async () => {
       body: JSON.stringify(orders),
     };
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching orders:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Error fetching orders" }),
