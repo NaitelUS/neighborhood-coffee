@@ -17,7 +17,19 @@ export default function AdminProducts() {
     try {
       const res = await fetch("/.netlify/functions/products");
       const data = await res.json();
-      setProducts(data);
+
+      // ✅ Estructura real: array plano con minúsculas
+      const records = Array.isArray(data) ? data : [];
+
+      const formatted = records.map((r: any) => ({
+        id: r.id,
+        Name: r.name || "Unnamed",
+        Description: r.description || "",
+        Price: r.price || 0,
+        Image: r.image_url || "",
+      }));
+
+      setProducts(formatted);
     } catch (err) {
       console.error("Error fetching products:", err);
     } finally {
@@ -47,10 +59,10 @@ export default function AdminProducts() {
         body: JSON.stringify({
           id: product.id,
           fields: {
-            Name: product.Name,
-            Description: product.Description,
-            Price: Number(product.Price),
-            Image: product.Image,
+            name: product.Name,
+            description: product.Description,
+            price: Number(product.Price),
+            image_url: product.Image,
           },
         }),
       });
@@ -69,83 +81,96 @@ export default function AdminProducts() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Manage Products</h1>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">Name</th>
-              <th className="border p-2">Description</th>
-              <th className="border p-2">Price</th>
-              <th className="border p-2">Image URL</th>
-              <th className="border p-2">Preview</th>
-              <th className="border p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50">
-                <td className="border p-2">
-                  <input
-                    value={p.Name}
-                    onChange={(e) => handleChange(p.id, "Name", e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-sm"
-                  />
-                </td>
-                <td className="border p-2">
-                  <textarea
-                    value={p.Description || ""}
-                    onChange={(e) => handleChange(p.id, "Description", e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-sm"
-                    rows={2}
-                  />
-                </td>
-                <td className="border p-2 w-24">
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={p.Price || ""}
-                    onChange={(e) =>
-                      handleChange(p.id, "Price", Number(e.target.value))
-                    }
-                    className="border rounded w-full px-2 py-1 text-sm"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={p.Image || ""}
-                    onChange={(e) => handleChange(p.id, "Image", e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-sm"
-                    placeholder="https://..."
-                  />
-                </td>
-                <td className="border p-2 text-center">
-                  {p.Image ? (
-                    <img
-                      src={p.Image}
-                      alt={p.Name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                  ) : (
-                    <span className="text-gray-400">No image</span>
-                  )}
-                </td>
-                <td className="border p-2 text-center">
-                  <button
-                    onClick={() => handleSave(p.id)}
-                    disabled={saving}
-                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
-                  >
-                    {saving ? "Saving..." : "Save"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Manage Products</h1>
+        <span className="text-sm text-gray-600">
+          ✅ Loaded {products.length} products from Database
+        </span>
       </div>
+
+      {products.length === 0 ? (
+        <p className="text-gray-500 text-center">
+          No products found. Check your Database table name or API response.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-200 text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-2">Name</th>
+                <th className="border p-2">Description</th>
+                <th className="border p-2">Price</th>
+                <th className="border p-2">Image URL</th>
+                <th className="border p-2">Preview</th>
+                <th className="border p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50">
+                  <td className="border p-2">
+                    <input
+                      value={p.Name}
+                      onChange={(e) => handleChange(p.id, "Name", e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm"
+                    />
+                  </td>
+                  <td className="border p-2">
+                    <textarea
+                      value={p.Description || ""}
+                      onChange={(e) =>
+                        handleChange(p.id, "Description", e.target.value)
+                      }
+                      className="border rounded w-full px-2 py-1 text-sm"
+                      rows={2}
+                    />
+                  </td>
+                  <td className="border p-2 w-24">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={p.Price || ""}
+                      onChange={(e) =>
+                        handleChange(p.id, "Price", Number(e.target.value))
+                      }
+                      className="border rounded w-full px-2 py-1 text-sm"
+                    />
+                  </td>
+                  <td className="border p-2">
+                    <input
+                      type="text"
+                      value={p.Image || ""}
+                      onChange={(e) => handleChange(p.id, "Image", e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm"
+                      placeholder="https://..."
+                    />
+                  </td>
+                  <td className="border p-2 text-center">
+                    {p.Image ? (
+                      <img
+                        src={p.Image}
+                        alt={p.Name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    ) : (
+                      <span className="text-gray-400">No image</span>
+                    )}
+                  </td>
+                  <td className="border p-2 text-center">
+                    <button
+                      onClick={() => handleSave(p.id)}
+                      disabled={saving}
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
+                    >
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
