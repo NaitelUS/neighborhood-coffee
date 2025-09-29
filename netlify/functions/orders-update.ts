@@ -49,14 +49,20 @@ export const handler: Handler = async (event) => {
       (existing.fields.CustomerName as string) || "Customer";
     const phone = existing.fields.Phone as string | undefined;
 
-    // 2️⃣ Actualizar estado en Airtable
+    // 2️⃣ Actualizar estado y LastUpdated en Airtable
     const updated = await base(TABLE).update([
-      { id, fields: { Status: status } },
+      {
+        id,
+        fields: {
+          Status: status,
+          LastUpdated: new Date().toISOString(),
+        },
+      },
     ]);
 
     const order = { id, ...updated[0].fields };
 
-    // 3️⃣ Enviar SMS (si configurado)
+    // 3️⃣ Enviar SMS (si Twilio configurado)
     if (client && phone) {
       const baseMessage = STATUS_MESSAGES[status] || "";
       if (baseMessage) {
@@ -67,9 +73,9 @@ export const handler: Handler = async (event) => {
               : baseMessage;
 
           const msg = await client.messages.create({
-            body: `${finalMessage}`,
+            body: finalMessage,
             from: twilioFrom,
-            to: phone.startsWith("+") ? phone : `+1${phone}`,
+            to: phone.startsWith("+") ? phone : `+1${phone}`, // fallback simple
           });
 
           console.log("SMS sent:", msg.sid);
