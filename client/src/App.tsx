@@ -7,6 +7,7 @@ import AdminOrders from "@/pages/AdminOrders";
 import Feedback from "@/pages/Feedback";
 import NotFound from "@/pages/NotFound";
 import AdminPanel from "@/pages/AdminPanel";
+import AdminProducts from "@/pages/AdminProducts";
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/admin" element={<AdminOrders />} />
 
             <Route path="/admin-panel" element={<AdminPanel />} />
+            <Route path="/admin-panel/products" element={<AdminProducts />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
