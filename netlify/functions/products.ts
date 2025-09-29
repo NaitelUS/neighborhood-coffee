@@ -3,26 +3,30 @@ import { base } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {
-    const records = await base(process.env.AIRTABLE_TABLE_CUSTOMERS!)
-      .select()
+    // ✅ Llamamos la tabla de productos desde las variables de entorno
+    const records = await base(process.env.AIRTABLE_TABLE_PRODUCTS!)
+      .select({ filterByFormula: "{active}=TRUE()" }) // opcional: filtra productos activos
       .all();
 
-    const customers = records.map((record) => ({
+    // ✅ Mapeamos los campos esperados
+    const products = records.map((record) => ({
       id: record.id,
       name: record.get("name"),
-      email: record.get("email"),
-      phone: record.get("phone"),
+      description: record.get("description"),
+      price: record.get("price"),
+      category: record.get("category"),
+      active: record.get("active"),
     }));
 
     return {
       statusCode: 200,
-      body: JSON.stringify(customers),
+      body: JSON.stringify(products),
     };
   } catch (error) {
-    console.error("Error fetching customers:", error);
+    console.error("Error fetching products:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Error fetching customers" }),
+      body: JSON.stringify({ error: "Error fetching products" }),
     };
   }
 };
