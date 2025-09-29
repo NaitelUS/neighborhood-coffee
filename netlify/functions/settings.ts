@@ -9,11 +9,8 @@ const handler: Handler = async () => {
 
     const settings = records.map((record) => ({
       id: record.id,
-      day: record.get("day"),
-      open_time: record.get("open_time"),
-      close_time: record.get("close_time"),
-      closed: record.get("closed"),
-      banner: record.get("banner"),
+      key: record.get("key"),
+      value: record.get("value"),
     }));
 
     return {
