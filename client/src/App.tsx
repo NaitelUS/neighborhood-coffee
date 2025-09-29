@@ -6,6 +6,7 @@ import ThankYou from "@/pages/ThankYou";
 import AdminOrders from "@/pages/AdminOrders";
 import Feedback from "@/pages/Feedback";
 import NotFound from "@/pages/NotFound";
+import AdminPanel from "@/pages/AdminPanel";
 
 export default function App() {
   return (
@@ -28,6 +29,8 @@ export default function App() {
 
             {/* Página admin */}
             <Route path="/admin" element={<AdminOrders />} />
+
+            <Route path="/admin-panel" element={<AdminPanel />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
