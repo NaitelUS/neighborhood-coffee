@@ -11,11 +11,10 @@ const handler: Handler = async () => {
       id: record.id,
       order: record.get("order"),
       product: record.get("product"),
-      qty: record.get("qty"),                 // Airtable: qty
-      unit_price: record.get("unit_price"),   // Airtable: unit_price
+      quantity: record.get("qty"),
+      addons: record.get("add_ons"),
       options: record.get("options"),
-      add_ons: record.get("add_ons"),         // Airtable: add_ons
-      order_ref: record.get("order_ref"),     // Airtable: order_ref
+      price: record.get("unit_price"),
     }));
 
     return {
