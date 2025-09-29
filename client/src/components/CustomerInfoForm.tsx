@@ -1,8 +1,6 @@
-// client/src/components/CustomerInfoForm.tsx
 import { useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
-import { addOnOptions, COUPON_CODE, COUPON_DISCOUNT } from "@/data/menuData";
 
 export default function CustomerInfoForm() {
   const navigate = useNavigate();
@@ -16,7 +14,7 @@ export default function CustomerInfoForm() {
   const [notes, setNotes] = useState("");
   const [coupon, setCoupon] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!cart || cart.length === 0) {
@@ -24,63 +22,66 @@ export default function CustomerInfoForm() {
       return;
     }
 
-    if (deliveryMethod === "Delivery" && !address.trim()) {
-      alert("Please provide a delivery address.");
-      return;
-    }
+    const subtotal = cart.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
 
-    // Generar número de orden
-    const orderId = Math.floor(Math.random() * 100000).toString();
-
-    // Calcular subtotal (con add-ons)
-    const subtotal = (cart ?? []).reduce((sum, item) => {
-      const addOnsTotal =
-        item.addOns?.reduce((aSum, addOnId) => {
-          const addOn = addOnOptions.find((o) => o.id === addOnId);
-          return aSum + (addOn ? addOn.price : 0);
-        }, 0) ?? 0;
-
-      return sum + (item.price + addOnsTotal) * item.quantity;
-    }, 0);
-
-    // Aplicar cupón
+    // Validate coupon
     let discount = 0;
-    if (coupon.trim().toUpperCase() === COUPON_CODE) {
-      discount = subtotal * COUPON_DISCOUNT;
+    if (coupon.trim()) {
+      const res = await fetch("/.netlify/functions/coupons");
+      const coupons = await res.json();
+      const match = coupons.find(
+        (c: any) => c.code === coupon.trim().toUpperCase()
+      );
+      if (match) discount = subtotal * (match.discount / 100);
     }
+
     const total = subtotal - discount;
 
-    // Preparar objeto de orden
-    const newOrder = {
-      id: orderId,
-      customerName: name,
-      items: (cart ?? []).map((item) => ({
-        name: item.name,
-        option: item.option,
-        quantity: item.quantity,
-        addOns: item.addOns,
-      })),
-      subtotal,
-      discount,
-      total,
-      status: "Pending",
-      phone,
-      email,
-      address: deliveryMethod === "Delivery" ? address : "Pickup",
-      notes,
-    };
+    try {
+      // 1️⃣ Create main order in Airtable
+      const orderRes = await fetch("/.netlify/functions/orders-new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: name,
+          phone,
+          email,
+          address: deliveryMethod === "Delivery" ? address : "Pickup",
+          notes,
+          subtotal,
+          discount,
+          total,
+        }),
+      });
 
-    // Guardar en localStorage
-    const saved = localStorage.getItem("orders");
-    const orders = saved ? JSON.parse(saved) : [];
-    orders.push(newOrder);
-    localStorage.setItem("orders", JSON.stringify(orders));
+      const newOrder = await orderRes.json();
 
-    // Limpiar carrito
-    clearCart();
+      // 2️⃣ Create order items
+      await Promise.all(
+        cart.map((item) =>
+          fetch("/.netlify/functions/orderitems-new", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: newOrder.id,
+              productName: item.name,
+              option: item.option,
+              quantity: item.quantity,
+              addOns: item.addOns?.join(", "),
+            }),
+          })
+        )
+      );
 
-    // Redirigir a página Thank You
-    navigate(`/thank-you/${orderId}`);
+      clearCart();
+      navigate(`/thank-you/${newOrder.id}`);
+    } catch (err) {
+      console.error("Error submitting order:", err);
+      alert("There was an issue submitting your order. Please try again.");
+    }
   };
 
   return (
@@ -90,36 +91,30 @@ export default function CustomerInfoForm() {
     >
       <h3 className="font-bold text-lg mb-2">Customer Info</h3>
 
-      <div className="flex flex-col">
-        <label className="text-sm">Name</label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="border rounded px-2 py-1"
-        />
-      </div>
+      <label className="text-sm">Name</label>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+        className="border rounded px-2 py-1 w-full"
+      />
 
-      <div className="flex flex-col">
-        <label className="text-sm">Phone</label>
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          required
-          className="border rounded px-2 py-1"
-        />
-      </div>
+      <label className="text-sm">Phone</label>
+      <input
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        required
+        className="border rounded px-2 py-1 w-full"
+      />
 
-      <div className="flex flex-col">
-        <label className="text-sm">Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="border rounded px-2 py-1"
-        />
-      </div>
+      <label className="text-sm">Email</label>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className="border rounded px-2 py-1 w-full"
+      />
 
       {/* Delivery Method */}
       <div>
@@ -149,37 +144,33 @@ export default function CustomerInfoForm() {
       </div>
 
       {deliveryMethod === "Delivery" && (
-        <div className="flex flex-col">
+        <>
           <label className="text-sm">Delivery Address</label>
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="border rounded px-2 py-1"
-            required={deliveryMethod === "Delivery"}
+            className="border rounded px-2 py-1 w-full"
+            required
           />
-        </div>
+        </>
       )}
 
-      <div className="flex flex-col">
-        <label className="text-sm">Notes</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="border rounded px-2 py-1"
-          placeholder="Special instructions (e.g., no sugar, ring the bell)"
-        />
-      </div>
+      <label className="text-sm">Notes</label>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        className="border rounded px-2 py-1 w-full"
+        placeholder="Special instructions (e.g., no sugar, ring the bell)"
+      />
 
-      <div className="flex flex-col">
-        <label className="text-sm">Coupon</label>
-        <input
-          type="text"
-          value={coupon}
-          onChange={(e) => setCoupon(e.target.value)}
-          className="border rounded px-2 py-1"
-          placeholder="Enter coupon"
-        />
-      </div>
+      <label className="text-sm">Coupon</label>
+      <input
+        type="text"
+        value={coupon}
+        onChange={(e) => setCoupon(e.target.value)}
+        className="border rounded px-2 py-1 w-full"
+        placeholder="Enter coupon"
+      />
 
       <button
         type="submit"
