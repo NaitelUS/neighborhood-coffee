@@ -1,64 +1,48 @@
 import React, { useState, useEffect } from "react";
-import { useCart } from "../context/CartContext";
-import { useToast } from "../hooks/use-toast";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/hooks/use-toast";
+
+interface Version {
+  price: number;
+  description: string;
+  image_url: string;
+}
 
 interface MenuItemProps {
   item: {
     id: string;
     name: string;
-    description: string;
-    price: number;
-    image_url?: string;
+    hotVersion: Version;
+    icedVersion: Version;
   };
-  options?: {
-    optionName: string;
-    price?: number;
-    description?: string;
-    image_url?: string;
-  }[];
 }
 
-export default function MenuItem({ item, options = [] }: MenuItemProps) {
+export default function MenuItem({ item }: MenuItemProps) {
   const { addToCart } = useCart();
   const { showToast } = useToast();
 
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [selected, setSelected] = useState<any>(item);
+  const [isHot, setIsHot] = useState(true);
+  const [selectedVersion, setSelectedVersion] = useState<Version>(item.hotVersion);
 
+  // 🔄 Cada vez que cambie el modo, actualiza la versión
   useEffect(() => {
-    if (selectedOption && options.length > 0) {
-      const opt = options.find((o) => o.optionName === selectedOption);
-      setSelected(opt ? { ...item, ...opt } : item);
-    } else {
-      setSelected(item);
-    }
-  }, [selectedOption, options]);
+    setSelectedVersion(isHot ? item.hotVersion : item.icedVersion);
+  }, [isHot, item]);
 
-  const handleOptionChange = (opt: any) => setSelectedOption(opt);
+  const handleToggle = () => setIsHot(!isHot);
 
   const handleAdd = () => {
     try {
-      // 🚫 Si tiene opciones y no ha elegido ninguna
-      if (options.length > 0 && !selectedOption) {
-        showToast("⚠️ Please select an option before adding.", "warning");
-        return;
-      }
-
       const productToAdd = {
-        id: selected.id,
-        name: selectedOption
-          ? `${item.name} - ${selectedOption}`
-          : item.name,
-        price: selected.price || item.price,
-        image_url: selected.image_url || item.image_url,
-        description: selected.description || item.description,
+        id: `${item.id}-${isHot ? "hot" : "iced"}`,
+        name: `${item.name} (${isHot ? "Hot" : "Iced"})`,
+        price: selectedVersion.price,
+        image_url: selectedVersion.image_url,
+        description: selectedVersion.description,
       };
 
       addToCart(productToAdd);
-      showToast(
-        `✅ Added ${productToAdd.name} ($${productToAdd.price.toFixed(2)})`,
-        "success"
-      );
+      showToast(`✅ Added ${productToAdd.name} ($${productToAdd.price.toFixed(2)})`, "success");
     } catch (err) {
       console.error("Add to cart error:", err);
       showToast("❌ Something went wrong adding this item", "error");
@@ -66,35 +50,30 @@ export default function MenuItem({ item, options = [] }: MenuItemProps) {
   };
 
   return (
-    <div className="p-4 border rounded-lg shadow-sm bg-white flex flex-col items-center">
+    <div className="p-4 border rounded-lg shadow-sm bg-white flex flex-col items-center text-center">
+      {/* 🖼️ Imagen dinámica */}
       <img
-        src={selected.image_url || "/placeholder.png"}
-        alt={selected.name}
-        className="w-32 h-32 object-cover rounded-lg mb-2"
+        src={selectedVersion.image_url || "/placeholder.png"}
+        alt={item.name}
+        className="w-32 h-32 object-cover rounded-lg mb-3"
       />
-      <h3 className="font-semibold text-lg">{selected.name}</h3>
-      <p className="text-sm text-gray-500 mb-1">{selected.description}</p>
-      <p className="font-bold mb-2">${selected.price.toFixed(2)}</p>
 
-      {/* 🔘 Botones dinámicos de opciones */}
-      {options.length > 0 && (
-        <div className="flex gap-2 mb-3">
-          {options.map((opt) => (
-            <button
-              key={opt.optionName}
-              onClick={() => handleOptionChange(opt.optionName)}
-              className={`px-3 py-1 rounded-full border ${
-                selectedOption === opt.optionName
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100"
-              }`}
-            >
-              {opt.optionName}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* ☕ Nombre y descripción */}
+      <h3 className="font-semibold text-lg">{item.name}</h3>
+      <p className="text-sm text-gray-600 mb-2">{selectedVersion.description}</p>
 
+      {/* 💲 Precio */}
+      <p className="font-bold mb-3">${selectedVersion.price.toFixed(2)}</p>
+
+      {/* 🔘 Botón para alternar Hot/Iced */}
+      <button
+        onClick={handleToggle}
+        className="mb-3 px-3 py-1 text-sm bg-gray-200 rounded-full hover:bg-gray-300 transition"
+      >
+        {isHot ? "Switch to Iced" : "Switch to Hot"}
+      </button>
+
+      {/* 🛒 Botón agregar al carrito */}
       <button
         onClick={handleAdd}
         className="mt-auto bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
