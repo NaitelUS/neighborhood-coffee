@@ -1,123 +1,77 @@
-import { useState } from "react";
-import { MenuItem as Item, addOnOptions, MenuItemOption } from "@/data/menuData";
+import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/useCart";
 
-interface Props {
-  item: Item;
-}
-
-export default function MenuItem({ item }: Props) {
+export default function MenuItem({ item, options = [] }: any) {
   const { addToCart } = useCart();
-  const [selectedOption, setSelectedOption] = useState<
-    string | MenuItemOption | undefined
-  >(item.options ? item.options[0] : undefined);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
-  const [showAddOns, setShowAddOns] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<any>(null);
 
-  const handleAddOnChange = (id: string) => {
-    setSelectedAddOns((prev) =>
-      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
-    );
+  // Si tiene opciones, selecciona la primera; si no, usa el item base
+  useEffect(() => {
+    if (options.length > 0) setSelectedOption(options[0]);
+  }, [options]);
+
+  const handleOptionChange = (opt: any) => {
+    setSelectedOption(opt);
   };
 
-  const handleAddToCart = () => {
-    addToCart({
-      ...item,
-      option: typeof selectedOption === "string" ? selectedOption : selectedOption?.label,
-      quantity,
-      addOns: selectedAddOns,
-      image:
-        typeof selectedOption === "object" && selectedOption?.image
-          ? selectedOption.image
-          : item.image,
-    });
+  const handleAdd = () => {
+    const productToAdd = {
+      id: selectedOption ? selectedOption.id : item.id,
+      name: selectedOption
+        ? `${item.name} - ${selectedOption.optionName}`
+        : item.name,
+      price: selectedOption ? selectedOption.price : item.price,
+      image_url: selectedOption
+        ? selectedOption.image_url
+        : item.image_url,
+      description: selectedOption
+        ? selectedOption.description
+        : item.description,
+    };
+    addToCart(productToAdd);
   };
 
-  const currentImage =
-    typeof selectedOption === "object" && selectedOption?.image
-      ? selectedOption.image
-      : item.image;
+  const display = selectedOption || item;
 
   return (
-    <div className="border rounded-lg shadow-sm p-4">
+    <div className="border rounded-lg shadow-sm bg-white p-4 flex flex-col">
       <img
-        src={currentImage}
-        alt={item.name}
-        className="w-full h-40 object-cover rounded"
+        src={display.image_url}
+        alt={display.name}
+        className="w-full h-48 object-cover rounded-md mb-3"
       />
-      <h3 className="font-semibold text-lg mt-2">{item.name}</h3>
-      <p className="text-sm text-gray-600">{item.description}</p>
-      <p className="font-bold mt-1">${item.price.toFixed(2)}</p>
 
-      {/* Hot/Iced o Apple/Pineapple */}
-      {item.options && (
-        <div className="flex gap-2 mt-2">
-          {item.options.map((opt) => (
+      <h2 className="font-semibold text-lg mb-1">{item.name}</h2>
+
+      {/* 🔀 Selector dinámico de opciones */}
+      {options.length > 1 && (
+        <div className="flex justify-center gap-2 mb-3 flex-wrap">
+          {options.map((opt) => (
             <button
-              key={typeof opt === "string" ? opt : opt.label}
-              onClick={() => setSelectedOption(opt)}
-              className={`px-3 py-1 rounded border ${
-                (typeof selectedOption === "string"
-                  ? selectedOption
-                  : selectedOption?.label) ===
-                (typeof opt === "string" ? opt : opt.label)
-                  ? "bg-teal-600 text-white"
-                  : ""
+              key={opt.id}
+              onClick={() => handleOptionChange(opt)}
+              className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                selectedOption?.id === opt.id
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
-              {typeof opt === "string" ? opt : opt.label}
+              {opt.optionName}
             </button>
           ))}
         </div>
       )}
 
-      {/* Add-ons toggle */}
-      {item.id !== "golden" && item.id !== "empanada" && (
-        <div className="mt-2">
-          <label className="flex items-center text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={showAddOns}
-              onChange={() => setShowAddOns(!showAddOns)}
-              className="mr-2"
-            />
-            Customize my drink
-          </label>
+      <p className="text-gray-600 text-sm mb-2">{display.description}</p>
 
-          {showAddOns && (
-            <div className="mt-2 space-y-1">
-              {addOnOptions.map((a) => (
-                <label key={a.id} className="flex items-center text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedAddOns.includes(a.id)}
-                    onChange={() => handleAddOnChange(a.id)}
-                    className="mr-2"
-                  />
-                  {a.name} (+${a.price.toFixed(2)})
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <p className="font-semibold text-lg mb-4">${display.price.toFixed(2)}</p>
 
-      <div className="mt-3 flex items-center gap-2">
-        <input
-          type="number"
-          min={1}
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          className="w-16 border rounded px-2 py-1"
-        />
-        <button
-          onClick={handleAddToCart}
-          className="flex-1 bg-teal-600 text-white px-4 py-2 rounded"
-        >
-          Add to Order
-        </button>
-      </div>
+      <button
+        onClick={handleAdd}
+        className="bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold transition"
+      >
+        Add to Cart
+      </button>
     </div>
   );
 }
