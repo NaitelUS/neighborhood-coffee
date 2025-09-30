@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MenuItem({ item, options = [] }: any) {
   const { addToCart } = useCart();
+  const { showToast, Toast } = useToast();
   const [selectedOption, setSelectedOption] = useState<any>(null);
 
   useEffect(() => {
@@ -12,9 +14,7 @@ export default function MenuItem({ item, options = [] }: any) {
     }
   }, [options]);
 
-  const handleOptionChange = (opt: any) => {
-    setSelectedOption(opt);
-  };
+  const handleOptionChange = (opt: any) => setSelectedOption(opt);
 
   const handleAdd = () => {
     const selected = selectedOption || item;
@@ -27,30 +27,28 @@ export default function MenuItem({ item, options = [] }: any) {
       image_url: selected.image_url || item.image_url,
       description: selected.description || item.description,
     };
+
     addToCart(productToAdd);
+    showToast(`✅ Added ${productToAdd.name} ($${productToAdd.price.toFixed(2)})`);
   };
 
   const display = selectedOption || item;
   const hasTwoOptions = options.length === 2;
 
   return (
-    <div className="border rounded-lg shadow-sm bg-white p-4 flex flex-col hover:shadow-md transition">
-      {/* Imagen dinámica */}
+    <div className="relative border rounded-lg shadow-sm bg-white p-4 flex flex-col hover:shadow-md transition">
       <img
         src={display.image_url}
         alt={display.name}
         className="w-full h-48 object-cover rounded-md mb-3"
       />
 
-      {/* Nombre principal */}
       <h2 className="font-semibold text-lg mb-2 text-center">{item.name}</h2>
 
-      {/* 🔀 Selector dinámico */}
       {options.length > 1 && (
         <div className="flex justify-center items-center mb-4">
           {hasTwoOptions ? (
             <div className="relative flex w-52 bg-gray-200 rounded-full cursor-pointer select-none flex-col items-center py-1">
-              {/* Fondo animado */}
               <div
                 className={`absolute top-0 bottom-0 w-1/2 bg-blue-600 rounded-full shadow transition-all duration-300 ${
                   selectedOption?.id === options[1].id
@@ -106,25 +104,25 @@ export default function MenuItem({ item, options = [] }: any) {
         </div>
       )}
 
-      {/* Descripción */}
       {display.description && (
         <p className="text-gray-600 text-sm mb-2 text-center">
           {display.description}
         </p>
       )}
 
-      {/* Precio principal */}
       <p className="font-semibold text-lg mb-4 text-center">
         ${display.price?.toFixed(2) ?? "0.00"}
       </p>
 
-      {/* Botón agregar */}
       <button
         onClick={handleAdd}
         className="bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold transition"
       >
         Add to Cart
       </button>
+
+      {/* 🟢 Toast visual */}
+      <Toast />
     </div>
   );
 }
