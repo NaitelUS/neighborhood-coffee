@@ -1,18 +1,62 @@
 import React, { useEffect, useState } from "react";
-import { useCart } from "../context/CartContext";
-import { fetchProducts } from "../data/api";
-import MenuItem from "../components/MenuItem";
-import CouponField from "../components/CouponField";
+import { useCart } from "@/context/CartContext";
+import { getProducts, createOrder, createOrderItems } from "@/api/api";
+import MenuItem from "@/components/MenuItem";
+import CouponField from "@/components/CouponField";
 
 export default function OrderPage() {
   const [products, setProducts] = useState<any[]>([]);
   const { cart, clearCart } = useCart();
 
   useEffect(() => {
-    fetchProducts().then(setProducts).catch(console.error);
+    getProducts().then(setProducts).catch(console.error);
   }, []);
 
   const total = cart.reduce((acc, item) => acc + item.price, 0);
+
+  // 🧠 Manejador del envío de la orden
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const form = e.target as HTMLFormElement;
+      const name = form.querySelector('input[required]')?.value || "";
+      const phone = form.querySelector('input[type="tel"]')?.value || "";
+      const email = form.querySelector('input[type="email"]')?.value || "";
+      const address = form.querySelector('textarea')?.value || "";
+
+      if (!name || cart.length === 0) {
+        alert("⚠️ Please enter your name and select at least one item.");
+        return;
+      }
+
+      // Crear orden principal en Airtable
+      const orderData = {
+        CustomerName: name,
+        Phone: phone,
+        Email: email,
+        Address: address,
+        Total: total,
+        Status: "Pending",
+        Created: new Date().toISOString(),
+      };
+
+      const order = await createOrder(orderData);
+
+      // Crear los items asociados
+      const orderId = order?.fields?.OrderCode || order?.id;
+      if (orderId) {
+        await createOrderItems(cart, orderId);
+      }
+
+      alert("✅ Order created successfully!");
+      clearCart();
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to create order");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground px-6 md:px-12 py-10">
@@ -74,7 +118,7 @@ export default function OrderPage() {
       {/* Info Form */}
       <section className="max-w-xl mx-auto mt-12">
         <h2 className="text-xl font-semibold mb-4">Your Info</h2>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm mb-1 font-medium">Name *</label>
             <input
