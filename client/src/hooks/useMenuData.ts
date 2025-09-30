@@ -24,6 +24,7 @@ export function useMenuData() {
           cRes.json(),
         ]);
 
+        // Solo mostrar productos activos
         setProducts(pData.filter((x: any) => x.active));
         setOptions(oData);
         setAddons(aData);
