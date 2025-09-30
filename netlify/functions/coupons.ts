@@ -1,31 +1,25 @@
 import { Handler } from "@netlify/functions";
-import { base } from "../lib/airtableClient";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const TABLE = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
+const base = getAirtableClient();
 
 export const handler: Handler = async () => {
   try {
-    const records = await base(TABLE).select({ view: "Grid view" }).all();
-
-    const coupons = records
-      .map((r) => {
-        const code = r.get("code");
-        const percent = r.get("percent_off");
-        const active = !!r.get("active"); // Airtable ya decide esto con tu fórmula
-
-        return {
-          id: r.id,
-          Code: typeof code === "string" ? code.toUpperCase().trim() : null,
-          Discount:
-            typeof percent === "number"
-              ? percent
-              : typeof percent === "string"
-              ? parseFloat(percent.replace("%", "")) / 100
-              : 0,
-          Active: active,
-        };
+    const records = await base("Coupons")
+      .select({
+        fields: ["code", "percent_off", "active"], // sólo los campos necesarios
+        filterByFormula: "active = 1", // solo cupones activos
       })
-      .filter((c) => c.Active && c.Code && c.Discount > 0);
+      .all();
+
+    const coupons = records.map((r) => ({
+      id: r.id,
+      Code: r.get("code"),
+      Discount: typeof r.get("percent_off") === "number"
+        ? r.get("percent_off")
+        : parseFloat(String(r.get("percent_off")).replace("%", "")) / 100,
+      Active: r.get("active") === true || r.get("active") === 1,
+    }));
 
     return {
       statusCode: 200,
