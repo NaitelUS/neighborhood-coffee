@@ -1,62 +1,36 @@
 // client/src/api/api.ts
-import Airtable from "airtable";
+// Este archivo ahora solo llama a tus Netlify Functions del backend.
 
-const base = new Airtable({ apiKey: import.meta.env.AIRTABLE_API_KEY }).base(
-  import.meta.env.AIRTABLE_BASE_ID
-);
-
-// --- PRODUCTS ---
 export async function getProducts() {
-  const tableName = import.meta.env.AIRTABLE_TABLE_PRODUCTS;
-  const records = await base(tableName)
-    .select({ filterByFormula: "Active" })
-    .all();
-
-  return records.map((r) => ({
-    id: r.id,
-    ...r.fields,
-  }));
+  const res = await fetch("/.netlify/functions/products");
+  if (!res.ok) throw new Error("Failed to fetch products");
+  return res.json();
 }
 
-// --- COUPONS ---
 export async function getCoupons() {
-  const tableName = import.meta.env.AIRTABLE_TABLE_COUPONS;
-  const records = await base(tableName)
-    .select({ filterByFormula: "Active" })
-    .all();
-
-  return records.map((r) => ({
-    id: r.id,
-    ...r.fields,
-  }));
+  const res = await fetch("/.netlify/functions/coupons");
+  if (!res.ok) throw new Error("Failed to fetch coupons");
+  return res.json();
 }
 
-// --- CREATE ORDER ---
 export async function createOrder(orderData: any) {
-  const tableName = import.meta.env.AIRTABLE_TABLE_ORDERS;
+  const res = await fetch("/.netlify/functions/orders-new", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(orderData),
+  });
 
-  const created = await base(tableName).create([
-    {
-      fields: orderData,
-    },
-  ]);
-
-  return created[0];
+  if (!res.ok) throw new Error("Failed to create order");
+  return res.json();
 }
 
-// --- CREATE ORDER ITEMS ---
 export async function createOrderItems(items: any[], orderCode: string) {
-  const tableName = import.meta.env.AIRTABLE_TABLE_ORDERITEMS;
+  const res = await fetch("/.netlify/functions/orderitems-new", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items, orderCode }),
+  });
 
-  const formatted = items.map((i) => ({
-    fields: {
-      OrderLink: orderCode,
-      ProductName: i.name,
-      Quantity: i.quantity,
-      Price: i.price,
-      Subtotal: i.quantity * i.price,
-    },
-  }));
-
-  await base(tableName).create(formatted);
+  if (!res.ok) throw new Error("Failed to create order items");
+  return res.json();
 }
