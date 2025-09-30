@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import Airtable from "airtable";
-// import twilio from "twilio"; // Descomenta cuando actives Twilio
+// import twilio from "twilio"; // 🔓 Descomenta cuando actives Twilio
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
@@ -8,9 +8,9 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 
 const TABLE = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
 
-/**
- * Crear nueva orden en Airtable
- */
+// 🌐 Base URL de tu sitio (ajusta si cambia el dominio)
+const SITE_URL = "https://theneighborhoodcoffee.netlify.app";
+
 export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
@@ -38,7 +38,7 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // 1️⃣ Crear registro en Airtable
+    // 1️⃣ Crear la orden en Airtable
     const record = await base(TABLE).create([
       {
         fields: {
@@ -58,7 +58,7 @@ export const handler: Handler = async (event) => {
 
     const order = { id: record[0].id, ...record[0].fields };
 
-    // 2️⃣ Enviar SMS (solo si activas Twilio)
+    // 2️⃣ Enviar SMS (opcional)
     /*
     const twilioSID = process.env.TWILIO_ACCOUNT_SID;
     const twilioToken = process.env.TWILIO_AUTH_TOKEN;
@@ -67,13 +67,15 @@ export const handler: Handler = async (event) => {
     if (twilioSID && twilioToken && twilioFrom && phone) {
       try {
         const client = twilio(twilioSID, twilioToken);
+
+        // 🧾 Construir mensaje
         let messageBody = `☕ Thank you, ${customerName}! Your order (${order.id}) has been received.`;
 
         if (discount && discount > 0 && couponCode) {
           messageBody += ` You saved $${discount.toFixed(2)} with ${couponCode}.`;
         }
 
-        messageBody += ` We'll notify you when it's ready for pickup or delivery.`;
+        messageBody += `\nTrack your order: ${SITE_URL}/order-status/${order.id}`;
 
         const msg = await client.messages.create({
           body: messageBody,
@@ -88,7 +90,7 @@ export const handler: Handler = async (event) => {
     }
     */
 
-    // 3️⃣ Responder al cliente
+    // 3️⃣ Responder con éxito
     return {
       statusCode: 200,
       headers: {
