@@ -1,17 +1,12 @@
-import type { Config } from "tailwindcss";
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./client/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,tsx}", // asegúrate de incluir todos tus archivos React
   ],
   theme: {
     extend: {
-// tailwind.config.js
-export default {
-  theme: {
-    extend: {
+      // 🔹 Animación personalizada para aplicar cupón (una sola vez)
       keyframes: {
         pulseOnce: {
           "0%": { opacity: 0, transform: "scale(0.95)" },
@@ -22,43 +17,14 @@ export default {
       animation: {
         pulseOnce: "pulseOnce 0.8s ease-out forwards",
       },
-    },
-  },
-  plugins: [],
-};
-     
+
+      // 🔹 Paleta base desde variables CSS (usada en theme)
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         border: "hsl(var(--border))",
-        primary: "hsl(var(--primary))",
-        "primary-foreground": "hsl(var(--primary-foreground))",
-        secondary: "hsl(var(--secondary))",
-        "secondary-foreground": "hsl(var(--secondary-foreground))",
-        accent: "hsl(var(--accent))",
-        "accent-foreground": "hsl(var(--accent-foreground))",
-        muted: "hsl(var(--muted))",
-        "muted-foreground": "hsl(var(--muted-foreground))",
-        card: "hsl(var(--card))",
-        "card-foreground": "hsl(var(--card-foreground))",
-      },
-      keyframes: {
-        "fade-in-out": {
-          "0%, 100%": { opacity: 0, transform: "translateY(20px)" },
-          "10%, 90%": { opacity: 1, transform: "translateY(0)" },
-        },
-      },
-      animation: {
-        "fade-in-out": "fade-in-out 2.5s ease-in-out",
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
       },
     },
   },
   plugins: [],
 };
-
-export default config;
