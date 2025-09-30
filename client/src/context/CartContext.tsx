@@ -15,7 +15,8 @@ interface CartContextType {
   removeItem: (id: string) => void;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+// ✅ Exportamos el contexto directamente
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -39,6 +40,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// ✅ Hook personalizado para acceder al contexto
 export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
   if (!context) {
