@@ -1,27 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { getProducts, getAddons, createOrder, createOrderItems } from "@/api/api";
+import { getProducts, createOrder, createOrderItems } from "@/api/api";
 import MenuItem from "@/components/MenuItem";
 import CouponField from "@/components/CouponField";
 
 export default function OrderPage() {
   const [products, setProducts] = useState<any[]>([]);
-  const [addons, setAddons] = useState<any[]>([]);
+  const [discount, setDiscount] = useState(0);
   const { cart, clearCart } = useCart();
 
-  // 🚀 Cargar productos y addons desde Airtable
   useEffect(() => {
-    Promise.all([getProducts(), getAddons()])
-      .then(([productsData, addonsData]) => {
-        setProducts(productsData);
-        setAddons(addonsData);
-      })
-      .catch(console.error);
+    getProducts().then(setProducts).catch(console.error);
   }, []);
 
-  const total = cart.reduce((acc, item) => acc + item.price, 0);
+  const subtotal = cart.reduce((acc, item) => acc + item.price, 0);
+  const total = Math.max(subtotal - discount, 0);
 
-  // 🧠 Envío de la orden
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -42,14 +36,14 @@ export default function OrderPage() {
         Phone: phone,
         Email: email,
         Address: address,
+        Subtotal: subtotal,
+        Discount: discount,
         Total: total,
         Status: "Pending",
         Created: new Date().toISOString(),
       };
 
       const order = await createOrder(orderData);
-
-      // Crear los ítems asociados
       const orderId = order?.fields?.OrderCode || order?.id;
       if (orderId) {
         await createOrderItems(cart, orderId);
@@ -58,6 +52,7 @@ export default function OrderPage() {
       alert("✅ Order created successfully!");
       clearCart();
       form.reset();
+      setDiscount(0);
     } catch (err) {
       console.error(err);
       alert("❌ Failed to create order");
@@ -84,15 +79,9 @@ export default function OrderPage() {
         <h2 className="text-2xl font-semibold mb-6 border-b pb-2">
           Our Menu
         </h2>
-
-        {/* 🧁 Grid de productos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((item) => (
-            <MenuItem
-              key={item.id}
-              item={item}
-              addons={addons.filter((a) => a.Category === "Drink")}
-            />
+            <MenuItem key={item.id} item={item} />
           ))}
         </div>
       </section>
@@ -110,27 +99,26 @@ export default function OrderPage() {
                 key={index}
                 className="flex justify-between text-sm border-b border-border pb-1"
               >
-                <div>
-                  <span className="block font-medium">{item.name}</span>
-                  {item.addons?.length > 0 && (
-                    <ul className="text-xs text-gray-500 ml-3 list-disc">
-                      {item.addons.map((addon: string, i: number) => (
-                        <li key={i}>{addon}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                <span>{item.name}</span>
                 <span>${item.price.toFixed(2)}</span>
               </li>
             ))}
           </ul>
         )}
 
-        {/* Coupon Field */}
-        <CouponField />
+        <CouponField onDiscountApply={setDiscount} />
 
-        {/* Total */}
         <div className="flex justify-between text-lg font-semibold mt-4">
+          <span>Subtotal</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
+
+        <div className="flex justify-between text-lg font-semibold mt-1">
+          <span>Discount</span>
+          <span>-${discount.toFixed(2)}</span>
+        </div>
+
+        <div className="flex justify-between text-xl font-bold mt-3 border-t pt-2">
           <span>Total</span>
           <span>${total.toFixed(2)}</span>
         </div>
