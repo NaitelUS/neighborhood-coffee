@@ -1,6 +1,17 @@
 import React, { useState } from "react";
+import Airtable from "airtable";
 
-export default function CouponField() {
+const base = new Airtable({ apiKey: import.meta.env.AIRTABLE_API_KEY }).base(
+  import.meta.env.AIRTABLE_BASE_ID
+);
+
+const TABLE_COUPONS = import.meta.env.AIRTABLE_TABLE_COUPONS || "Coupons";
+
+interface CouponFieldProps {
+  onApply?: (discount: number) => void;
+}
+
+export default function CouponField({ onApply }: CouponFieldProps) {
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
   const [applied, setApplied] = useState(false);
@@ -10,21 +21,22 @@ export default function CouponField() {
     setError("");
 
     try {
-      const response = await fetch("/.netlify/functions/coupons", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: coupon }),
-      });
+      const records = await base(TABLE_COUPONS)
+        .select({
+          filterByFormula: `AND({Code}='${coupon}', {Active}=TRUE())`,
+        })
+        .all();
 
-      const data = await response.json();
-
-      if (!response.ok || !data.valid) {
+      if (records.length === 0) {
         setError("❌ Invalid or expired coupon.");
         return;
       }
 
-      setDiscount(Number(data.discount || 0));
+      const record = records[0];
+      const discountValue = record.get("Discount") || 0;
+      setDiscount(Number(discountValue));
       setApplied(true);
+      if (onApply) onApply(Number(discountValue));
     } catch (err) {
       console.error("Error checking coupon:", err);
       setError("⚠️ Unable to verify coupon right now.");
