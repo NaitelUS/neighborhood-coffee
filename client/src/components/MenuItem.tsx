@@ -7,6 +7,7 @@ export default function MenuItem({ item, options = [] }: any) {
   const { showToast, Toast } = useToast();
   const [selectedOption, setSelectedOption] = useState<any>(null);
 
+  // 🔸 Inicializa opción por defecto
   useEffect(() => {
     if (options.length > 0) {
       const firstActive = options.find((opt) => opt.active !== false);
@@ -17,19 +18,30 @@ export default function MenuItem({ item, options = [] }: any) {
   const handleOptionChange = (opt: any) => setSelectedOption(opt);
 
   const handleAdd = () => {
-    const selected = selectedOption || item;
-    const productToAdd = {
-      id: selected.id,
-      name: selectedOption
-        ? `${item.name} - ${selected.optionName}`
-        : item.name,
-      price: selected.price || item.price,
-      image_url: selected.image_url || item.image_url,
-      description: selected.description || item.description,
-    };
+    try {
+      if (!item) {
+        showToast("❌ Item not found", "error");
+        return;
+      }
 
-    addToCart(productToAdd);
-    showToast(`✅ Added ${productToAdd.name} ($${productToAdd.price.toFixed(2)})`);
+      const selected = selectedOption || item;
+
+      const productToAdd = {
+        id: selected.id,
+        name: selectedOption
+          ? `${item.name} - ${selected.optionName}`
+          : item.name,
+        price: selected.price || item.price,
+        image_url: selected.image_url || item.image_url,
+        description: selected.description || item.description,
+      };
+
+      addToCart(productToAdd);
+      showToast(`✅ Added ${productToAdd.name} ($${productToAdd.price.toFixed(2)})`, "success");
+    } catch (err) {
+      console.error("Add to cart error:", err);
+      showToast("❌ Something went wrong adding this item", "error");
+    }
   };
 
   const display = selectedOption || item;
@@ -45,6 +57,7 @@ export default function MenuItem({ item, options = [] }: any) {
 
       <h2 className="font-semibold text-lg mb-2 text-center">{item.name}</h2>
 
+      {/* 🔸 Selector dinámico: Apple/Pineapple o Hot/Iced */}
       {options.length > 1 && (
         <div className="flex justify-center items-center mb-4">
           {hasTwoOptions ? (
@@ -104,6 +117,7 @@ export default function MenuItem({ item, options = [] }: any) {
         </div>
       )}
 
+      {/* 🔸 Descripción y precio */}
       {display.description && (
         <p className="text-gray-600 text-sm mb-2 text-center">
           {display.description}
@@ -114,6 +128,7 @@ export default function MenuItem({ item, options = [] }: any) {
         ${display.price?.toFixed(2) ?? "0.00"}
       </p>
 
+      {/* 🔸 Botón de acción */}
       <button
         onClick={handleAdd}
         className="bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold transition"
