@@ -1,5 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import Airtable from "airtable";
+// import twilio from "twilio"; // opcional, descomentaremos cuando tengas tus credenciales
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
@@ -35,7 +36,12 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // 1️⃣ Crear orden en Airtable
+    // 🧾 Cálculo final (por si subtotal o descuento vienen nulos)
+    const finalSubtotal = Number(subtotal || total);
+    const finalDiscount = Number(discount || 0);
+    const finalTotal = Number(total);
+
+    // 🧠 Crear registro en Airtable
     const record = await base(TABLE).create([
       {
         fields: {
@@ -43,9 +49,9 @@ export const handler: Handler = async (event) => {
           Phone: phone || "",
           Email: email || "",
           Address: address || "",
-          Total: Number(total),
-          Subtotal: Number(subtotal || total),
-          Discount: Number(discount || 0),
+          Subtotal: finalSubtotal,
+          Discount: finalDiscount,
+          Total: finalTotal,
           CouponCode: couponCode || "",
           Status: "Pending",
           Created: new Date().toISOString(),
@@ -55,24 +61,7 @@ export const handler: Handler = async (event) => {
 
     const order = { id: record[0].id, ...record[0].fields };
 
-    // 🚫 Twilio SMS deshabilitado temporalmente
-    /*
-    // 2️⃣ Enviar SMS con Twilio (si está configurado)
-    if (client && phone) {
-      try {
-        const message = await client.messages.create({
-          body: `☕ Thank you, ${customerName}! Your order (${order.id}) has been received. We'll notify you when it's ready for pickup or delivery.`,
-          from: twilioFrom,
-          to: phone.startsWith("+") ? phone : `+1${phone}`, // fallback simple
-        });
-        console.log("SMS sent:", message.sid);
-      } catch (smsErr: any) {
-        console.error("Error sending SMS:", smsErr.message);
-      }
-    }
-    */
-
-    // 3️⃣ Responder al cliente
+    // ✅ Respuesta al cliente
     return {
       statusCode: 200,
       headers: {
