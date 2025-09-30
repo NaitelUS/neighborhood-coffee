@@ -1,116 +1,143 @@
+import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/useCart";
-import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function OrderSummary() {
-  const { cart, removeFromCart } = useCart();
-  const [coupon, setCoupon] = useState("");
-  const [discountApplied, setDiscountApplied] = useState<number>(0);
+  const { cart, clearCart } = useCart();
+  const { showToast, Toast } = useToast();
+  const [couponCode, setCouponCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
 
-  const subtotal = (cart ?? []).reduce((sum, item) => {
-    const addOnsTotal =
-      item.addOns?.reduce((aSum, addOn) => {
-        const price = Number(addOn?.price || 0);
-        return aSum + price;
-      }, 0) ?? 0;
-    return sum + (item.price + addOnsTotal) * item.quantity;
-  }, 0);
-
-  const total = subtotal - discountApplied;
+  const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+  const total = subtotal - discount;
 
   const applyCoupon = async () => {
+    if (!couponCode) {
+      showToast("⚠️ Enter a coupon code first", "info");
+      return;
+    }
+    if (appliedCoupon) {
+      showToast("⚠️ Coupon already applied", "info");
+      return;
+    }
+
     try {
-      const normalized = coupon.trim().toUpperCase();
+      setIsApplying(true);
       const res = await fetch("/.netlify/functions/coupons");
       const coupons = await res.json();
-      const found = coupons.find((c: any) => c.code === normalized);
 
-      if (found) {
-        setDiscountApplied(subtotal * (found.discount / 100));
-      } else {
-        alert("Invalid coupon");
-        setDiscountApplied(0);
+      const found = coupons.find(
+        (c: any) =>
+          c.code?.toLowerCase() === couponCode.trim().toLowerCase() &&
+          c.active !== false
+      );
+
+      if (!found) {
+        showToast("❌ Invalid or expired coupon", "error");
+        return;
       }
+
+      // 🔹 Valid coupon: calculate discount
+      let discountValue = 0;
+      if (found.type === "percent") {
+        discountValue = subtotal * (found.value / 100);
+      } else if (found.type === "amount") {
+        discountValue = found.value;
+      }
+
+      setDiscount(discountValue);
+      setAppliedCoupon(found.code);
+      showToast(`✅ Coupon ${found.code} applied!`, "success");
     } catch (err) {
-      console.error("Error applying coupon:", err);
+      console.error(err);
+      showToast("❌ Error applying coupon", "error");
+    } finally {
+      setIsApplying(false);
     }
   };
 
+  const clearCoupon = () => {
+    setCouponCode("");
+    setDiscount(0);
+    setAppliedCoupon(null);
+    showToast("Coupon cleared", "info");
+  };
+
   return (
-    <div className="border rounded-lg shadow-sm p-4 mb-4">
-      <h3 className="font-bold text-lg mb-2">Your Order</h3>
+    <div className="border rounded-lg p-5 bg-white shadow-sm">
+      <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
 
-      {(cart ?? []).length === 0 ? (
-        <p className="text-sm text-gray-500">Your cart is empty.</p>
+      {cart.length === 0 ? (
+        <p className="text-gray-500">Your cart is empty.</p>
       ) : (
-        <ul className="divide-y">
-          {(cart ?? []).map((item, idx) => (
-            <li key={idx} className="py-2">
-              <div className="flex justify-between">
-                <div>
-                  <span className="font-medium">
-                    {item.name} {item.option ? `(${item.option})` : ""}
-                  </span>
-                  <div className="text-xs text-gray-600">
-                    Qty: {item.quantity}
-                  </div>
-                  {item.addOns?.length > 0 && (
-                    <div className="text-xs text-gray-500">
-                      Add-ons: {item.addOns.join(", ")}
-                    </div>
-                  )}
-                </div>
-                <div className="text-right">
-                  ${(item.price * item.quantity).toFixed(2)}
-                  <button
-                    className="ml-2 text-red-500 text-xs"
-                    onClick={() => removeFromCart(idx)}
-                  >
-                    Remove
-                  </button>
-                </div>
+        <>
+          <ul className="space-y-2 mb-4">
+            {cart.map((item, idx) => (
+              <li
+                key={idx}
+                className="flex justify-between text-gray-700 text-sm"
+              >
+                <span>{item.name}</span>
+                <span>${item.price.toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="border-t border-gray-200 pt-3">
+            <div className="flex justify-between text-gray-700 text-sm mb-2">
+              <span>Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+
+            {discount > 0 && (
+              <div className="flex justify-between text-green-600 text-sm mb-2">
+                <span>Discount ({appliedCoupon})</span>
+                <span>- ${discount.toFixed(2)}</span>
               </div>
-            </li>
-          ))}
-        </ul>
+            )}
+
+            <div className="flex justify-between font-semibold text-gray-900 text-base mb-3">
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="Enter coupon"
+                className="flex-1 border rounded px-3 py-2 text-sm"
+                disabled={!!appliedCoupon}
+              />
+              <button
+                onClick={applyCoupon}
+                disabled={isApplying || !!appliedCoupon}
+                className={`px-4 py-2 text-sm font-semibold rounded transition ${
+                  appliedCoupon
+                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+              >
+                {appliedCoupon ? "Applied" : isApplying ? "..." : "Apply"}
+              </button>
+            </div>
+
+            {appliedCoupon && (
+              <button
+                onClick={clearCoupon}
+                className="text-xs text-red-500 underline"
+              >
+                Remove coupon
+              </button>
+            )}
+          </div>
+        </>
       )}
 
-      <div className="flex justify-between font-semibold border-t pt-2 mt-2">
-        <span>Subtotal</span>
-        <span>${subtotal.toFixed(2)}</span>
-      </div>
-      {discountApplied > 0 && (
-        <div className="flex justify-between text-green-600">
-          <span>Coupon applied</span>
-          <span>- ${discountApplied.toFixed(2)}</span>
-        </div>
-      )}
-      <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-        <span>Total</span>
-        <span>${total.toFixed(2)}</span>
-      </div>
-
-      {/* Coupon field */}
-      <div className="flex mt-3 gap-2">
-        <input
-          type="text"
-          value={coupon}
-          onChange={(e) => setCoupon(e.target.value)}
-          placeholder="Enter coupon"
-          className="flex-1 border px-2 py-1 rounded"
-        />
-        <button
-          type="button"
-          onClick={applyCoupon}
-          disabled={discountApplied > 0}
-          className={`px-3 rounded text-white ${
-            discountApplied > 0
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-600"
-          }`}
-        >
-          Apply
-        </button>
-      </div>
+      <Toast />
     </div>
   );
 }
