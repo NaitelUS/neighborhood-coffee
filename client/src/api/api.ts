@@ -7,6 +7,19 @@ export async function getProducts() {
   return res.json();
 }
 
+// --- ADDONS ---
+export async function getAddons() {
+  const tableName = import.meta.env.AIRTABLE_TABLE_ADDONS;
+  const records = await base(tableName)
+    .select({ filterByFormula: "Active" })
+    .all();
+
+  return records.map((r) => ({
+    id: r.id,
+    ...r.fields,
+  }));
+}
+
 export async function getCoupons() {
   const res = await fetch("/.netlify/functions/coupons");
   if (!res.ok) throw new Error("Failed to fetch coupons");
