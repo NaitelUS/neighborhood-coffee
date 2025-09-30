@@ -1,29 +1,33 @@
-import { Link } from "react-router-dom";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 
 export default function Header() {
   const { cart } = useCart();
 
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 border-b bg-white shadow">
-      {/* Logo */}
-      <Link to="/order">
-        <img
-          src="/attached_assets/tnclogo.png"
-          alt="The Neighborhood Coffee"
-          className="h-10"
-        />
-      </Link>
+  const scrollToSummary = () => {
+    const summary = document.getElementById("order-summary");
+    if (summary) summary.scrollIntoView({ behavior: "smooth" });
+  };
 
-      {/* Cart */}
-      <Link to="/order" className="relative">
-        <span className="text-2xl">🛒</span>
-        {(cart ?? []).length > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2">
-            {cart.length}
-          </span>
-        )}
-      </Link>
+  return (
+    <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
+      <div className="flex justify-between items-center px-6 py-4">
+        <a href="/" className="text-xl font-serif font-bold">
+          The Neighborhood Coffee
+        </a>
+
+        {/* 🔔 Ícono del carrito con contador */}
+        <button
+          onClick={scrollToSummary}
+          className="relative text-gray-700 hover:text-primary transition"
+        >
+          🛒
+          {cart.length > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+              {cart.length}
+            </span>
+          )}
+        </button>
+      </div>
     </header>
   );
 }
