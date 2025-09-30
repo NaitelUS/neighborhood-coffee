@@ -10,20 +10,20 @@ export default function CouponField() {
     setError("");
 
     try {
-      const res = await fetch("/.netlify/functions/coupons-check", {
+      const response = await fetch("/.netlify/functions/coupons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: coupon }),
       });
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (!data.valid) {
+      if (!response.ok || !data.valid) {
         setError("❌ Invalid or expired coupon.");
         return;
       }
 
-      setDiscount(data.discount);
+      setDiscount(Number(data.discount || 0));
       setApplied(true);
     } catch (err) {
       console.error("Error checking coupon:", err);
