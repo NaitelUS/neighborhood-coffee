@@ -1,19 +1,33 @@
 import { useState, useCallback } from "react";
 
-export function useToast() {
-  const [message, setMessage] = useState<string | null>(null);
+type ToastType = "success" | "error" | "info";
 
-  const showToast = useCallback((msg: string) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(null), 2500); // 2.5s visible
+export function useToast() {
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  const showToast = useCallback((message: string, type: ToastType = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 2500);
   }, []);
 
-  const Toast = () =>
-    message ? (
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-black text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg animate-fade-in-out z-50">
-        {message}
+  const Toast = () => {
+    if (!toast) return null;
+
+    const bgColor =
+      toast.type === "error"
+        ? "bg-red-600"
+        : toast.type === "info"
+        ? "bg-blue-600"
+        : "bg-green-600";
+
+    return (
+      <div
+        className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg animate-fade-in-out z-50 ${bgColor}`}
+      >
+        {toast.message}
       </div>
-    ) : null;
+    );
+  };
 
   return { showToast, Toast };
 }
