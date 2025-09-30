@@ -1,33 +1,45 @@
+import React from "react";
 import { useCart } from "@/context/CartContext";
+import { ShoppingCart } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Header() {
   const { cart } = useCart();
+  const navigate = useNavigate();
 
-  const scrollToSummary = () => {
-    const summary = document.getElementById("order-summary");
-    if (summary) summary.scrollIntoView({ behavior: "smooth" });
+  const handleCartClick = () => {
+    // ✅ Envía al usuario al resumen del pedido en la misma página
+    const section = document.getElementById("order-summary");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    } else {
+      navigate("/"); // fallback
+    }
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
-      <div className="flex justify-between items-center px-6 py-4">
-        <a href="/" className="text-xl font-serif font-bold">
-          The Neighborhood Coffee
-        </a>
-
-        {/* 🔔 Ícono del carrito con contador */}
-        <button
-          onClick={scrollToSummary}
-          className="relative text-gray-700 hover:text-primary transition"
-        >
-          🛒
-          {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-              {cart.length}
-            </span>
-          )}
-        </button>
+    <header className="w-full flex justify-between items-center py-4 px-6 bg-white shadow-sm">
+      {/* Logo */}
+      <div className="flex items-center gap-2">
+        <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
+        <h1 className="font-serif text-xl md:text-2xl tracking-wide">
+          <span className="text-primary font-bold">Neighborhood</span> Coffee
+        </h1>
       </div>
+
+      {/* Carrito */}
+      <button
+        onClick={handleCartClick}
+        className="relative flex items-center justify-center p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+        aria-label="Go to Cart"
+      >
+        <ShoppingCart className="w-6 h-6 text-gray-700" />
+        {cart.length > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+            {cart.length}
+          </span>
+        )}
+      </button>
     </header>
   );
 }
