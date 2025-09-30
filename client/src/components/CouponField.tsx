@@ -16,8 +16,12 @@ export default function CouponField({ onDiscountApply }: CouponFieldProps) {
 
     try {
       const coupons = await getCoupons();
+      console.log("Coupons fetched:", coupons);
+
+      // Buscar cupón activo
       const found = coupons.find(
-        (c: any) => c.Code?.toUpperCase() === coupon.toUpperCase() && c.Active
+        (c: any) =>
+          c.Code?.toUpperCase() === coupon.trim().toUpperCase() && c.Active
       );
 
       if (!found) {
@@ -29,7 +33,7 @@ export default function CouponField({ onDiscountApply }: CouponFieldProps) {
       const discountValue = Number(found.Discount || 0);
       setDiscount(discountValue);
       setApplied(true);
-      onDiscountApply(discountValue); // 💰 Enviar descuento al total
+      onDiscountApply(discountValue);
     } catch (err) {
       console.error("Error verifying coupon:", err);
       setError("⚠️ Unable to verify coupon right now.");
@@ -39,7 +43,6 @@ export default function CouponField({ onDiscountApply }: CouponFieldProps) {
 
   return (
     <div className="mt-6">
-      <label className="block text-sm mb-1 font-medium">Coupon Code</label>
       <div className="flex gap-2">
         <input
           type="text"
@@ -63,7 +66,9 @@ export default function CouponField({ onDiscountApply }: CouponFieldProps) {
         </button>
       </div>
 
+      {/* Mostrar mensajes */}
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
       {applied && discount > 0 && (
         <p className="text-green-600 text-sm mt-2">
           Coupon applied: <strong>{(discount * 100).toFixed(0)}% OFF</strong>
