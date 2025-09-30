@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useCart } from "../hooks/useCart";
-import { useToast } from "../hooks/useToast";
+import { useToast } from "../hooks/use-toast";
 
 interface MenuItemProps {
   item: {
