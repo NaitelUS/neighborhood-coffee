@@ -8,37 +8,39 @@ import Feedback from "@/pages/Feedback";
 import NotFound from "@/pages/NotFound";
 import AdminPanel from "@/pages/AdminPanel";
 import AdminProducts from "@/pages/AdminProducts";
+import { CartProvider } from "@/context/CartContext"; // 👈 Importamos el provider
 
 export default function App() {
   return (
-    <Router>
-      <div className="flex flex-col min-h-screen">
-        {/* Header visible en todas las páginas */}
-        <Header />
+    <CartProvider> {/* 👈 Envolvemos todo dentro del provider */}
+      <Router>
+        <div className="flex flex-col min-h-screen">
+          {/* Header visible en todas las páginas */}
+          <Header />
 
-        <main className="flex-1 bg-gray-50">
-          <Routes>
-            {/* Página principal */}
-            <Route path="/" element={<OrderPage />} />
-            <Route path="/order" element={<OrderPage />} />
+          <main className="flex-1 bg-gray-50">
+            <Routes>
+              {/* Página principal */}
+              <Route path="/" element={<OrderPage />} />
+              <Route path="/order" element={<OrderPage />} />
 
-            {/* Página de confirmación */}
-            <Route path="/thank-you/:orderId" element={<ThankYou />} />
+              {/* Página de confirmación */}
+              <Route path="/thank-you/:orderId" element={<ThankYou />} />
 
-            {/* Página de feedback */}
-            <Route path="/feedback" element={<Feedback />} />
+              {/* Página de feedback */}
+              <Route path="/feedback" element={<Feedback />} />
 
-            {/* Página admin */}
-            <Route path="/admin" element={<AdminOrders />} />
+              {/* Página admin */}
+              <Route path="/admin" element={<AdminOrders />} />
+              <Route path="/admin-panel" element={<AdminPanel />} />
+              <Route path="/admin-panel/products" element={<AdminProducts />} />
 
-            <Route path="/admin-panel" element={<AdminPanel />} />
-            <Route path="/admin-panel/products" element={<AdminProducts />} />
-
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+              {/* 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </CartProvider>
   );
 }
