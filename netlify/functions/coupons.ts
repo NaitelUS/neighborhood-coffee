@@ -1,58 +1,51 @@
-import { Handler } from "@netlify/functions";
-import { base } from "../lib/airtableClient";
+import type { Handler } from "@netlify/functions";
+import Airtable from "airtable";
 
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*", // ✅ Permite llamadas desde cualquier origen
-};
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
 
-const handler: Handler = async () => {
+const TABLE = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
+
+export const handler: Handler = async () => {
   try {
-    // ✅ 1. Verificación de variable de entorno
-    const tableName = process.env.AIRTABLE_TABLE_COUPONS;
-    if (!tableName) {
-      console.error("❌ Falta AIRTABLE_TABLE_COUPONS en variables de entorno");
-      return {
-        statusCode: 500,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({
-          error: "Missing AIRTABLE_TABLE_COUPONS env var",
-        }),
-      };
-    }
-
-    // ✅ 2. Consulta a Airtable (solo cupones activos)
-    const records = await base(tableName)
-      .select({ filterByFormula: "{active}=TRUE()" })
+    const records = await base(TABLE)
+      .select({
+        view: "Grid view",
+        filterByFormula: `
+          AND(
+            {Active},
+            OR({ValidFrom} = BLANK(), IS_BEFORE({ValidFrom}, TODAY())),
+            OR({ValidUntil} = BLANK(), IS_AFTER({ValidUntil}, TODAY()))
+          )
+        `,
+      })
       .all();
 
-    // ✅ 3. Mapeo de los campos esperados
-    const coupons = records.map((record) => ({
-      id: record.id,
-      code: record.get("code"),
-      discount: record.get("discount"),
-      active: record.get("active"),
-      expires_at: record.get("expires_at"),
+    const coupons = records.map((rec) => ({
+      id: rec.id,
+      code: rec.get("Code"),
+      type: rec.get("Type"),
+      value: rec.get("Value"),
+      description: rec.get("Description"),
+      validFrom: rec.get("ValidFrom"),
+      validUntil: rec.get("ValidUntil"),
+      active: rec.get("Active"),
     }));
 
-    // ✅ 4. Respuesta correcta
     return {
       statusCode: 200,
-      headers: JSON_HEADERS,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
       body: JSON.stringify(coupons),
     };
-  } catch (error) {
-    console.error("❌ Error fetching coupons:", error);
+  } catch (err: any) {
+    console.error("Error fetching coupons:", err);
     return {
       statusCode: 500,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({
-        error: "Error fetching coupons",
-        message: (error as Error).message,
-      }),
+      body: JSON.stringify({ error: err.message }),
     };
   }
 };
-
-// ✅ 5. Export correcto (sin default)
-export { handler };
