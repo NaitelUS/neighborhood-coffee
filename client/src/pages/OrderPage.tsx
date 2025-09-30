@@ -6,15 +6,18 @@ import CouponField from "@/components/CouponField";
 
 export default function OrderPage() {
   const [products, setProducts] = useState<any[]>([]);
+  const [discount, setDiscount] = useState(0); // 💰 Nuevo estado
   const { cart, clearCart } = useCart();
 
   useEffect(() => {
     getProducts().then(setProducts).catch(console.error);
   }, []);
 
-  const total = cart.reduce((acc, item) => acc + item.price, 0);
+  // 🧮 Calcular total con descuento aplicado
+  const subtotal = cart.reduce((acc, item) => acc + item.price, 0);
+  const total = subtotal * (1 - discount); // aplica descuento si existe
 
-  // 🧠 Enviar orden
+  // 📤 Enviar orden
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -35,13 +38,14 @@ export default function OrderPage() {
         Phone: phone,
         Email: email,
         Address: address,
+        Subtotal: subtotal,
+        Discount: discount * 100, // en %
         Total: total,
         Status: "Pending",
         Created: new Date().toISOString(),
       };
 
       const order = await createOrder(orderData);
-
       const orderId = order?.fields?.OrderCode || order?.id;
       if (orderId) {
         await createOrderItems(cart, orderId);
@@ -50,6 +54,7 @@ export default function OrderPage() {
       alert("✅ Order created successfully!");
       clearCart();
       form.reset();
+      setDiscount(0); // reiniciar descuento
     } catch (err) {
       console.error(err);
       alert("❌ Failed to create order");
@@ -60,11 +65,7 @@ export default function OrderPage() {
     <div className="min-h-screen bg-background text-foreground px-6 md:px-12 py-10">
       {/* Header */}
       <header className="flex flex-col items-center text-center mb-10">
-        <img
-          src="/logo.png"
-          alt="The Neighborhood Coffee"
-          className="h-20 mb-4"
-        />
+        <img src="/logo.png" alt="The Neighborhood Coffee" className="h-20 mb-4" />
         <h1 className="text-3xl md:text-4xl font-serif tracking-wide">
           The <span className="text-primary">Neighborhood</span> Coffee
         </h1>
@@ -73,9 +74,7 @@ export default function OrderPage() {
 
       {/* Menu */}
       <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6 border-b pb-2">
-          Our Menu
-        </h2>
+        <h2 className="text-2xl font-semibold mb-6 border-b pb-2">Our Menu</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((item) => (
             <MenuItem key={item.id} item={item} />
@@ -92,38 +91,35 @@ export default function OrderPage() {
         ) : (
           <ul className="space-y-3 mb-4">
             {cart.map((item, index) => (
-              <li
-                key={index}
-                className="border-b border-border pb-2 text-sm"
-              >
-                <div className="flex justify-between font-medium">
-                  <span>{item.name}</span>
-                  <span>${item.price.toFixed(2)}</span>
-                </div>
-
-                {/* Mostrar Add-ons con precios */}
-                {item.addons && item.addons.length > 0 && (
-                  <div className="text-xs text-gray-500 mt-1 space-y-1">
-                    {item.addons.map((addon: any, i: number) => (
-                      <div key={i} className="flex justify-between pl-3">
-                        <span>+ {addon.name}</span>
-                        <span>${addon.price.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <li key={index} className="flex justify-between text-sm border-b border-border pb-1">
+                <span>{item.name}</span>
+                <span>${item.price.toFixed(2)}</span>
               </li>
             ))}
           </ul>
         )}
 
         {/* Coupon Field */}
-        <CouponField />
+        <CouponField onDiscountApply={(val) => setDiscount(val)} />
 
-        {/* Total */}
-        <div className="flex justify-between text-lg font-semibold mt-4">
-          <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+        {/* Totales */}
+        <div className="border-t border-border mt-4 pt-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Subtotal</span>
+            <span>${subtotal.toFixed(2)}</span>
+          </div>
+
+          {discount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Discount ({(discount * 100).toFixed(0)}%)</span>
+              <span>- ${(subtotal * discount).toFixed(2)}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between text-lg font-semibold">
+            <span>Total</span>
+            <span>${total.toFixed(2)}</span>
+          </div>
         </div>
       </section>
 
