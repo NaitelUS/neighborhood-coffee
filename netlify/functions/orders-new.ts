@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import Airtable from "airtable";
-// import twilio from "twilio"; // opcional, descomentaremos cuando tengas tus credenciales
+// import twilio from "twilio"; // Descomenta cuando actives Twilio
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
@@ -8,6 +8,9 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 
 const TABLE = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
 
+/**
+ * Crear nueva orden en Airtable
+ */
 export const handler: Handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
@@ -15,7 +18,6 @@ export const handler: Handler = async (event) => {
     }
 
     const body = JSON.parse(event.body || "{}");
-
     const {
       customerName,
       phone,
@@ -36,12 +38,7 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // 🧾 Cálculo final (por si subtotal o descuento vienen nulos)
-    const finalSubtotal = Number(subtotal || total);
-    const finalDiscount = Number(discount || 0);
-    const finalTotal = Number(total);
-
-    // 🧠 Crear registro en Airtable
+    // 1️⃣ Crear registro en Airtable
     const record = await base(TABLE).create([
       {
         fields: {
@@ -49,9 +46,9 @@ export const handler: Handler = async (event) => {
           Phone: phone || "",
           Email: email || "",
           Address: address || "",
-          Subtotal: finalSubtotal,
-          Discount: finalDiscount,
-          Total: finalTotal,
+          Total: Number(total),
+          Subtotal: Number(subtotal || total),
+          Discount: Number(discount || 0),
           CouponCode: couponCode || "",
           Status: "Pending",
           Created: new Date().toISOString(),
@@ -61,7 +58,37 @@ export const handler: Handler = async (event) => {
 
     const order = { id: record[0].id, ...record[0].fields };
 
-    // ✅ Respuesta al cliente
+    // 2️⃣ Enviar SMS (solo si activas Twilio)
+    /*
+    const twilioSID = process.env.TWILIO_ACCOUNT_SID;
+    const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+    const twilioFrom = process.env.TWILIO_FROM_PHONE;
+
+    if (twilioSID && twilioToken && twilioFrom && phone) {
+      try {
+        const client = twilio(twilioSID, twilioToken);
+        let messageBody = `☕ Thank you, ${customerName}! Your order (${order.id}) has been received.`;
+
+        if (discount && discount > 0 && couponCode) {
+          messageBody += ` You saved $${discount.toFixed(2)} with ${couponCode}.`;
+        }
+
+        messageBody += ` We'll notify you when it's ready for pickup or delivery.`;
+
+        const msg = await client.messages.create({
+          body: messageBody,
+          from: twilioFrom,
+          to: phone.startsWith("+") ? phone : `+1${phone}`,
+        });
+
+        console.log("SMS sent:", msg.sid);
+      } catch (smsErr: any) {
+        console.error("Error sending SMS:", smsErr.message);
+      }
+    }
+    */
+
+    // 3️⃣ Responder al cliente
     return {
       statusCode: 200,
       headers: {
