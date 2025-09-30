@@ -1,7 +1,15 @@
-// Lista centralizada de cupones
-// Key = código del cupón (en mayúsculas), Value = descuento en decimal
-export const coupons: Record<string, number> = {
-  WELCOME15: 0.15, // 15% de descuento
-  TEST10: 0.1,     // 10% de descuento
-  VIP5: 0.05,      // 5% de descuento
+// netlify/functions/coupons.ts
+import { coupons } from "../lib/coupons";
+
+export const handler = async () => {
+  const result = Object.entries(coupons).map(([code, discount]) => ({
+    Code: code,
+    Discount: discount * 100, // Si prefieres mostrarlo en %
+    Active: true,
+  }));
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify(result),
+  };
 };
