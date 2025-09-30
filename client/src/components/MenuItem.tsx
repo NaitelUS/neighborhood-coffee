@@ -43,14 +43,14 @@ export default function MenuItem({ item, options = [] }: any) {
       />
 
       {/* Nombre principal */}
-      <h2 className="font-semibold text-lg mb-1 text-center">{item.name}</h2>
+      <h2 className="font-semibold text-lg mb-2 text-center">{item.name}</h2>
 
-      {/* 🔀 Selector dinámico con animación */}
+      {/* 🔀 Selector dinámico */}
       {options.length > 1 && (
         <div className="flex justify-center items-center mb-4">
           {hasTwoOptions ? (
-            <div className="relative flex w-44 bg-gray-200 rounded-full cursor-pointer select-none">
-              {/* Fondo animado (la píldora azul) */}
+            <div className="relative flex w-52 bg-gray-200 rounded-full cursor-pointer select-none flex-col items-center py-1">
+              {/* Fondo animado */}
               <div
                 className={`absolute top-0 bottom-0 w-1/2 bg-blue-600 rounded-full shadow transition-all duration-300 ${
                   selectedOption?.id === options[1].id
@@ -59,19 +59,32 @@ export default function MenuItem({ item, options = [] }: any) {
                 }`}
               ></div>
 
-              {options.map((opt, index) => (
-                <div
-                  key={opt.id}
-                  onClick={() => handleOptionChange(opt)}
-                  className={`flex-1 z-10 text-center text-sm font-semibold py-2 transition-colors duration-300 ${
-                    selectedOption?.id === opt.id
-                      ? "text-white"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {opt.optionName}
-                </div>
-              ))}
+              <div className="flex w-full z-10">
+                {options.map((opt) => (
+                  <div
+                    key={opt.id}
+                    onClick={() => handleOptionChange(opt)}
+                    className={`flex-1 text-center py-1 transition-colors duration-300 ${
+                      selectedOption?.id === opt.id
+                        ? "text-white"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    <div className="font-semibold text-sm leading-tight">
+                      {opt.optionName}
+                    </div>
+                    <div
+                      className={`text-[10px] ${
+                        selectedOption?.id === opt.id
+                          ? "text-white/80"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      ${opt.price.toFixed(2)}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="flex justify-center gap-2">
@@ -85,7 +98,7 @@ export default function MenuItem({ item, options = [] }: any) {
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
-                  {opt.optionName}
+                  {opt.optionName} (${opt.price.toFixed(2)})
                 </button>
               ))}
             </div>
@@ -100,12 +113,12 @@ export default function MenuItem({ item, options = [] }: any) {
         </p>
       )}
 
-      {/* Precio */}
+      {/* Precio principal */}
       <p className="font-semibold text-lg mb-4 text-center">
         ${display.price?.toFixed(2) ?? "0.00"}
       </p>
 
-      {/* Botón de agregar */}
+      {/* Botón agregar */}
       <button
         onClick={handleAdd}
         className="bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold transition"
