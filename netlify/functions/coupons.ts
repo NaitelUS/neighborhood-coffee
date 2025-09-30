@@ -10,31 +10,29 @@ export const handler: Handler = async () => {
     const coupons = records
       .map((r) => {
         const code = r.get("code");
-        const percent = r.get("% percent_off"); // Airtable envía el valor decimal (0.1 para 10%)
-        const active = r.get("active"); // Fórmula booleana en Airtable
+        const percent = r.get("percent_off"); // asegúrate de renombrar el campo en Airtable
+        const active = !!r.get("active"); // convertir 1/0 o true/false a boolean
         const validFrom = r.get("valid_from");
         const validUntil = r.get("valid_until");
 
-        // Validar fechas activas
         const now = new Date();
         const isWithinRange =
           (!validFrom || new Date(validFrom) <= now) &&
           (!validUntil || new Date(validUntil) >= now);
 
-        // Usar el valor tal cual, ya es decimal
-        const discountValue =
-          typeof percent === "number"
-            ? percent
-            : 0;
-
         return {
           id: r.id,
           Code: typeof code === "string" ? code.toUpperCase().trim() : null,
-          Discount: discountValue,
-          Active: !!active && isWithinRange && discountValue > 0,
+          Discount:
+            typeof percent === "number"
+              ? percent
+              : typeof percent === "string"
+              ? parseFloat(percent) / 100
+              : 0,
+          Active: active && isWithinRange,
         };
       })
-      .filter((c) => c.Active && c.Code);
+      .filter((c) => c.Active && c.Code && c.Discount > 0);
 
     return {
       statusCode: 200,
