@@ -7,29 +7,29 @@ export default function CouponField() {
   const [error, setError] = useState("");
 
   const handleApply = async () => {
-    setError("");
+  setError("");
 
-    try {
-      const res = await fetch("/.netlify/functions/checkCoupon", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coupon }),
-      });
+  try {
+    const res = await fetch("/.netlify/functions/coupons-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: coupon }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!data.valid) {
-        setError(data.message || "❌ Invalid or expired coupon.");
-        return;
-      }
-
-      setDiscount(data.discount);
-      setApplied(true);
-    } catch (err) {
-      console.error("Error verifying coupon:", err);
-      setError("⚠️ Unable to verify coupon right now.");
+    if (!data.valid) {
+      setError("❌ Invalid or expired coupon.");
+      return;
     }
-  };
+
+    setDiscount(data.discount);
+    setApplied(true);
+  } catch (err) {
+    console.error("Error verifying coupon:", err);
+    setError("⚠️ Unable to verify coupon right now.");
+  }
+};
 
   return (
     <div className="mt-6">
