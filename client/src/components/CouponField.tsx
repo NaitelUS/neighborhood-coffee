@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import Airtable from "airtable";
-
-const base = new Airtable({ apiKey: import.meta.env.AIRTABLE_API_KEY }).base(
-  import.meta.env.AIRTABLE_BASE_ID
-);
-
-const TABLE_COUPONS = import.meta.env.AIRTABLE_TABLE_COUPONS || "Coupons";
+import { getCoupons } from "@/api/api";
 
 interface CouponFieldProps {
   onDiscountApply: (discount: number) => void;
@@ -21,20 +15,22 @@ export default function CouponField({ onDiscountApply }: CouponFieldProps) {
     setError("");
 
     try {
-      const records = await base(TABLE_COUPONS)
-        .select({
-          filterByFormula: `AND({Code}='${coupon}', {Active}=TRUE())`,
-        })
-        .all();
+      const coupons = await getCoupons();
 
-      if (records.length === 0) {
+      // Buscar el cupón activo con ese código
+      const match = coupons.find(
+        (c: any) =>
+          c.Code?.toLowerCase() === coupon.toLowerCase() &&
+          c.Active === true
+      );
+
+      if (!match) {
         setError("❌ Invalid or expired coupon.");
         onDiscountApply(0);
         return;
       }
 
-      const record = records[0];
-      const discountValue = Number(record.get("Discount") || 0);
+      const discountValue = Number(match.Discount || 0);
 
       setDiscount(discountValue);
       setApplied(true);
