@@ -14,7 +14,7 @@ export default function OrderPage() {
 
   const total = cart.reduce((acc, item) => acc + item.price, 0);
 
-  // 🧠 Manejador del envío de la orden
+  // 🧠 Enviar orden
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -30,7 +30,6 @@ export default function OrderPage() {
         return;
       }
 
-      // Crear orden principal en Airtable
       const orderData = {
         CustomerName: name,
         Phone: phone,
@@ -43,7 +42,6 @@ export default function OrderPage() {
 
       const order = await createOrder(orderData);
 
-      // Crear los items asociados
       const orderId = order?.fields?.OrderCode || order?.id;
       if (orderId) {
         await createOrderItems(cart, orderId);
@@ -73,9 +71,11 @@ export default function OrderPage() {
         <p className="text-muted-foreground mt-2">From our house to yours ☕</p>
       </header>
 
-      {/* Menu Section */}
+      {/* Menu */}
       <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6 border-b pb-2">Our Menu</h2>
+        <h2 className="text-2xl font-semibold mb-6 border-b pb-2">
+          Our Menu
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((item) => (
             <MenuItem key={item.id} item={item} />
@@ -101,14 +101,15 @@ export default function OrderPage() {
                   <span>${item.price.toFixed(2)}</span>
                 </div>
 
-                {/* Add-ons list */}
+                {/* Mostrar Add-ons con precios */}
                 {item.addons && item.addons.length > 0 && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    {item.addons
-                      .split(",")
-                      .map((a: string, i: number) => (
-                        <span key={i} className="block">+ {a.trim()}</span>
-                      ))}
+                  <div className="text-xs text-gray-500 mt-1 space-y-1">
+                    {item.addons.map((addon: any, i: number) => (
+                      <div key={i} className="flex justify-between pl-3">
+                        <span>+ {addon.name}</span>
+                        <span>${addon.price.toFixed(2)}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </li>
