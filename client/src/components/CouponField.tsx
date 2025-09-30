@@ -16,27 +16,22 @@ export default function CouponField({ onDiscountApply }: CouponFieldProps) {
 
     try {
       const coupons = await getCoupons();
-
-      // Buscar el cupón activo con ese código
-      const match = coupons.find(
-        (c: any) =>
-          c.Code?.toLowerCase() === coupon.toLowerCase() &&
-          c.Active === true
+      const found = coupons.find(
+        (c: any) => c.Code?.toUpperCase() === coupon.toUpperCase() && c.Active
       );
 
-      if (!match) {
+      if (!found) {
         setError("❌ Invalid or expired coupon.");
         onDiscountApply(0);
         return;
       }
 
-      const discountValue = Number(match.Discount || 0);
-
+      const discountValue = Number(found.Discount || 0);
       setDiscount(discountValue);
       setApplied(true);
-      onDiscountApply(discountValue);
+      onDiscountApply(discountValue); // 💰 Enviar descuento al total
     } catch (err) {
-      console.error("Error checking coupon:", err);
+      console.error("Error verifying coupon:", err);
       setError("⚠️ Unable to verify coupon right now.");
       onDiscountApply(0);
     }
@@ -69,9 +64,9 @@ export default function CouponField({ onDiscountApply }: CouponFieldProps) {
       </div>
 
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-      {applied && (
+      {applied && discount > 0 && (
         <p className="text-green-600 text-sm mt-2">
-          Coupon applied: <strong>- ${discount.toFixed(2)}</strong>
+          Coupon applied: <strong>{(discount * 100).toFixed(0)}% OFF</strong>
         </p>
       )}
     </div>
