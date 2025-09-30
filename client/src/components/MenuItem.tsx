@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useCart } from "../hooks/useCart";
+import { useCart } from "../context/CartContext";
 import { useToast } from "../hooks/use-toast";
 
 interface MenuItemProps {
