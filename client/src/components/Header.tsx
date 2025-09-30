@@ -1,33 +1,34 @@
+import React from "react";
 import { useCart } from "@/context/CartContext";
 
 export default function Header() {
   const { cart } = useCart();
 
-  const scrollToSummary = () => {
-    const summary = document.getElementById("order-summary");
-    if (summary) summary.scrollIntoView({ behavior: "smooth" });
+  const scrollToOrder = () => {
+    const orderSection = document.querySelector("section.bg-card");
+    orderSection?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
-      <div className="flex justify-between items-center px-6 py-4">
-        <a href="/" className="text-xl font-serif font-bold text-primary">
+    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md sticky top-0 z-50">
+      <div className="flex items-center space-x-3 cursor-pointer">
+        <img src="/logo.png" alt="Logo" className="h-10 w-10" />
+        <h1 className="text-xl font-bold text-gray-800">
           The Neighborhood Coffee
-        </a>
-
-        {/* 🛒 Icono del carrito con contador */}
-        <button
-          onClick={scrollToSummary}
-          className="relative text-gray-700 hover:text-primary transition"
-        >
-          🛒
-          {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-              {cart.length}
-            </span>
-          )}
-        </button>
+        </h1>
       </div>
+
+      <button
+        onClick={scrollToOrder}
+        className="relative bg-primary text-primary-foreground px-4 py-2 rounded-md font-semibold hover:opacity-90 transition"
+      >
+        🛒 Cart
+        {cart.length > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+            {cart.length}
+          </span>
+        )}
+      </button>
     </header>
   );
 }
