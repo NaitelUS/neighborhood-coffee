@@ -5,9 +5,12 @@ export default function MenuItem({ item, options = [] }: any) {
   const { addToCart } = useCart();
   const [selectedOption, setSelectedOption] = useState<any>(null);
 
-  // Si tiene opciones, selecciona la primera; si no, usa el item base
+  // Selecciona la primera opción activa por defecto
   useEffect(() => {
-    if (options.length > 0) setSelectedOption(options[0]);
+    if (options.length > 0) {
+      const firstActive = options.find((opt) => opt.active !== false);
+      setSelectedOption(firstActive || options[0]);
+    }
   }, [options]);
 
   const handleOptionChange = (opt: any) => {
@@ -15,18 +18,15 @@ export default function MenuItem({ item, options = [] }: any) {
   };
 
   const handleAdd = () => {
+    const selected = selectedOption || item;
     const productToAdd = {
-      id: selectedOption ? selectedOption.id : item.id,
+      id: selected.id,
       name: selectedOption
-        ? `${item.name} - ${selectedOption.optionName}`
+        ? `${item.name} - ${selected.optionName}`
         : item.name,
-      price: selectedOption ? selectedOption.price : item.price,
-      image_url: selectedOption
-        ? selectedOption.image_url
-        : item.image_url,
-      description: selectedOption
-        ? selectedOption.description
-        : item.description,
+      price: selected.price || item.price,
+      image_url: selected.image_url || item.image_url,
+      description: selected.description || item.description,
     };
     addToCart(productToAdd);
   };
@@ -34,18 +34,20 @@ export default function MenuItem({ item, options = [] }: any) {
   const display = selectedOption || item;
 
   return (
-    <div className="border rounded-lg shadow-sm bg-white p-4 flex flex-col">
+    <div className="border rounded-lg shadow-sm bg-white p-4 flex flex-col hover:shadow-md transition">
+      {/* Imagen dinámica */}
       <img
         src={display.image_url}
         alt={display.name}
         className="w-full h-48 object-cover rounded-md mb-3"
       />
 
-      <h2 className="font-semibold text-lg mb-1">{item.name}</h2>
+      {/* Nombre principal */}
+      <h2 className="font-semibold text-lg mb-1 text-center">{item.name}</h2>
 
-      {/* 🔀 Selector dinámico de opciones */}
+      {/* 🔀 Selector de opciones dinámico */}
       {options.length > 1 && (
-        <div className="flex justify-center gap-2 mb-3 flex-wrap">
+        <div className="flex justify-center gap-2 mb-3">
           {options.map((opt) => (
             <button
               key={opt.id}
@@ -62,10 +64,19 @@ export default function MenuItem({ item, options = [] }: any) {
         </div>
       )}
 
-      <p className="text-gray-600 text-sm mb-2">{display.description}</p>
+      {/* Descripción */}
+      {display.description && (
+        <p className="text-gray-600 text-sm mb-2 text-center">
+          {display.description}
+        </p>
+      )}
 
-      <p className="font-semibold text-lg mb-4">${display.price.toFixed(2)}</p>
+      {/* Precio */}
+      <p className="font-semibold text-lg mb-4 text-center">
+        ${display.price?.toFixed(2) ?? "0.00"}
+      </p>
 
+      {/* Botón de agregar */}
       <button
         onClick={handleAdd}
         className="bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold transition"
