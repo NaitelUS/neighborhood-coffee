@@ -1,43 +1,50 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { base } from "../lib/airtableClient";
 
-const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_COUPONS } = process.env;
+const TABLE = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
 
-if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
-  console.error("❌ Missing Airtable API Key or Base ID in environment variables");
-}
-
-const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID!);
-const tableName = AIRTABLE_TABLE_COUPONS || "Coupons";
-
-export const handler: Handler = async (event) => {
+export const handler: Handler = async () => {
   try {
-    const body = JSON.parse(event.body || "{}");
-    const { code } = body;
+    const records = await base(TABLE).select({ view: "Grid view" }).all();
 
-    if (!code) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Coupon code required" }) };
-    }
+    const coupons = records
+      .map((r) => {
+        const code = r.get("code");
+        const percent = r.get("% percent_off"); // Airtable envía el valor decimal (0.1 para 10%)
+        const active = r.get("active"); // Fórmula booleana en Airtable
+        const validFrom = r.get("valid_from");
+        const validUntil = r.get("valid_until");
 
-    const records = await base(tableName)
-      .select({
-        filterByFormula: `AND({Code}='${code}', {Active}=TRUE())`,
+        // Validar fechas activas
+        const now = new Date();
+        const isWithinRange =
+          (!validFrom || new Date(validFrom) <= now) &&
+          (!validUntil || new Date(validUntil) >= now);
+
+        // Usar el valor tal cual, ya es decimal
+        const discountValue =
+          typeof percent === "number"
+            ? percent
+            : 0;
+
+        return {
+          id: r.id,
+          Code: typeof code === "string" ? code.toUpperCase().trim() : null,
+          Discount: discountValue,
+          Active: !!active && isWithinRange && discountValue > 0,
+        };
       })
-      .firstPage();
-
-    if (records.length === 0) {
-      return { statusCode: 200, body: JSON.stringify({ valid: false }) };
-    }
-
-    const record = records[0];
-    const discount = record.get("Discount") || 0;
+      .filter((c) => c.Active && c.Code);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ valid: true, discount }),
+      body: JSON.stringify(coupons),
     };
-  } catch (err: any) {
-    console.error("❌ Error validating coupon:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+  } catch (error) {
+    console.error("Error fetching coupons:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to fetch coupons" }),
+    };
   }
 };
