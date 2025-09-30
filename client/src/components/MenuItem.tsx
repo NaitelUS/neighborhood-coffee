@@ -45,19 +45,27 @@ export default function MenuItem({ item, options = [] }: any) {
       {/* Nombre principal */}
       <h2 className="font-semibold text-lg mb-1 text-center">{item.name}</h2>
 
-      {/* 🔀 Selector dinámico */}
+      {/* 🔀 Selector dinámico con animación */}
       {options.length > 1 && (
-        <div className="flex justify-center items-center mb-3">
-          {/* ✅ Si hay solo 2 opciones → usar switch */}
+        <div className="flex justify-center items-center mb-4">
           {hasTwoOptions ? (
-            <div className="relative flex items-center bg-gray-200 rounded-full px-1 py-1 w-40">
+            <div className="relative flex w-44 bg-gray-200 rounded-full cursor-pointer select-none">
+              {/* Fondo animado (la píldora azul) */}
+              <div
+                className={`absolute top-0 bottom-0 w-1/2 bg-blue-600 rounded-full shadow transition-all duration-300 ${
+                  selectedOption?.id === options[1].id
+                    ? "translate-x-full"
+                    : "translate-x-0"
+                }`}
+              ></div>
+
               {options.map((opt, index) => (
                 <div
                   key={opt.id}
                   onClick={() => handleOptionChange(opt)}
-                  className={`flex-1 text-center cursor-pointer text-sm font-semibold py-1 transition-all duration-300 rounded-full ${
+                  className={`flex-1 z-10 text-center text-sm font-semibold py-2 transition-colors duration-300 ${
                     selectedOption?.id === opt.id
-                      ? "bg-blue-600 text-white shadow"
+                      ? "text-white"
                       : "text-gray-700"
                   }`}
                 >
@@ -66,7 +74,6 @@ export default function MenuItem({ item, options = [] }: any) {
               ))}
             </div>
           ) : (
-            // 🔸 Si hay más de 2 opciones, usar botones individuales
             <div className="flex justify-center gap-2">
               {options.map((opt) => (
                 <button
