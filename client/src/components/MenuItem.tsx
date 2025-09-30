@@ -17,14 +17,8 @@ export default function MenuItem({ item, options = [] }: any) {
 
   const handleOptionChange = (opt: any) => setSelectedOption(opt);
 
-  const handleAdd = () => {
-    try {
-      if (!item) {
-        showToast("❌ Item not found", "error");
-        return;
-      }
-
-      const selected = selectedOption || item;
+  onst handleAdd = () => {
+    
 
       const productToAdd = {
         id: selected.id,
