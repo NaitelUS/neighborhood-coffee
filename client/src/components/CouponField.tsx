@@ -1,11 +1,4 @@
 import React, { useState } from "react";
-import Airtable from "airtable";
-
-const base = new Airtable({ apiKey: import.meta.env.VITE_AIRTABLE_API_KEY }).base(
-  import.meta.env.VITE_AIRTABLE_BASE_ID
-);
-
-const TABLE_COUPONS = import.meta.env.VITE_AIRTABLE_TABLE_COUPONS || "Coupons";
 
 export default function CouponField() {
   const [coupon, setCoupon] = useState("");
@@ -17,23 +10,23 @@ export default function CouponField() {
     setError("");
 
     try {
-      const records = await base(TABLE_COUPONS)
-        .select({
-          filterByFormula: `AND({Code}='${coupon}', {Active}=TRUE())`,
-        })
-        .all();
+      const res = await fetch("/.netlify/functions/checkCoupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coupon }),
+      });
 
-      if (records.length === 0) {
-        setError("❌ Invalid or expired coupon.");
+      const data = await res.json();
+
+      if (!data.valid) {
+        setError(data.message || "❌ Invalid or expired coupon.");
         return;
       }
 
-      const record = records[0];
-      const discountValue = record.get("Discount") || 0;
-      setDiscount(Number(discountValue));
+      setDiscount(data.discount);
       setApplied(true);
     } catch (err) {
-      console.error("Error checking coupon:", err);
+      console.error("Error verifying coupon:", err);
       setError("⚠️ Unable to verify coupon right now.");
     }
   };
