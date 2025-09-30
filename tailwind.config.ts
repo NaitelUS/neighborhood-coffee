@@ -8,6 +8,25 @@ const config: Config = {
   ],
   theme: {
     extend: {
+// tailwind.config.js
+export default {
+  theme: {
+    extend: {
+      keyframes: {
+        pulseOnce: {
+          "0%": { opacity: 0, transform: "scale(0.95)" },
+          "50%": { opacity: 1, transform: "scale(1.05)" },
+          "100%": { opacity: 1, transform: "scale(1)" },
+        },
+      },
+      animation: {
+        pulseOnce: "pulseOnce 0.8s ease-out forwards",
+      },
+    },
+  },
+  plugins: [],
+};
+     
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
