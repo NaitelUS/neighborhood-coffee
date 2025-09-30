@@ -8,10 +8,10 @@ const base = new Airtable({ apiKey: import.meta.env.AIRTABLE_API_KEY }).base(
 const TABLE_COUPONS = import.meta.env.AIRTABLE_TABLE_COUPONS || "Coupons";
 
 interface CouponFieldProps {
-  onApply?: (discount: number) => void;
+  onDiscountApply: (discount: number) => void;
 }
 
-export default function CouponField({ onApply }: CouponFieldProps) {
+export default function CouponField({ onDiscountApply }: CouponFieldProps) {
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
   const [applied, setApplied] = useState(false);
@@ -29,17 +29,20 @@ export default function CouponField({ onApply }: CouponFieldProps) {
 
       if (records.length === 0) {
         setError("❌ Invalid or expired coupon.");
+        onDiscountApply(0);
         return;
       }
 
       const record = records[0];
-      const discountValue = record.get("Discount") || 0;
-      setDiscount(Number(discountValue));
+      const discountValue = Number(record.get("Discount") || 0);
+
+      setDiscount(discountValue);
       setApplied(true);
-      if (onApply) onApply(Number(discountValue));
+      onDiscountApply(discountValue);
     } catch (err) {
       console.error("Error checking coupon:", err);
       setError("⚠️ Unable to verify coupon right now.");
+      onDiscountApply(0);
     }
   };
 
