@@ -17,7 +17,7 @@ export default function MenuItem({ item, options = [] }: any) {
 
   const handleOptionChange = (opt: any) => setSelectedOption(opt);
 
-  onst handleAdd = () => {
+  const handleAdd = () => {
     
 
       const productToAdd = {
