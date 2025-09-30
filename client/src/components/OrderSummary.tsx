@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 
 export default function OrderSummary() {
   const { cart, clearCart } = useCart();
   const { showToast, Toast } = useToast();
+
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -18,6 +19,7 @@ export default function OrderSummary() {
       showToast("⚠️ Enter a coupon code first", "info");
       return;
     }
+
     if (appliedCoupon) {
       showToast("⚠️ Coupon already applied", "info");
       return;
@@ -39,7 +41,7 @@ export default function OrderSummary() {
         return;
       }
 
-      // 🔹 Valid coupon: calculate discount
+      // 🔹 Calcular descuento
       let discountValue = 0;
       if (found.type === "percent") {
         discountValue = subtotal * (found.value / 100);
@@ -47,9 +49,19 @@ export default function OrderSummary() {
         discountValue = found.value;
       }
 
+      // 🔹 Aplicar descuento y guardar estado
       setDiscount(discountValue);
       setAppliedCoupon(found.code);
-      showToast(`✅ Coupon ${found.code} applied!`, "success");
+
+      // ✅ Mostrar toast amigable
+      const savedText =
+        found.type === "percent"
+          ? `${found.value}%`
+          : `$${discountValue.toFixed(2)}`;
+      showToast(
+        `✅ Coupon ${found.code} applied — You saved ${savedText}! 🎉`,
+        "success"
+      );
     } catch (err) {
       console.error(err);
       showToast("❌ Error applying coupon", "error");
@@ -103,6 +115,7 @@ export default function OrderSummary() {
               <span>${total.toFixed(2)}</span>
             </div>
 
+            {/* Cupón */}
             <div className="flex gap-2 mb-3">
               <input
                 type="text"
