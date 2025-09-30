@@ -5,11 +5,12 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
 
-const TABLE = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+const TABLE_ITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
 export const handler: Handler = async (event) => {
   try {
-    // ✅ Solo aceptar método GET
+    // ✅ Solo GET permitido
     if (event.httpMethod !== "GET") {
       return {
         statusCode: 405,
@@ -20,7 +21,6 @@ export const handler: Handler = async (event) => {
     const params = event.queryStringParameters || {};
     const orderId = params.id;
 
-    // ✅ Validar parámetro
     if (!orderId) {
       return {
         statusCode: 400,
@@ -28,33 +28,52 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // 🔍 Buscar el registro por ID
-    const record = await base(TABLE).find(orderId);
+    // 🔹 Buscar la orden principal
+    const orderRecord = await base(TABLE_ORDERS).find(orderId);
 
-    if (!record) {
+    if (!orderRecord) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: "Order not found" }),
       };
     }
 
-    // 🧩 Extraer campos relevantes
-    const fields = record.fields;
+    const orderFields = orderRecord.fields;
 
-    const orderData = {
-      id: record.id,
-      CustomerName: fields.CustomerName || "",
-      Total: fields.Total || 0,
-      Subtotal: fields.Subtotal || 0,
-      Discount: fields.Discount || 0,
-      CouponCode: fields.CouponCode || "",
-      Phone: fields.Phone || "",
-      Email: fields.Email || "",
-      Address: fields.Address || "",
-      Status: fields.Status || "Pending",
-      Created: fields.Created || "",
+    // 🧩 Estructura principal
+    const orderData: any = {
+      id: orderRecord.id,
+      CustomerName: orderFields.CustomerName || "",
+      Total: orderFields.Total || 0,
+      Subtotal: orderFields.Subtotal || 0,
+      Discount: orderFields.Discount || 0,
+      CouponCode: orderFields.CouponCode || "",
+      Phone: orderFields.Phone || "",
+      Email: orderFields.Email || "",
+      Address: orderFields.Address || "",
+      Status: orderFields.Status || "Pending",
+      Created: orderFields.Created || "",
+      Items: [],
     };
 
+    // 🔍 Buscar productos relacionados en OrderItems
+    const items = await base(TABLE_ITEMS)
+      .select({
+        filterByFormula: `{Order} = '${orderId}'`,
+        fields: ["ProductName", "Quantity", "Price", "AddOns", "Option"],
+      })
+      .all();
+
+    orderData.Items = items.map((rec) => ({
+      id: rec.id,
+      ProductName: rec.fields.ProductName || "Unnamed item",
+      Quantity: rec.fields.Quantity || 1,
+      Price: rec.fields.Price || 0,
+      Option: rec.fields.Option || "",
+      AddOns: rec.fields.AddOns || [],
+    }));
+
+    // ✅ Respuesta completa
     return {
       statusCode: 200,
       headers: {
