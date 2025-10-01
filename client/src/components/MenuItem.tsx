@@ -34,40 +34,35 @@ export default function MenuItem({ product }: MenuItemProps) {
   const totalPrice =
     product.price + selectedAddOns.reduce((sum, a) => sum + a.price, 0);
 
-  const handleAddToCart = () => {
-    if (product.category?.toLowerCase() === "pastry") return; // 🥐 Desactivado
+  const isPastry = product.category?.toLowerCase() === "pastry";
 
-    if (
-      product.category?.toLowerCase() !== "pastry" &&
-      !selectedOption
-    ) {
+  const handleAddToCart = () => {
+    if (isPastry) return;
+
+    if (!selectedOption && !isPastry) {
       alert("Please select Hot or Iced before adding to your order.");
       return;
     }
 
-    const itemName =
-      product.category?.toLowerCase() === "pastry"
-        ? product.name
-        : `${product.name} (${selectedOption})`;
+    const itemName = isPastry
+      ? product.name
+      : `${product.name} (${selectedOption})`;
 
     addToCart({
       id: product.id,
       name: itemName,
       price: totalPrice,
       option: selectedOption,
-      addons:
-        product.category?.toLowerCase() !== "pastry"
-          ? selectedAddOns.map((a) => ({
-              name: a.name,
-              price: a.price,
-            }))
-          : [],
+      addons: !isPastry
+        ? selectedAddOns.map((a) => ({
+            name: a.name,
+            price: a.price,
+          }))
+        : [],
     });
 
     alert(`${itemName} added to your order!`);
   };
-
-  const isPastry = product.category?.toLowerCase() === "pastry";
 
   return (
     <div className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-all">
@@ -84,9 +79,9 @@ export default function MenuItem({ product }: MenuItemProps) {
         {product.description || "Delicious item from our menu"}
       </p>
 
-      {/* ⚠️ Coming Soon */}
+      {/* 🥐 Coming Soon */}
       {isPastry && (
-        <p className="text-sm text-amber-600 font-medium mb-3">
+        <p className="text-sm text-[#1D9099] font-medium mb-3">
           🥐 Coming Soon
         </p>
       )}
@@ -99,8 +94,8 @@ export default function MenuItem({ product }: MenuItemProps) {
               onClick={() => setSelectedOption("Hot")}
               className={`px-3 py-1 rounded-md border ${
                 selectedOption === "Hot"
-                  ? "bg-amber-600 text-white border-amber-700"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-amber-50"
+                  ? "bg-[#1D9099] text-white border-[#00454E]"
+                  : "bg-white text-gray-800 border-gray-300 hover:bg-[#e0f7f8]"
               }`}
             >
               Hot
@@ -111,8 +106,8 @@ export default function MenuItem({ product }: MenuItemProps) {
               onClick={() => setSelectedOption("Iced")}
               className={`px-3 py-1 rounded-md border ${
                 selectedOption === "Iced"
-                  ? "bg-blue-600 text-white border-blue-700"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-blue-50"
+                  ? "bg-[#1D9099] text-white border-[#00454E]"
+                  : "bg-white text-gray-800 border-gray-300 hover:bg-[#e0f7f8]"
               }`}
             >
               Iced
@@ -121,7 +116,7 @@ export default function MenuItem({ product }: MenuItemProps) {
         </div>
       )}
 
-      {/* Customize (solo bebidas) */}
+      {/* Customize solo bebidas */}
       {!isPastry && (
         <>
           <label className="flex items-center gap-2 mb-3">
@@ -143,23 +138,22 @@ export default function MenuItem({ product }: MenuItemProps) {
         </>
       )}
 
-      {/* Total dinámico + botón */}
+      {/* Total + botón */}
       <div className="mt-3 flex justify-between items-center">
         <span className="text-lg font-semibold text-gray-800">
           ${totalPrice.toFixed(2)}
         </span>
 
-        {/* Si es empanada, el botón está desactivado */}
         <button
           onClick={handleAddToCart}
           disabled={isPastry}
           className={`px-4 py-2 rounded-md font-medium ${
             isPastry
               ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-amber-600 text-white hover:bg-amber-700"
+              : "bg-[#1D9099] text-white hover:bg-[#00454E]"
           }`}
         >
-          {isPastry ? "Unavailable" : "Add to Order"}
+          {isPastry ? "Coming Soon" : "Add to Order"}
         </button>
       </div>
     </div>
