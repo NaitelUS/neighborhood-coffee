@@ -1,95 +1,130 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "Neighbor2025!";
+interface EndpointResult {
+  name: string;
+  url: string;
+  method?: string;
+  response?: any;
+  error?: string;
+}
+
+const endpoints = [
+  { name: "Products", url: "/.netlify/functions/products" },
+  { name: "Add-ons", url: "/.netlify/functions/addons" },
+  { name: "Coupons", url: "/.netlify/functions/coupons" },
+  { name: "Settings", url: "/.netlify/functions/settings" },
+  { name: "Orders (GET)", url: "/.netlify/functions/orders-get" },
+  { name: "Feedback (GET)", url: "/.netlify/functions/feedback" },
+  { name: "Check Coupon (WELCOME10)", url: "/.netlify/functions/checkCoupon?code=WELCOME10" },
+];
 
 export default function AdminPanel() {
-  const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [results, setResults] = useState<EndpointResult[]>([]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem("auth", "true");
-      setAuthenticated(true);
+  const handleLogin = () => {
+    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
+    if (password === adminPass) {
+      setIsAuthorized(true);
     } else {
-      setError("Incorrect password");
+      alert("Incorrect password");
     }
   };
 
-  if (!authenticated && sessionStorage.getItem("auth") !== "true") {
+  const testEndpoint = async (endpoint: EndpointResult) => {
+    try {
+      const res = await fetch(endpoint.url);
+      const json = await res.json();
+
+      setResults((prev) =>
+        prev.map((r) =>
+          r.name === endpoint.name ? { ...r, response: json, error: undefined } : r
+        )
+      );
+    } catch (error) {
+      setResults((prev) =>
+        prev.map((r) =>
+          r.name === endpoint.name
+            ? { ...r, error: String(error), response: undefined }
+            : r
+        )
+      );
+    }
+  };
+
+  const testAll = async () => {
+    setResults(endpoints.map((e) => ({ ...e })));
+
+    for (const endpoint of endpoints) {
+      await testEndpoint(endpoint);
+    }
+  };
+
+  if (!isAuthorized) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <div className="bg-white shadow-lg rounded-lg p-8 w-80">
-          <h1 className="text-xl font-bold mb-4 text-center">Admin Access</h1>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              className="border w-full rounded p-2"
-            />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-            >
-              Log in
-            </button>
-          </form>
-        </div>
+      <div className="max-w-md mx-auto mt-20 bg-white shadow-md rounded-xl p-6 text-center">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+          Admin Panel Access
+        </h2>
+        <input
+          type="password"
+          className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button
+          onClick={handleLogin}
+          className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 rounded-lg"
+        >
+          Enter
+        </button>
       </div>
     );
   }
 
-  // 🔒 Si ya está logueado, muestra el panel base
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
-      <p className="text-gray-500 mb-6">
-        Welcome back! Choose a section below to manage your data.
-      </p>
+    <div className="max-w-5xl mx-auto mt-10 bg-white shadow-lg rounded-xl p-6">
+      <h2 className="text-3xl font-bold text-amber-700 mb-6 text-center">
+        ☕ Admin Panel — Endpoint Tester
+      </h2>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="border rounded-lg p-4 shadow hover:shadow-md transition">
-          <h2 className="font-semibold mb-2">Products</h2>
-          <p className="text-sm text-gray-500 mb-3">
-            Edit product names, prices, and descriptions.
-          </p>
-          <a
-            href="/admin-panel/products"
-            className="text-blue-600 font-medium hover:underline"
-          >
-            Manage →
-          </a>
-        </div>
+      <button
+        onClick={testAll}
+        className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-semibold mb-6"
+      >
+        Test All Endpoints
+      </button>
 
-        <div className="border rounded-lg p-4 shadow hover:shadow-md transition">
-          <h2 className="font-semibold mb-2">AddOns</h2>
-          <p className="text-sm text-gray-500 mb-3">
-            Manage extra ingredients and prices.
-          </p>
-          <a
-            href="/admin-panel/addons"
-            className="text-blue-600 font-medium hover:underline"
+      <div className="space-y-4">
+        {results.map((r) => (
+          <div
+            key={r.name}
+            className="border border-gray-200 rounded-lg p-4 bg-gray-50"
           >
-            Manage →
-          </a>
-        </div>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold text-gray-800">{r.name}</h3>
+              <a
+                href={r.url}
+                target="_blank"
+                className="text-sm text-blue-500 hover:underline"
+              >
+                Open ↗
+              </a>
+            </div>
 
-        <div className="border rounded-lg p-4 shadow hover:shadow-md transition">
-          <h2 className="font-semibold mb-2">Coupons</h2>
-          <p className="text-sm text-gray-500 mb-3">
-            Create or update discount codes.
-          </p>
-          <a
-            href="/admin-panel/coupons"
-            className="text-blue-600 font-medium hover:underline"
-          >
-            Manage →
-          </a>
-        </div>
+            {r.error ? (
+              <p className="text-red-500 text-sm">❌ {r.error}</p>
+            ) : r.response ? (
+              <pre className="bg-white text-xs p-3 rounded border overflow-x-auto">
+                {JSON.stringify(r.response, null, 2)}
+              </pre>
+            ) : (
+              <p className="text-gray-400 text-sm italic">Pending...</p>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
