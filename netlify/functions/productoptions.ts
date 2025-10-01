@@ -1,40 +1,31 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-// Inicializar Airtable
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
-
-const TABLE = process.env.AIRTABLE_TABLE_PRODUCT_OPTIONS || "ProductOptions";
-
-export const handler: Handler = async () => {
+const handler: Handler = async () => {
   try {
-    const records = await base(TABLE).select({}).all();
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_PRODUCT_OPTIONS || "ProductOptions");
 
-    const formatted = records.map((record) => ({
-      id: record.id,
-      productId: record.fields.Product?.[0], // 🔗 referencia al producto principal
-      optionName: record.fields.OptionName || "",
-      description: record.fields.Description || "",
-      price: Number(record.fields.Price) || 0,
-      image_url: record.fields.Image_URL || "",
-      active: record.fields.Active ?? true,
+    const records = await table.select().all();
+
+    const options = records.map((r) => ({
+      id: r.id,
+      name: r.fields.name || "",
+      price: r.fields.price || 0,
+      type: r.fields.type || "addon",
     }));
 
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify(formatted),
+      body: JSON.stringify(options),
     };
-  } catch (err: any) {
-    console.error("Error loading product options:", err);
+  } catch (error) {
+    console.error("Error fetching product options:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({ error: "Failed to fetch product options", details: error.message }),
     };
   }
 };
+
+export { handler };
