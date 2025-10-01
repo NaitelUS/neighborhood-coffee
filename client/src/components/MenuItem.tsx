@@ -1,75 +1,117 @@
 import React, { useState, useContext } from "react";
-import { Button } from "@/components/ui/button";
-import AddOnSelector from "./AddOnSelector";
 import { CartContext } from "@/context/CartContext";
 
-export default function MenuItem({ product }) {
+interface MenuItemProps {
+  product: {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    image_url?: string;
+    is_hot?: boolean;
+    is_iced?: boolean;
+  };
+}
+
+export default function MenuItem({ product }: MenuItemProps) {
   const { addToCart } = useContext(CartContext);
-  const [selectedOption, setSelectedOption] = useState("Hot");
-  const [showAddons, setShowAddons] = useState(false);
+
+  // ✅ Por defecto: si el producto tiene opción "Hot", la selecciona automáticamente
+  const [selectedOption, setSelectedOption] = useState<string>(
+    product.is_hot ? "Hot" : product.is_iced ? "Iced" : ""
+  );
+
+  const [customize, setCustomize] = useState(false);
 
   const handleAddToCart = () => {
-    if (!selectedOption) return;
-    addToCart({ ...product, option: selectedOption });
+    if (!selectedOption) {
+      alert("Please select Hot or Iced before adding to your order.");
+      return;
+    }
+
+    addToCart({
+      id: product.id,
+      name: `${product.name} (${selectedOption})`,
+      price: product.price,
+      option: selectedOption,
+    });
+
+    alert(`${product.name} added to your order!`);
   };
 
   return (
-    <div className="border rounded-2xl shadow-sm p-4 bg-white">
+    <div className="p-4 border rounded-lg shadow-sm bg-white">
+      {/* ✅ Imagen segura con fallback */}
       <img
         src={product.image_url || "/attached_assets/tnclogo.png"}
         alt={product.name}
-        className="w-full h-48 object-cover rounded-xl mb-3"
+        className="w-full h-48 object-cover rounded-md mb-3"
       />
 
-      <h2 className="font-semibold text-lg">{product.name}</h2>
-      <p className="text-gray-600 mb-2">{product.description}</p>
+      {/* ✅ Nombre y descripción */}
+      <h2 className="text-lg font-semibold mb-1">{product.name}</h2>
+      <p className="text-sm text-gray-600 mb-2">{product.description}</p>
 
-      <div className="flex gap-3 mb-3">
+      {/* ✅ Opciones Hot / Iced */}
+      <div className="flex gap-2 mb-3">
         {product.is_hot && (
-          <Button
-            variant={selectedOption === "Hot" ? "default" : "outline"}
+          <button
             onClick={() => setSelectedOption("Hot")}
+            className={`px-3 py-1 rounded-md border ${
+              selectedOption === "Hot"
+                ? "bg-amber-600 text-white border-amber-700"
+                : "bg-white text-gray-800 border-gray-300 hover:bg-amber-50"
+            }`}
           >
             Hot
-          </Button>
+          </button>
         )}
         {product.is_iced && (
-          <Button
-            variant={selectedOption === "Iced" ? "default" : "outline"}
+          <button
             onClick={() => setSelectedOption("Iced")}
+            className={`px-3 py-1 rounded-md border ${
+              selectedOption === "Iced"
+                ? "bg-blue-600 text-white border-blue-700"
+                : "bg-white text-gray-800 border-gray-300 hover:bg-blue-50"
+            }`}
           >
             Iced
-          </Button>
+          </button>
         )}
       </div>
 
-      <div className="mb-3">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            onChange={() => setShowAddons(!showAddons)}
-            checked={showAddons}
-          />
-          Customize your drink
-        </label>
-      </div>
+      {/* ✅ Customize checkbox */}
+      <label className="flex items-center gap-2 mb-3">
+        <input
+          type="checkbox"
+          checked={customize}
+          onChange={(e) => setCustomize(e.target.checked)}
+        />
+        <span className="font-medium">Customize your drink</span>
+      </label>
 
-      {showAddons && (
-        <div className="mt-3 border-t pt-3">
-          <AddOnSelector productId={product.id} />
+      {/* ✅ Sección dinámica para Add-ons */}
+      {customize && (
+        <div className="mb-3 text-sm text-gray-700 border rounded p-2 bg-gray-50">
+          <p>✨ Add-ons list coming soon (van desde Airtable / AddOns)</p>
         </div>
       )}
 
-      <div className="flex justify-between items-center mt-4">
-        <span className="font-bold">${product.price?.toFixed(2)}</span>
-        <Button
-          onClick={handleAddToCart}
-          disabled={!selectedOption}
-          className="bg-orange-600 hover:bg-orange-700"
-        >
-          Add to Order
-        </Button>
-      </div>
+      {/* ✅ Precio */}
+      <p className="text-lg font-semibold mb-3">${product.price.toFixed(2)}</p>
+
+      {/* ✅ Botón de agregar */}
+      <button
+        onClick={handleAddToCart}
+        disabled={!selectedOption}
+        className={`w-full py-2 rounded-md font-medium ${
+          selectedOption
+            ? "bg-amber-600 text-white hover:bg-amber-700"
+            : "bg-gray-300 text-gray-600 cursor-not-allowed"
+        }`}
+      >
+        Add to Order
+      </button>
     </div>
   );
 }
