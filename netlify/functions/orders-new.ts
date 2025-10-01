@@ -1,109 +1,38 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
-// import twilio from "twilio"; // 🔓 Descomenta cuando actives Twilio
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
-
-const TABLE = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
-
-// 🌐 Base URL de tu sitio (ajusta si cambia el dominio)
-const SITE_URL = "https://theneighborhoodcoffee.netlify.app";
-
-export const handler: Handler = async (event) => {
+const handler: Handler = async (event) => {
   try {
-    if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: "Method not allowed" };
-    }
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_ORDERS || "Orders");
 
     const body = JSON.parse(event.body || "{}");
-    const {
-      customerName,
-      phone,
-      email,
-      address,
-      total,
-      discount,
-      subtotal,
-      couponCode,
-    } = body;
 
-    if (!customerName || !total) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: "Missing required fields (customerName or total).",
-        }),
-      };
-    }
-
-    // 1️⃣ Crear la orden en Airtable
-    const record = await base(TABLE).create([
+    const record = await table.create([
       {
         fields: {
-          CustomerName: customerName,
-          Phone: phone || "",
-          Email: email || "",
-          Address: address || "",
-          Total: Number(total),
-          Subtotal: Number(subtotal || total),
-          Discount: Number(discount || 0),
-          CouponCode: couponCode || "",
-          Status: "Pending",
-          Created: new Date().toISOString(),
+          customer: body.customer,
+          total: body.total,
+          status: body.status || "Received",
+          createdAt: new Date().toISOString(),
         },
       },
     ]);
 
-    const order = { id: record[0].id, ...record[0].fields };
-
-    // 2️⃣ Enviar SMS (opcional)
-    /*
-    const twilioSID = process.env.TWILIO_ACCOUNT_SID;
-    const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-    const twilioFrom = process.env.TWILIO_FROM_PHONE;
-
-    if (twilioSID && twilioToken && twilioFrom && phone) {
-      try {
-        const client = twilio(twilioSID, twilioToken);
-
-        // 🧾 Construir mensaje
-        let messageBody = `☕ Thank you, ${customerName}! Your order (${order.id}) has been received.`;
-
-        if (discount && discount > 0 && couponCode) {
-          messageBody += ` You saved $${discount.toFixed(2)} with ${couponCode}.`;
-        }
-
-        messageBody += `\nTrack your order: ${SITE_URL}/order-status/${order.id}`;
-
-        const msg = await client.messages.create({
-          body: messageBody,
-          from: twilioFrom,
-          to: phone.startsWith("+") ? phone : `+1${phone}`,
-        });
-
-        console.log("SMS sent:", msg.sid);
-      } catch (smsErr: any) {
-        console.error("Error sending SMS:", smsErr.message);
-      }
-    }
-    */
-
-    // 3️⃣ Responder con éxito
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify(order),
+      body: JSON.stringify({ id: record[0].id }),
     };
-  } catch (err: any) {
-    console.error("Error creating order:", err);
+  } catch (error) {
+    console.error("Error creating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({
+        error: "Failed to create order",
+        details: error.message,
+      }),
     };
   }
 };
+
+export { handler };
