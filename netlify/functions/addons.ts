@@ -8,19 +8,22 @@ const handler: Handler = async () => {
 
     const records = await table.select().all();
 
-    const addons = records.map((r) => ({
-      id: r.id,
-      name: r.fields.name,
-      price: r.fields.price,
-      active: r.fields.active,
+    const addons = records.map((record) => ({
+      id: record.id,
+      name: record.fields.name || "",
+      price: Number(record.fields.price) || 0,
+      active: record.fields.active ?? true,
     }));
 
-    return { statusCode: 200, body: JSON.stringify(addons) };
-  } catch (err) {
-    console.error("Error loading addons:", err);
+    return {
+      statusCode: 200,
+      body: JSON.stringify(addons),
+    };
+  } catch (error) {
+    console.error("Error fetching addons:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({ error: "Failed to fetch addons", details: error.message }),
     };
   }
 };
