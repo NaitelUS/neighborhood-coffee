@@ -37,13 +37,13 @@ export const CartContext = createContext<CartContextType>({
   total: 0,
 });
 
-// 🧠 Proveedor global
+// 🧠 Proveedor global del carrito
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | undefined>();
 
-  // 🧩 Agregar producto al carrito
+  // ➕ Agregar producto al carrito
   const addToCart = (item: CartItem) => {
     setCartItems((prev) => [...prev, item]);
   };
@@ -66,15 +66,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setAppliedCoupon(couponCode);
   };
 
-  // 💰 Calcular subtotal dinámico (con add-ons)
+  // 💰 Calcular subtotal (ya incluye Add-ons porque se suman en MenuItem)
   const subtotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => {
-      const addonsTotal = item.addons?.reduce((aSum, a) => aSum + a.price, 0) || 0;
-      return sum + item.price + addonsTotal;
-    }, 0);
+    return cartItems.reduce((sum, item) => sum + item.price, 0);
   }, [cartItems]);
 
-  // 💸 Calcular total con descuento
+  // 💸 Calcular total con descuento aplicado
   const total = useMemo(() => {
     const discountAmount = subtotal * discount;
     return subtotal - discountAmount;
