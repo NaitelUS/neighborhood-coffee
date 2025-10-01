@@ -1,58 +1,33 @@
 import { Handler } from "@netlify/functions";
-import { base } from "../lib/airtableClient";
-
-// ✅ Cabeceras globales (JSON + CORS)
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-};
+import { getAirtableClient } from "../lib/airtableClient";
 
 const handler: Handler = async () => {
   try {
-    // ✅ 1. Verificación de variable de entorno
-    const tableName = process.env.AIRTABLE_TABLE_SETTINGS;
-    if (!tableName) {
-      console.error("❌ Falta AIRTABLE_TABLE_SETTINGS en variables de entorno");
-      return {
-        statusCode: 500,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({
-          error: "Missing AIRTABLE_TABLE_SETTINGS env var",
-        }),
-      };
-    }
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_SETTINGS || "Settings");
 
-    // ✅ 2. Consulta a Airtable
-    const records = await base(tableName).select().all();
+    const records = await table.select().all();
 
-    // ✅ 3. Mapeo de los campos esperados
-    const settings = records.map((record) => ({
-      id: record.id,
-      key: record.get("key") ?? null,
-      value: record.get("value") ?? null,
-      description: record.get("description") ?? null, // opcional si existe
+    const settings = records.map((r) => ({
+      id: r.id,
+      opening_hour: r.fields.opening_hour || "06:00",
+      closing_hour: r.fields.closing_hour || "11:00",
+      closed_days: r.fields.closed_days || [],
+      vacation_start: r.fields.vacation_start || null,
+      vacation_end: r.fields.vacation_end || null,
     }));
 
-    // ✅ 4. Respuesta exitosa
     return {
       statusCode: 200,
-      headers: JSON_HEADERS,
       body: JSON.stringify(settings),
     };
   } catch (error) {
-    console.error("❌ Error fetching settings:", error);
-
-    // 🚨 5. Manejo controlado del error
+    console.error("Error fetching settings:", error);
     return {
       statusCode: 500,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({
-        error: "Error fetching settings",
-        message: (error as Error).message,
-      }),
+      body: JSON.stringify({ error: "Failed to fetch settings", details: error.message }),
     };
   }
 };
 
-// ✅ 6. Exportación nombrada
 export { handler };
