@@ -3,16 +3,8 @@ import { CartContext } from "@/context/CartContext";
 import CouponField from "@/components/CouponField";
 
 export default function OrderSummary() {
-  const { cartItems, discount, appliedCoupon } = useContext(CartContext);
-
-  // 🔹 Subtotal antes de descuentos
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
-
-  // 🔹 Descuento aplicado
-  const discountAmount = subtotal * discount;
-
-  // 🔹 Total final
-  const total = subtotal - discountAmount;
+  const { cartItems, subtotal, discount, appliedCoupon, total } =
+    useContext(CartContext);
 
   return (
     <div className="bg-white shadow-md rounded-xl p-6">
@@ -27,11 +19,10 @@ export default function OrderSummary() {
         <ul className="divide-y divide-gray-200 mb-4">
           {cartItems.map((item, index) => (
             <li key={index} className="py-3">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium text-gray-800">
-                    {item.name}
-                  </p>
+                  <p className="font-medium text-gray-800">{item.name}</p>
+
                   {/* ✅ Add-ons debajo del nombre */}
                   {item.addons && item.addons.length > 0 && (
                     <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
@@ -43,6 +34,8 @@ export default function OrderSummary() {
                     </ul>
                   )}
                 </div>
+
+                {/* 💰 Precio total del item */}
                 <span className="text-gray-700 font-semibold">
                   ${item.price.toFixed(2)}
                 </span>
@@ -62,7 +55,7 @@ export default function OrderSummary() {
       {discount > 0 && (
         <div className="flex justify-between py-1 text-green-700 font-medium">
           <span>Discount ({appliedCoupon})</span>
-          <span>- ${discountAmount.toFixed(2)}</span>
+          <span>- ${(subtotal * discount).toFixed(2)}</span>
         </div>
       )}
 
@@ -72,12 +65,12 @@ export default function OrderSummary() {
         <span>${total.toFixed(2)}</span>
       </div>
 
-      {/* 🏷️ Campo de cupón (debajo del total) */}
+      {/* 🏷️ Campo de cupón */}
       <div className="mt-4">
         <CouponField />
       </div>
 
-      {/* 🚀 Botón de confirmación (opcional) */}
+      {/* 🚀 Botón de confirmación */}
       {cartItems.length > 0 && (
         <button
           className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 mt-4 rounded-lg font-semibold"
