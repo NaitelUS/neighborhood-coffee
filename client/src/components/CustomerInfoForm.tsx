@@ -1,149 +1,109 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-interface CustomerInfo {
-  name: string;
-  phone: string;
-  method: "Pickup" | "Delivery";
-  address?: string;
+interface CustomerInfoFormProps {
+  onSubmit: (info: any, schedule: string) => void;
 }
 
-interface Props {
-  onSubmit: (info: CustomerInfo, schedule: string) => void;
-}
-
-export default function CustomerInfoForm({ onSubmit }: Props) {
-  const [formData, setFormData] = useState<CustomerInfo>({
+export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
+  const [info, setInfo] = useState({
     name: "",
     phone: "",
-    method: "Pickup", // ✅ default
+    method: "Pickup",
     address: "",
   });
 
-  const [date, setDate] = useState<string>("");
-  const [time, setTime] = useState<string>("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
 
-  // ✅ Lunes a Sábado
-  const isDateAllowed = (d: string) => {
-    const day = new Date(d).getDay();
-    return day >= 1 && day <= 6; // 0 = Domingo, 6 = Sábado
-  };
-
-  // ✅ 6:00 AM a 11:00 AM
-  const isTimeAllowed = (t: string) => {
-    const [hours] = t.split(":").map(Number);
-    return hours >= 6 && hours < 11;
-  };
+  useEffect(() => {
+    const now = new Date();
+    setDate(now.toISOString().split("T")[0]);
+    setTime(now.toTimeString().slice(0, 5));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!date || !time) {
-      alert("Please select a valid date and time.");
-      return;
-    }
-
-    if (!isDateAllowed(date)) {
-      alert("Orders can only be scheduled from Monday to Saturday.");
-      return;
-    }
-
-    if (!isTimeAllowed(time)) {
-      alert("Orders must be between 6:00 AM and 11:00 AM.");
-      return;
-    }
-
-    const combined = new Date(`${date}T${time}:00`).toISOString();
-
-    onSubmit(formData, combined);
+    const schedule = `${date} ${time}`;
+    onSubmit(info, schedule);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-xl p-6 space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">Customer Information</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white p-6 rounded-xl shadow-md space-y-4"
+    >
+      <h3 className="text-xl font-semibold text-gray-800">Your Info</h3>
 
       <input
         type="text"
-        placeholder="Full Name"
-        value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        placeholder="Full name"
+        value={info.name}
+        onChange={(e) => setInfo({ ...info, name: e.target.value })}
+        className="w-full border rounded-md p-2"
         required
-        className="w-full border rounded-lg p-2"
       />
 
       <input
         type="tel"
-        placeholder="Phone Number"
-        value={formData.phone}
-        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+        placeholder="Phone number"
+        value={info.phone}
+        onChange={(e) => setInfo({ ...info, phone: e.target.value })}
+        className="w-full border rounded-md p-2"
         required
-        className="w-full border rounded-lg p-2"
       />
 
-      {/* ✅ Pickup / Delivery */}
       <div className="flex gap-4">
         <label className="flex items-center gap-2">
           <input
             type="radio"
             name="method"
             value="Pickup"
-            checked={formData.method === "Pickup"}
-            onChange={(e) => setFormData({ ...formData, method: e.target.value as "Pickup" })}
+            checked={info.method === "Pickup"}
+            onChange={() => setInfo({ ...info, method: "Pickup" })}
           />
           Pickup
         </label>
-
         <label className="flex items-center gap-2">
           <input
             type="radio"
             name="method"
             value="Delivery"
-            checked={formData.method === "Delivery"}
-            onChange={(e) => setFormData({ ...formData, method: e.target.value as "Delivery" })}
+            checked={info.method === "Delivery"}
+            onChange={() => setInfo({ ...info, method: "Delivery" })}
           />
           Delivery
         </label>
       </div>
 
-      {/* ✅ Address visible solo si Delivery */}
-      {formData.method === "Delivery" && (
+      {info.method === "Delivery" && (
         <input
           type="text"
-          placeholder="Delivery Address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          placeholder="Delivery address"
+          value={info.address}
+          onChange={(e) => setInfo({ ...info, address: e.target.value })}
+          className="w-full border rounded-md p-2"
           required
-          className="w-full border rounded-lg p-2"
         />
       )}
 
-      {/* 📅 Fecha */}
-      <div>
-        <label className="block text-gray-700 mb-1">Select Date</label>
+      <div className="grid grid-cols-2 gap-4">
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          required
-          className="w-full border rounded-lg p-2"
+          className="border rounded-md p-2"
         />
-      </div>
-
-      {/* ⏰ Hora */}
-      <div>
-        <label className="block text-gray-700 mb-1">Select Time</label>
         <input
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-          required
-          className="w-full border rounded-lg p-2"
+          className="border rounded-md p-2"
         />
       </div>
 
-      {/* 🚀 Submit */}
       <button
         type="submit"
-        className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-lg font-semibold"
+        className="w-full py-2 bg-[#1D9099] text-white rounded-md hover:bg-[#00454E]"
       >
         Continue
       </button>
