@@ -35,8 +35,10 @@ export default function MenuItem({ product }: MenuItemProps) {
     product.price + selectedAddOns.reduce((sum, a) => sum + a.price, 0);
 
   const handleAddToCart = () => {
+    if (product.category?.toLowerCase() === "pastry") return; // 🥐 Desactivado
+
     if (
-      product.category?.toLowerCase() !== "pastry" && // 🥐 Empanadas no necesitan Hot/Iced
+      product.category?.toLowerCase() !== "pastry" &&
       !selectedOption
     ) {
       alert("Please select Hot or Iced before adding to your order.");
@@ -65,6 +67,8 @@ export default function MenuItem({ product }: MenuItemProps) {
     alert(`${itemName} added to your order!`);
   };
 
+  const isPastry = product.category?.toLowerCase() === "pastry";
+
   return (
     <div className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-all">
       {/* Imagen */}
@@ -80,15 +84,15 @@ export default function MenuItem({ product }: MenuItemProps) {
         {product.description || "Delicious item from our menu"}
       </p>
 
-      {/* ⚠️ Coming Soon para Empanadas */}
-      {product.category?.toLowerCase() === "pastry" && (
-        <p className="text-sm text-amber-600 font-medium mb-2">
+      {/* ⚠️ Coming Soon */}
+      {isPastry && (
+        <p className="text-sm text-amber-600 font-medium mb-3">
           🥐 Coming Soon
         </p>
       )}
 
       {/* Hot/Iced solo si no es empanada */}
-      {product.category?.toLowerCase() !== "pastry" && (
+      {!isPastry && (
         <div className="flex gap-2 mb-3">
           {product.is_hot && (
             <button
@@ -118,7 +122,7 @@ export default function MenuItem({ product }: MenuItemProps) {
       )}
 
       {/* Customize (solo bebidas) */}
-      {product.category?.toLowerCase() !== "pastry" && (
+      {!isPastry && (
         <>
           <label className="flex items-center gap-2 mb-3">
             <input
@@ -144,11 +148,18 @@ export default function MenuItem({ product }: MenuItemProps) {
         <span className="text-lg font-semibold text-gray-800">
           ${totalPrice.toFixed(2)}
         </span>
+
+        {/* Si es empanada, el botón está desactivado */}
         <button
           onClick={handleAddToCart}
-          className={`px-4 py-2 rounded-md font-medium bg-amber-600 text-white hover:bg-amber-700`}
+          disabled={isPastry}
+          className={`px-4 py-2 rounded-md font-medium ${
+            isPastry
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-amber-600 text-white hover:bg-amber-700"
+          }`}
         >
-          Add to Order
+          {isPastry ? "Unavailable" : "Add to Order"}
         </button>
       </div>
     </div>
