@@ -6,7 +6,7 @@ node_bundler = "esbuild"
 # --- Configuración de build ---
 [build]
   command = "npm install && npm run build"
-  publish = "dist"
+  publish = "client/dist"
 
 # --- Redirección global para SPA (React/Vite) ---
 [[redirects]]
