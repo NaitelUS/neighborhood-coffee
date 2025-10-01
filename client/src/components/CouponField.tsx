@@ -1,78 +1,88 @@
-import React, { useState } from "react";
-import { getCoupons } from "@/api/api";
+import React, { useState, useContext } from "react";
+import { CartContext } from "@/context/CartContext";
+import { CheckCircle, XCircle } from "lucide-react";
 
-interface CouponFieldProps {
-  onDiscountApply: (discount: number) => void;
-}
-
-export default function CouponField({ onDiscountApply }: CouponFieldProps) {
-  const [coupon, setCoupon] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [applied, setApplied] = useState(false);
-  const [error, setError] = useState("");
+export default function CouponField() {
+  const { applyDiscount, appliedCoupon } = useContext(CartContext);
+  const [couponCode, setCouponCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
 
   const handleApply = async () => {
-    setError("");
+    if (!couponCode.trim()) return;
+
+    setStatus("loading");
+    setMessage("");
 
     try {
-      const coupons = await getCoupons();
-      console.log("Coupons fetched:", coupons);
-
-      // Buscar cupón activo
-      const found = coupons.find(
-        (c: any) =>
-          c.Code?.toUpperCase() === coupon.trim().toUpperCase() && c.Active
+      const res = await fetch(
+        `/.netlify/functions/coupons-check?code=${encodeURIComponent(couponCode.trim())}`
       );
 
-      if (!found) {
-        setError("❌ Invalid or expired coupon.");
-        onDiscountApply(0);
-        return;
-      }
+      if (!res.ok) throw new Error("Invalid response from server");
 
-      const discountValue = Number(found.Discount || 0);
-      setDiscount(discountValue);
-      setApplied(true);
-      onDiscountApply(discountValue);
+      const data = await res.json();
+
+      if (data.valid && data.discount > 0) {
+        applyDiscount(couponCode.trim().toUpperCase(), data.discount);
+        setStatus("success");
+        setMessage(`✅ Coupon applied! You saved ${(data.discount * 100).toFixed(0)}%.`);
+      } else {
+        setStatus("error");
+        setMessage("❌ Invalid or expired coupon.");
+      }
     } catch (err) {
-      console.error("Error verifying coupon:", err);
-      setError("⚠️ Unable to verify coupon right now.");
-      onDiscountApply(0);
+      console.error("Error checking coupon:", err);
+      setStatus("error");
+      setMessage("⚠️ Unable to verify coupon right now.");
     }
   };
 
+  const disabled = status === "loading" || appliedCoupon !== undefined;
+
   return (
-    <div className="mt-6">
+    <div className="mt-4 border-t pt-4">
+      <h3 className="font-semibold text-gray-800 mb-2">Have a coupon?</h3>
+
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder="Enter coupon"
-          className="flex-1 border border-border rounded-md px-3 py-2 bg-background text-foreground"
-          value={coupon}
-          onChange={(e) => setCoupon(e.target.value)}
-          disabled={applied}
+          value={couponCode}
+          disabled={disabled}
+          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+          placeholder="Enter your code"
+          className="border rounded-md p-2 w-full text-gray-700 focus:ring-2 focus:ring-amber-400"
         />
+
         <button
-          type="button"
           onClick={handleApply}
-          disabled={applied || !coupon.trim()}
-          className={`px-4 py-2 rounded-md font-semibold transition ${
-            applied
-              ? "bg-green-600 text-white cursor-not-allowed"
-              : "bg-primary text-primary-foreground hover:opacity-90"
+          disabled={disabled}
+          className={`px-4 py-2 rounded-md font-semibold ${
+            disabled
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-amber-600 hover:bg-amber-700 text-white"
           }`}
         >
-          {applied ? "✅ Applied" : "Apply"}
+          {status === "loading" ? "..." : appliedCoupon ? "Applied" : "Apply"}
         </button>
       </div>
 
-      {/* Mostrar mensajes */}
-      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-      {applied && discount > 0 && (
-        <p className="text-green-600 text-sm mt-2">
-          Coupon applied: <strong>{(discount * 100).toFixed(0)}% OFF</strong>
-        </p>
+      {message && (
+        <div className="mt-2 flex items-center gap-2 text-sm">
+          {status === "success" && <CheckCircle className="text-green-600 w-4 h-4" />}
+          {status === "error" && <XCircle className="text-red-500 w-4 h-4" />}
+          <span
+            className={`${
+              status === "success"
+                ? "text-green-600"
+                : status === "error"
+                ? "text-red-600"
+                : "text-gray-600"
+            }`}
+          >
+            {message}
+          </span>
+        </div>
       )}
     </div>
   );
