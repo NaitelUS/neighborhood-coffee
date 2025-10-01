@@ -7,7 +7,7 @@ export default function OrderSummary() {
 
   const subtotal = cartItems.reduce((sum, item) => {
     const addonsTotal =
-      item.addons?.reduce((aSum, a) => aSum + a.price, 0) || 0;
+      item.addons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     return sum + item.price + addonsTotal;
   }, 0);
 
@@ -16,7 +16,7 @@ export default function OrderSummary() {
 
   return (
     <div className="bg-white shadow-md rounded-xl p-6 space-y-4">
-      <h2 className="text-2xl font-semibold text-gray-800 text-center mb-3">
+      <h2 className="text-2xl font-semibold text-gray-800 text-center">
         Your Order
       </h2>
 
@@ -26,7 +26,7 @@ export default function OrderSummary() {
         <ul className="divide-y divide-gray-200">
           {cartItems.map((item, index) => (
             <li key={index} className="py-3">
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between">
                 <div>
                   <p className="font-medium text-gray-800">{item.name}</p>
                   {item.addons && item.addons.length > 0 && (
@@ -39,8 +39,8 @@ export default function OrderSummary() {
                     </ul>
                   )}
                 </div>
-                <span className="text-gray-700 font-semibold whitespace-nowrap ml-3">
-                  ${(item.price || 0).toFixed(2)}
+                <span className="text-gray-700 font-semibold">
+                  ${(item.price + (item.addons?.reduce((aSum, a) => aSum + a.price, 0) || 0)).toFixed(2)}
                 </span>
               </div>
             </li>
@@ -48,23 +48,21 @@ export default function OrderSummary() {
         </ul>
       )}
 
-      <div className="border-t pt-3 text-gray-700 space-y-2">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
-        </div>
+      <div className="flex justify-between text-gray-700">
+        <span>Subtotal</span>
+        <span>${subtotal.toFixed(2)}</span>
+      </div>
 
-        {discount > 0 && (
-          <div className="flex justify-between text-[#1D9099] font-medium">
-            <span>Discount ({appliedCoupon})</span>
-            <span>- ${discountAmount.toFixed(2)}</span>
-          </div>
-        )}
-
-        <div className="flex justify-between border-t pt-3 text-lg font-bold text-gray-900">
-          <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+      {discount > 0 && (
+        <div className="flex justify-between text-green-700 font-medium">
+          <span>Discount ({appliedCoupon})</span>
+          <span>- ${discountAmount.toFixed(2)}</span>
         </div>
+      )}
+
+      <div className="flex justify-between border-t pt-3 text-lg font-bold text-gray-900">
+        <span>Total</span>
+        <span>${total.toFixed(2)}</span>
       </div>
 
       <CouponField />
