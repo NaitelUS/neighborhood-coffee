@@ -11,6 +11,7 @@ export default function OrderPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  // ✅ Enviar orden completa a Airtable
   const handleOrderSubmit = async (info: any, schedule: string) => {
     if (cartItems.length === 0) {
       alert("Your cart is empty.");
@@ -36,12 +37,11 @@ export default function OrderPage() {
           option: item.option,
           price: item.price,
           addons:
-            item.addons
-              ?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`)
-              .join(", ") || "",
+            item.addons?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`).join(", ") || "",
         })),
       };
 
+      // 🧠 Guardar en Airtable
       const res = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,12 +53,11 @@ export default function OrderPage() {
       const result = await res.json();
       const orderId = result.id || "N/A";
 
+      // 🧾 Redirigir con datos
       navigate(
-        `/thank-you?order_id=${orderId}&total=${total.toFixed(
-          2
-        )}&name=${encodeURIComponent(info.name)}&discount=${discount}&coupon=${
-          appliedCoupon || ""
-        }`
+        `/thank-you?order_id=${orderId}&total=${total.toFixed(2)}&name=${encodeURIComponent(
+          info.name
+        )}&discount=${discount}&coupon=${appliedCoupon || ""}`
       );
 
       clearCart();
@@ -71,15 +70,28 @@ export default function OrderPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-6 mt-6 px-4 pb-10">
+    <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mt-6 px-4">
+      {/* 🔙 Botón para volver al menú */}
+      <div className="md:col-span-2 mb-2">
+        <button
+          onClick={() => navigate("/")}
+          className="text-[#1D9099] hover:text-[#00454E] font-semibold flex items-center gap-2"
+        >
+          ← Add More Items
+        </button>
+      </div>
+
+      {/* 🧾 Resumen de la orden */}
       <div>
         <OrderSummary />
       </div>
 
+      {/* 👤 Información del cliente + Fecha */}
       <div>
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
 
+      {/* Loader (pantalla completa mientras se envía orden) */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg text-center">
