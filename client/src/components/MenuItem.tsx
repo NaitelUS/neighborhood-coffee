@@ -1,146 +1,74 @@
 import React, { useState, useContext } from "react";
+import { Button } from "@/components/ui/button";
+import AddOnSelector from "./AddOnSelector";
 import { CartContext } from "@/context/CartContext";
-import AddOnSelector from "@/components/AddOnSelector";
 
-interface MenuItemProps {
-  product: {
-    id: string;
-    name: string;
-    description?: string;
-    price: number;
-    category?: string;
-    image_url?: string | null;
-  };
-}
-
-export default function MenuItem({ product }: MenuItemProps) {
+export default function MenuItem({ product }) {
   const { addToCart } = useContext(CartContext);
-  const [temperature, setTemperature] = useState<"Hot" | "Iced" | null>(null);
-  const [flavor, setFlavor] = useState<"Apple" | "Pineapple" | null>(null);
-  const [showCustomize, setShowCustomize] = useState(false);
-  const [addons, setAddons] = useState<any[]>([]);
-
-  // ✅ Precio base
-  const basePrice = product.price || 0;
-  const addonsTotal = addons.reduce((acc, a) => acc + (a.price || 0), 0);
-  const finalPrice = basePrice + addonsTotal;
-
-  // ✅ Fallback para imagen
-  const imageSrc =
-    product.image_url || "/attached_assets/tnclogo.png";
+  const [selectedOption, setSelectedOption] = useState("Hot");
+  const [showAddons, setShowAddons] = useState(false);
 
   const handleAddToCart = () => {
-    addToCart({
-      ...product,
-      price: finalPrice,
-      temperature,
-      flavor,
-      addons,
-      quantity: 1,
-    });
+    if (!selectedOption) return;
+    addToCart({ ...product, option: selectedOption });
   };
 
   return (
-    <div className="border border-border rounded-lg p-4 bg-white shadow-sm">
-      {/* 🖼 Imagen del producto */}
+    <div className="border rounded-2xl shadow-sm p-4 bg-white">
       <img
-        src={imageSrc}
-        alt={product.name || "Coffee Item"}
-        className="w-full h-40 object-cover rounded-md border border-border"
-        onError={(e) => {
-          e.currentTarget.src = "/attached_assets/tnclogo.png";
-        }}
+        src={product.image_url || "/attached_assets/tnclogo.png"}
+        alt={product.name}
+        className="w-full h-48 object-cover rounded-xl mb-3"
       />
 
-      {/* 🧾 Información */}
-      <h3 className="text-lg font-semibold mt-3">{product.name}</h3>
-      {product.description && (
-        <p className="text-sm text-muted-foreground mt-1">
-          {product.description}
-        </p>
-      )}
+      <h2 className="font-semibold text-lg">{product.name}</h2>
+      <p className="text-gray-600 mb-2">{product.description}</p>
 
-      {/* ☕ Toggle Hot/Iced */}
-      {product.category?.toLowerCase() === "drink" && (
-        <div className="flex gap-3 mt-3">
-          <button
-            className={`px-3 py-1 rounded-md text-sm border ${
-              temperature === "Hot"
-                ? "bg-amber-600 text-white"
-                : "hover:bg-amber-50"
-            }`}
-            onClick={() => setTemperature("Hot")}
+      <div className="flex gap-3 mb-3">
+        {product.is_hot && (
+          <Button
+            variant={selectedOption === "Hot" ? "default" : "outline"}
+            onClick={() => setSelectedOption("Hot")}
           >
             Hot
-          </button>
-          <button
-            className={`px-3 py-1 rounded-md text-sm border ${
-              temperature === "Iced"
-                ? "bg-blue-600 text-white"
-                : "hover:bg-blue-50"
-            }`}
-            onClick={() => setTemperature("Iced")}
+          </Button>
+        )}
+        {product.is_iced && (
+          <Button
+            variant={selectedOption === "Iced" ? "default" : "outline"}
+            onClick={() => setSelectedOption("Iced")}
           >
             Iced
-          </button>
+          </Button>
+        )}
+      </div>
+
+      <div className="mb-3">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            onChange={() => setShowAddons(!showAddons)}
+            checked={showAddons}
+          />
+          Customize your drink
+        </label>
+      </div>
+
+      {showAddons && (
+        <div className="mt-3 border-t pt-3">
+          <AddOnSelector productId={product.id} />
         </div>
       )}
 
-      {/* 🥧 Toggle Apple/Pineapple */}
-      {product.category?.toLowerCase() === "empanada" && (
-        <div className="flex gap-3 mt-3">
-          <button
-            className={`px-3 py-1 rounded-md text-sm border ${
-              flavor === "Apple"
-                ? "bg-amber-600 text-white"
-                : "hover:bg-amber-50"
-            }`}
-            onClick={() => setFlavor("Apple")}
-          >
-            Apple
-          </button>
-          <button
-            className={`px-3 py-1 rounded-md text-sm border ${
-              flavor === "Pineapple"
-                ? "bg-yellow-500 text-white"
-                : "hover:bg-yellow-50"
-            }`}
-            onClick={() => setFlavor("Pineapple")}
-          >
-            Pineapple
-          </button>
-        </div>
-      )}
-
-      {/* 🧩 Customize your drink */}
-      {product.category?.toLowerCase() === "drink" && (
-        <div className="mt-4">
-          <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showCustomize}
-              onChange={() => setShowCustomize(!showCustomize)}
-            />
-            Customize your drink
-          </label>
-
-          {showCustomize && (
-            <div className="mt-3 border-t border-border pt-3">
-              <AddOnSelector onChange={setAddons} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 💰 Precio y botón */}
       <div className="flex justify-between items-center mt-4">
-        <span className="font-semibold">${finalPrice.toFixed(2)}</span>
-        <button
+        <span className="font-bold">${product.price?.toFixed(2)}</span>
+        <Button
           onClick={handleAddToCart}
-          className="bg-amber-600 hover:bg-amber-700 text-white text-sm px-4 py-2 rounded-md transition"
+          disabled={!selectedOption}
+          className="bg-orange-600 hover:bg-orange-700"
         >
           Add to Order
-        </button>
+        </Button>
       </div>
     </div>
   );
