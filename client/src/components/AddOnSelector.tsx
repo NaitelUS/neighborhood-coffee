@@ -1,64 +1,89 @@
 import React, { useEffect, useState } from "react";
-import { fetchAddOns, AddOn } from "@/api/fetchAddOns";
 
-interface AddOnSelectorProps {
-  onSelect: (selected: AddOn[]) => void;
+interface AddOn {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
 }
 
-export default function AddOnSelector({ onSelect }: AddOnSelectorProps) {
-  const [addons, setAddons] = useState<AddOn[]>([]);
-  const [selectedAddons, setSelectedAddons] = useState<AddOn[]>([]);
+interface AddOnSelectorProps {
+  onAddOnSelect: (selectedAddOns: AddOn[]) => void;
+}
 
+export default function AddOnSelector({ onAddOnSelect }: AddOnSelectorProps) {
+  const [addons, setAddons] = useState<AddOn[]>([]);
+  const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
+  const [showAddOns, setShowAddOns] = useState(false);
+
+  // ✅ Cargar add-ons desde Airtable (Netlify Function)
   useEffect(() => {
-    fetchAddOns().then(setAddons);
+    fetch("/.netlify/functions/addons")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAddons(data);
+      })
+      .catch((err) => console.error("Error fetching addons:", err));
   }, []);
 
-  const handleToggle = (addon: AddOn) => {
-    let updated: AddOn[];
-    if (selectedAddons.some((a) => a.id === addon.id)) {
-      updated = selectedAddons.filter((a) => a.id !== addon.id);
-    } else {
-      updated = [...selectedAddons, addon];
-    }
-    setSelectedAddons(updated);
-    onSelect(updated);
+  // ✅ Notificar al padre cada vez que cambia la selección
+  useEffect(() => {
+    onAddOnSelect(selectedAddOns);
+  }, [selectedAddOns]);
+
+  const toggleAddOn = (addon: AddOn) => {
+    setSelectedAddOns((prev) =>
+      prev.some((a) => a.id === addon.id)
+        ? prev.filter((a) => a.id !== addon.id)
+        : [...prev, addon]
+    );
   };
 
   return (
-    <div className="border rounded-md p-4 bg-gray-50 mt-3">
-      <p className="font-semibold mb-3 text-gray-800">Customize your drink 🍯</p>
+    <div className="mt-3 border-t border-gray-300 pt-3">
+      {/* Checkbox principal */}
+      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+        <input
+          type="checkbox"
+          className="accent-green-600"
+          checked={showAddOns}
+          onChange={(e) => setShowAddOns(e.target.checked)}
+        />
+        Customize your drink
+      </label>
 
-      {addons.length === 0 ? (
-        <p className="text-gray-500 text-sm">Loading add-ons...</p>
-      ) : (
-        <ul className="space-y-3">
-          {addons.map((addon) => (
-            <li
-              key={addon.id}
-              className="flex flex-col border-b pb-2 last:border-none"
-            >
-              <div className="flex justify-between items-center">
-                <label className="flex items-center gap-2">
+      {/* Lista desplegable de Add-ons */}
+      {showAddOns && (
+        <div className="mt-2 space-y-2 animate-fadeIn">
+          {addons.length > 0 ? (
+            addons.map((addon) => (
+              <div
+                key={addon.id}
+                className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 shadow-sm"
+              >
+                <div>
+                  <p className="text-sm font-semibold">{addon.name}</p>
+                  {addon.description && (
+                    <p className="text-xs text-gray-500">{addon.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    ${addon.price.toFixed(2)}
+                  </span>
                   <input
                     type="checkbox"
-                    checked={selectedAddons.some((a) => a.id === addon.id)}
-                    onChange={() => handleToggle(addon)}
+                    className="accent-green-600"
+                    checked={selectedAddOns.some((a) => a.id === addon.id)}
+                    onChange={() => toggleAddOn(addon)}
                   />
-                  <span className="font-medium text-gray-700">{addon.name}</span>
-                </label>
-                <span className="text-sm text-green-700 font-semibold">
-                  +${addon.price.toFixed(2)}
-                </span>
+                </div>
               </div>
-
-              {addon.description && (
-                <p className="text-xs text-gray-500 pl-6 mt-1">
-                  {addon.description}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
+            ))
+          ) : (
+            <p className="text-xs text-gray-400">No add-ons available</p>
+          )}
+        </div>
       )}
     </div>
   );
