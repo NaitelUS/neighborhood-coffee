@@ -1,31 +1,28 @@
-// netlify/functions/addons.ts
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({
-  apiKey: process.env.AIRTABLE_API_KEY,
-}).base(process.env.AIRTABLE_BASE_ID!);
-
-export const handler = async () => {
+const handler: Handler = async () => {
   try {
-    const tableName = process.env.AIRTABLE_TABLE_ADDONS!;
-    const records = await base(tableName)
-      .select({ filterByFormula: "{active}=TRUE()" })
-      .all();
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_ADDONS || "Addons");
+
+    const records = await table.select().all();
 
     const addons = records.map((r) => ({
       id: r.id,
-      ...r.fields,
+      name: r.fields.name,
+      price: r.fields.price,
+      active: r.fields.active,
     }));
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(addons),
-    };
-  } catch (err: any) {
-    console.error("Error fetching addons:", err);
+    return { statusCode: 200, body: JSON.stringify(addons) };
+  } catch (err) {
+    console.error("Error loading addons:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),
     };
   }
 };
+
+export { handler };
