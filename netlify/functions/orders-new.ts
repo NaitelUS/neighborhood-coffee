@@ -5,17 +5,26 @@ const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method Not Allowed" }),
-    };
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   try {
     const data = JSON.parse(event.body || "{}");
-    const { customer_name, customer_phone, method, address, schedule, total, status, items, subtotal, discount_value, coupon } = data;
+    const {
+      customer_name,
+      customer_phone,
+      method,
+      address,
+      schedule,
+      subtotal,
+      discount_value,
+      coupon,
+      total,
+      status,
+      items,
+    } = data;
 
-    if (!customer_name || !customer_phone || !items || items.length === 0) {
+    if (!customer_name || !customer_phone || !items?.length) {
       return {
         statusCode: 400,
         body: JSON.stringify({ message: "Missing required fields" }),
@@ -58,11 +67,11 @@ export const handler: Handler = async (event) => {
         id: created[0].id,
       }),
     };
-  } catch (error) {
-    console.error("❌ Error creating order:", error);
+  } catch (err) {
+    console.error("❌ Error creating order:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Server Error", error: String(error) }),
+      body: JSON.stringify({ message: "Server error", error: String(err) }),
     };
   }
 };
