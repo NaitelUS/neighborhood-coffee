@@ -1,109 +1,152 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 interface CustomerInfo {
   name: string;
   phone: string;
-  method: "pickup" | "delivery";
+  method: "Pickup" | "Delivery";
   address?: string;
 }
 
-interface CustomerInfoFormProps {
-  onInfoChange: (info: CustomerInfo) => void;
+interface Props {
+  onSubmit: (info: CustomerInfo, schedule: string) => void;
 }
 
-export default function CustomerInfoForm({ onInfoChange }: CustomerInfoFormProps) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [method, setMethod] = useState<"pickup" | "delivery">("pickup");
-  const [address, setAddress] = useState("");
+export default function CustomerInfoForm({ onSubmit }: Props) {
+  const [formData, setFormData] = useState<CustomerInfo>({
+    name: "",
+    phone: "",
+    method: "Pickup", // ✅ default
+    address: "",
+  });
 
-  // 🔄 Emitir cambios al componente padre
-  useEffect(() => {
-    onInfoChange({ name, phone, method, address: method === "delivery" ? address : undefined });
-  }, [name, phone, method, address]);
+  const [date, setDate] = useState<string>("");
+  const [time, setTime] = useState<string>("");
+
+  // ✅ Lunes a Sábado
+  const isDateAllowed = (d: string) => {
+    const day = new Date(d).getDay();
+    return day >= 1 && day <= 6; // 0 = Domingo, 6 = Sábado
+  };
+
+  // ✅ 6:00 AM a 11:00 AM
+  const isTimeAllowed = (t: string) => {
+    const [hours] = t.split(":").map(Number);
+    return hours >= 6 && hours < 11;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!date || !time) {
+      alert("Please select a valid date and time.");
+      return;
+    }
+
+    if (!isDateAllowed(date)) {
+      alert("Orders can only be scheduled from Monday to Saturday.");
+      return;
+    }
+
+    if (!isTimeAllowed(time)) {
+      alert("Orders must be between 6:00 AM and 11:00 AM.");
+      return;
+    }
+
+    const combined = new Date(`${date}T${time}:00`).toISOString();
+
+    onSubmit(formData, combined);
+  };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-6 mt-6">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-        Customer Information
-      </h2>
+    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-xl p-6 space-y-4">
+      <h2 className="text-xl font-semibold text-gray-800 mb-2">Customer Information</h2>
 
-      {/* 👤 Nombre */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Name <span className="text-red-500">*</span>
+      <input
+        type="text"
+        placeholder="Full Name"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        required
+        className="w-full border rounded-lg p-2"
+      />
+
+      <input
+        type="tel"
+        placeholder="Phone Number"
+        value={formData.phone}
+        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+        required
+        className="w-full border rounded-lg p-2"
+      />
+
+      {/* ✅ Pickup / Delivery */}
+      <div className="flex gap-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="method"
+            value="Pickup"
+            checked={formData.method === "Pickup"}
+            onChange={(e) => setFormData({ ...formData, method: e.target.value as "Pickup" })}
+          />
+          Pickup
         </label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="method"
+            value="Delivery"
+            checked={formData.method === "Delivery"}
+            onChange={(e) => setFormData({ ...formData, method: e.target.value as "Delivery" })}
+          />
+          Delivery
+        </label>
+      </div>
+
+      {/* ✅ Address visible solo si Delivery */}
+      {formData.method === "Delivery" && (
         <input
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter your full name"
+          placeholder="Delivery Address"
+          value={formData.address}
+          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
           required
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-amber-500 focus:border-amber-500"
+          className="w-full border rounded-lg p-2"
         />
-      </div>
-
-      {/* 📱 Teléfono */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Phone <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="(555) 123-4567"
-          required
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-amber-500 focus:border-amber-500"
-        />
-      </div>
-
-      {/* 🚚 Método: Pickup / Delivery */}
-      <div className="mb-4">
-        <p className="block text-sm font-medium text-gray-700 mb-2">
-          How would you like to receive your order?
-        </p>
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              value="pickup"
-              checked={method === "pickup"}
-              onChange={() => setMethod("pickup")}
-              className="accent-amber-600"
-            />
-            <span>Pickup (default)</span>
-          </label>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              value="delivery"
-              checked={method === "delivery"}
-              onChange={() => setMethod("delivery")}
-              className="accent-amber-600"
-            />
-            <span>Delivery</span>
-          </label>
-        </div>
-      </div>
-
-      {/* 🏠 Dirección (solo si elige Delivery) */}
-      {method === "delivery" && (
-        <div className="mb-4 animate-fadeIn">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Delivery Address <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Enter your delivery address"
-            rows={2}
-            required
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-amber-500 focus:border-amber-500"
-          />
-        </div>
       )}
-    </div>
+
+      {/* 📅 Fecha */}
+      <div>
+        <label className="block text-gray-700 mb-1">Select Date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+          className="w-full border rounded-lg p-2"
+        />
+      </div>
+
+      {/* ⏰ Hora */}
+      <div>
+        <label className="block text-gray-700 mb-1">Select Time</label>
+        <input
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          required
+          className="w-full border rounded-lg p-2"
+        />
+      </div>
+
+      {/* 🚀 Submit */}
+      <button
+        type="submit"
+        className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-lg font-semibold"
+      >
+        Continue
+      </button>
+    </form>
   );
 }
