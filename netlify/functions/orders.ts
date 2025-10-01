@@ -1,46 +1,32 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
-
-const TABLE = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
-
-export const handler: Handler = async (event) => {
+const handler: Handler = async () => {
   try {
-    const { id } = event.queryStringParameters || {};
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_ORDERS || "Orders");
 
-    if (id) {
-      // 🧩 Obtener orden específica por ID
-      const record = await base(TABLE).find(id);
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          id: record.id,
-          ...record.fields,
-        }),
-        headers: { "Content-Type": "application/json" },
-      };
-    } else {
-      // 📋 Listar todas las órdenes
-      const records = await base(TABLE)
-        .select({ sort: [{ field: "Created", direction: "desc" }] })
-        .all();
+    const records = await table.select().all();
 
-      const data = records.map((r) => ({
-        id: r.id,
-        ...r.fields,
-      }));
+    const orders = records.map((r) => ({
+      id: r.id,
+      customer: r.fields.customer,
+      total: r.fields.total,
+      status: r.fields.status,
+      createdAt: r.fields.createdAt,
+    }));
 
-      return {
-        statusCode: 200,
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      };
-    }
-  } catch (error: any) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify(orders),
+    };
+  } catch (error) {
     console.error("Error fetching orders:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to fetch orders", details: error.message }),
+    };
   }
 };
+
+export { handler };
