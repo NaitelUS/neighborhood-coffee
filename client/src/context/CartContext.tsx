@@ -1,50 +1,100 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useState, useMemo } from "react";
+
+// 🧱 Tipos
+interface AddOn {
+  name: string;
+  price: number;
+}
 
 interface CartItem {
   id: string;
   name: string;
   price: number;
-  image_url?: string;
-  description?: string;
+  option?: string;
+  addons?: AddOn[];
 }
 
 interface CartContextType {
-  cart: CartItem[];
+  cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
+  removeFromCart: (id: string) => void;
   clearCart: () => void;
-  removeItem: (id: string) => void;
+  discount: number;
+  appliedCoupon?: string;
+  applyDiscount: (couponCode: string, discountValue: number) => void;
+  subtotal: number;
+  total: number;
 }
 
-// ✅ Exportamos el contexto directamente
-export const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartContext = createContext<CartContextType>({
+  cartItems: [],
+  addToCart: () => {},
+  removeFromCart: () => {},
+  clearCart: () => {},
+  discount: 0,
+  applyDiscount: () => {},
+  subtotal: 0,
+  total: 0,
+});
 
-export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+// 🧠 Proveedor global
+export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [discount, setDiscount] = useState<number>(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | undefined>();
 
+  // 🧩 Agregar producto al carrito
   const addToCart = (item: CartItem) => {
-    setCart((prev) => [...prev, item]);
+    setCartItems((prev) => [...prev, item]);
   };
 
-  const removeItem = (id: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+  // 🗑️ Quitar producto
+  const removeFromCart = (id: string) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
+  // 🔄 Vaciar carrito
   const clearCart = () => {
-    setCart([]);
+    setCartItems([]);
+    setDiscount(0);
+    setAppliedCoupon(undefined);
   };
+
+  // 🏷️ Aplicar descuento
+  const applyDiscount = (couponCode: string, discountValue: number) => {
+    setDiscount(discountValue);
+    setAppliedCoupon(couponCode);
+  };
+
+  // 💰 Calcular subtotal dinámico (con add-ons)
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => {
+      const addonsTotal = item.addons?.reduce((aSum, a) => aSum + a.price, 0) || 0;
+      return sum + item.price + addonsTotal;
+    }, 0);
+  }, [cartItems]);
+
+  // 💸 Calcular total con descuento
+  const total = useMemo(() => {
+    const discountAmount = subtotal * discount;
+    return subtotal - discountAmount;
+  }, [subtotal, discount]);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, clearCart, removeItem }}>
+    <CartContext.Provider
+      value={{
+        cartItems,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        discount,
+        appliedCoupon,
+        applyDiscount,
+        subtotal,
+        total,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
-};
-
-// ✅ Hook personalizado para acceder al contexto
-export const useCart = (): CartContextType => {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
-  return context;
 };
