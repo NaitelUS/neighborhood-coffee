@@ -1,89 +1,92 @@
 import React, { useState, useContext } from "react";
 import { CartContext } from "@/context/CartContext";
-import { CheckCircle, XCircle } from "lucide-react";
 
 export default function CouponField() {
   const { applyDiscount, appliedCoupon } = useContext(CartContext);
-  const [couponCode, setCouponCode] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
+  const [coupon, setCoupon] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleApply = async () => {
-    if (!couponCode.trim()) return;
+  const handleApplyCoupon = async () => {
+    if (!coupon.trim()) return;
 
-    setStatus("loading");
-    setMessage("");
+    setLoading(true);
+    setError(null);
 
     try {
-      const res = await fetch(
-        `/.netlify/functions/coupons-check?code=${encodeURIComponent(couponCode.trim())}`
-      );
-
-      if (!res.ok) throw new Error("Invalid response from server");
+      const res = await fetch("/.netlify/functions/coupons");
+      if (!res.ok) throw new Error("Failed to fetch coupons");
 
       const data = await res.json();
+      const found = data.find(
+        (c: any) =>
+          c.code.toUpperCase() === coupon.trim().toUpperCase() && c.active
+      );
 
-      if (data.valid && data.discount > 0) {
-        applyDiscount(couponCode.trim().toUpperCase(), data.discount);
-        setStatus("success");
-        setMessage(`✅ Coupon applied! You saved ${(data.discount * 100).toFixed(0)}%.`);
-      } else {
-        setStatus("error");
-        setMessage("❌ Invalid or expired coupon.");
+      if (!found) {
+        setError("Coupon not found or inactive.");
+        return;
       }
+
+      const now = new Date();
+      const validFrom = found.valid_from ? new Date(found.valid_from) : null;
+      const validUntil = found.valid_until ? new Date(found.valid_until) : null;
+
+      if (validFrom && now < validFrom) {
+        setError("Coupon not valid yet.");
+        return;
+      }
+      if (validUntil && now > validUntil) {
+        setError("Coupon has expired.");
+        return;
+      }
+
+      // ✅ Si llega aquí, aplica el descuento
+      const discountValue =
+        found.percent_off > 1 ? found.percent_off / 100 : found.percent_off;
+
+      applyDiscount(found.code, discountValue);
+      setError(null);
+      alert(`Coupon ${found.code} applied!`);
     } catch (err) {
-      console.error("Error checking coupon:", err);
-      setStatus("error");
-      setMessage("⚠️ Unable to verify coupon right now.");
+      console.error("Error verifying coupon:", err);
+      setError("Unable to verify coupon right now.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const disabled = status === "loading" || appliedCoupon !== undefined;
-
   return (
-    <div className="mt-4 border-t pt-4">
-      <h3 className="font-semibold text-gray-800 mb-2">Have a coupon?</h3>
+    <div className="mt-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Have a coupon?
+      </label>
 
       <div className="flex gap-2">
         <input
           type="text"
-          value={couponCode}
-          disabled={disabled}
-          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-          placeholder="Enter your code"
-          className="border rounded-md p-2 w-full text-gray-700 focus:ring-2 focus:ring-amber-400"
+          value={coupon}
+          onChange={(e) => setCoupon(e.target.value)}
+          disabled={!!appliedCoupon}
+          placeholder="Enter your coupon code"
+          className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-[#1D9099] focus:outline-none"
         />
 
         <button
-          onClick={handleApply}
-          disabled={disabled}
-          className={`px-4 py-2 rounded-md font-semibold ${
-            disabled
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-amber-600 hover:bg-amber-700 text-white"
+          type="button"
+          onClick={handleApplyCoupon}
+          disabled={loading || !!appliedCoupon}
+          className={`px-4 py-2 rounded-md text-white font-medium ${
+            appliedCoupon
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-[#1D9099] hover:bg-[#00454E]"
           }`}
         >
-          {status === "loading" ? "..." : appliedCoupon ? "Applied" : "Apply"}
+          {appliedCoupon ? "Applied" : loading ? "Checking..." : "Apply"}
         </button>
       </div>
 
-      {message && (
-        <div className="mt-2 flex items-center gap-2 text-sm">
-          {status === "success" && <CheckCircle className="text-green-600 w-4 h-4" />}
-          {status === "error" && <XCircle className="text-red-500 w-4 h-4" />}
-          <span
-            className={`${
-              status === "success"
-                ? "text-green-600"
-                : status === "error"
-                ? "text-red-600"
-                : "text-gray-600"
-            }`}
-          >
-            {message}
-          </span>
-        </div>
-      )}
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
     </div>
   );
 }
