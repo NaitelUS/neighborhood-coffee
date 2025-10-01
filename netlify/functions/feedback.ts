@@ -1,47 +1,32 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
-
-const TABLE = process.env.AIRTABLE_TABLE_FEEDBACK || "Feedback";
-
-export const handler: Handler = async (event) => {
+const handler: Handler = async (event) => {
   try {
-    const { orderId } = event.queryStringParameters || {};
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_FEEDBACK || "Feedback");
 
-    // 📋 Configuración base
-    const selectOptions: any = {
-      sort: [{ field: "Created", direction: "desc" }],
-    };
+    const records = await table.select().all();
 
-    // 🎯 Si se pasa orderId por query string, filtra por esa orden
-    if (orderId) {
-      selectOptions.filterByFormula = `FIND('${orderId}', ARRAYJOIN({Order}))`;
-    }
-
-    // 📡 Consulta en Airtable
-    const records = await base(TABLE).select(selectOptions).all();
-
-    const data = records.map((r) => ({
+    const feedback = records.map((r) => ({
       id: r.id,
-      ...r.fields,
+      rating: r.fields.rating || 0,
+      comment: r.fields.comment || "",
+      orderId: r.fields.orderId || "",
+      createdAt: r.fields.createdAt || null,
     }));
 
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify(data),
+      body: JSON.stringify(feedback),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching feedback:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: "Failed to fetch feedback", details: error.message }),
     };
   }
 };
+
+export { handler };
