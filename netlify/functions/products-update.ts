@@ -1,34 +1,37 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
-const TABLE = process.env.AIRTABLE_TABLE_PRODUCTS || "Products";
-
-export const handler: Handler = async (event) => {
+const handler: Handler = async (event) => {
   try {
-    if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: "Method Not Allowed" };
-    }
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_PRODUCTS || "Products");
 
-    const { id, fields } = JSON.parse(event.body || "{}");
+    const body = JSON.parse(event.body || "{}");
+    const { id, ...fields } = body;
 
-    if (!id || !fields) {
+    if (!id) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Missing id or fields" }),
+        body: JSON.stringify({ error: "Missing product id" }),
       };
     }
 
-    const updated = await base(TABLE).update([{ id, fields }]);
+    await table.update([{ id, fields }]);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, record: updated[0] }),
+      body: JSON.stringify({ message: "Product updated successfully" }),
     };
-  } catch (err: any) {
-    console.error(err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+  } catch (error) {
+    console.error("Error updating product:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: "Failed to update product",
+        details: error.message,
+      }),
+    };
   }
 };
+
+export { handler };
