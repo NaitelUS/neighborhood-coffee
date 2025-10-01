@@ -1,61 +1,53 @@
 import { Handler } from "@netlify/functions";
-import { base } from "../lib/airtableClient";
+import { getAirtableClient } from "../lib/airtableClient";
 
-// ✅ Cabeceras globales (JSON + CORS)
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-};
-
-const handler: Handler = async () => {
+const handler: Handler = async (event) => {
   try {
-    // ✅ 1. Verificamos la variable de entorno
-    const tableName = process.env.AIRTABLE_TABLE_CUSTOMERS;
-    if (!tableName) {
-      console.error("❌ Falta AIRTABLE_TABLE_CUSTOMERS en variables de entorno");
-      return {
-        statusCode: 500,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({
-          error: "Missing AIRTABLE_TABLE_CUSTOMERS env var",
-        }),
-      };
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_CUSTOMERS || "Customers");
+
+    // ✅ Si se pasa un email o teléfono, buscar ese cliente
+    const params = event.queryStringParameters || {};
+    const email = params.email?.toLowerCase();
+    const phone = params.phone;
+
+    let records;
+
+    if (email || phone) {
+      const filter = email
+        ? `LOWER({email}) = '${email}'`
+        : `{phone} = '${phone}'`;
+
+      records = await table.select({ filterByFormula: filter }).firstPage();
+    } else {
+      // Si no se pasa nada, trae todos (solo para test)
+      records = await table.select().all();
     }
 
-    // ✅ 2. Consultamos Airtable
-    const records = await base(tableName)
-      .select({ filterByFormula: "{active}=TRUE()" }) // Opcional: solo clientes activos
-      .all();
-
-    // ✅ 3. Mapeamos los registros a un formato limpio
+    // ✅ Mapeo seguro
     const customers = records.map((record) => ({
       id: record.id,
-      name: record.get("name") ?? null,
-      email: record.get("email") ?? null,
-      phone: record.get("phone") ?? null,
-      active: record.get("active") ?? null,
+      name: record.fields.name || "",
+      email: record.fields.email || "",
+      phone: record.fields.phone || "",
+      address: record.fields.address || "",
+      createdAt: record.fields.createdAt || null,
     }));
 
-    // ✅ 4. Respuesta correcta
     return {
       statusCode: 200,
-      headers: JSON_HEADERS,
       body: JSON.stringify(customers),
     };
   } catch (error) {
-    console.error("❌ Error fetching customers:", error);
-
-    // 🚨 5. Respuesta controlada en caso de error
+    console.error("Error loading customers:", error);
     return {
       statusCode: 500,
-      headers: JSON_HEADERS,
       body: JSON.stringify({
-        error: "Error fetching customers",
-        message: (error as Error).message,
+        error: "Failed to fetch customers",
+        details: error.message,
       }),
     };
   }
 };
 
-// ✅ 6. Export correcto (Netlify busca “handler”)
 export { handler };
