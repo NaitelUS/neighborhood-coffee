@@ -1,110 +1,100 @@
-import React, { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext } from "react";
 import { CartContext } from "@/context/CartContext";
-import OrderSummary from "@/components/OrderSummary";
-import CustomerInfoForm from "@/components/CustomerInfoForm";
+import CouponField from "@/components/CouponField";
 
-export default function OrderPage() {
-  const { cartItems, subtotal, discount, appliedCoupon, total, clearCart } =
-    useContext(CartContext);
+export default function OrderSummary() {
+  const {
+    cartItems,
+    discount,
+    appliedCoupon,
+    removeFromCart,
+    subtotal,
+    total,
+  } = useContext(CartContext);
 
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-
-  // ✅ Redirigir al menú principal
-  const handleBackToMenu = () => {
-    navigate("/"); // regresa al home sin limpiar el carrito
-  };
-
-  // ✅ Enviar orden completa a Airtable
-  const handleOrderSubmit = async (info: any, schedule: string) => {
-    if (cartItems.length === 0) {
-      alert("Your cart is empty.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const orderData = {
-        customer_name: info.name,
-        customer_phone: info.phone,
-        method: info.method,
-        address: info.method === "Delivery" ? info.address : "",
-        schedule,
-        subtotal,
-        discount_value: discount,
-        coupon: appliedCoupon || null,
-        total,
-        status: "Received",
-        items: cartItems.map((item) => ({
-          name: item.name,
-          option: item.option,
-          price: item.price,
-          addons:
-            item.addons
-              ?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`)
-              .join(", ") || "",
-        })),
-      };
-
-      const res = await fetch("/.netlify/functions/orders-new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!res.ok) throw new Error("Failed to save order");
-
-      const result = await res.json();
-      const orderId = result.id || "N/A";
-
-      navigate(
-        `/thank-you?order_id=${orderId}&total=${total.toFixed(
-          2
-        )}&name=${encodeURIComponent(info.name)}&discount=${discount}&coupon=${
-          appliedCoupon || ""
-        }`
-      );
-
-      clearCart();
-    } catch (err) {
-      console.error("❌ Error sending order:", err);
-      alert("There was an error submitting your order.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (cartItems.length === 0) {
+    return (
+      <div className="bg-white shadow-md rounded-xl p-6 text-center">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Your Order</h2>
+        <p className="text-gray-500">Your cart is empty.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 mt-6 px-4">
-      {/* 🧾 Resumen */}
-      <div>
-        <OrderSummary />
+    <div className="bg-white shadow-md rounded-xl p-6 w-full">
+      <h2 className="text-2xl font-semibold mb-4 text-gray-800">Your Order</h2>
+
+      {/* 🧾 Lista de productos */}
+      <ul className="divide-y divide-gray-200 mb-4">
+        {cartItems.map((item, index) => (
+          <li key={index} className="py-3">
+            <div className="flex justify-between items-start gap-3">
+              <div className="flex-1">
+                <p className="font-medium text-gray-800">{item.name}</p>
+
+                {/* ✅ Add-ons debajo del nombre */}
+                {item.addons && item.addons.length > 0 && (
+                  <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
+                    {item.addons.map((addon, idx) => (
+                      <li key={idx}>
+                        {addon.name} (+${addon.price.toFixed(2)})
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* 💵 Precio */}
+              <div className="flex flex-col items-end">
+                <span className="text-gray-700 font-semibold">
+                  ${item.price.toFixed(2)}
+                </span>
+
+                {/* ❌ Botón de eliminar */}
+                <button
+                  onClick={() => removeFromCart(item.id)}
+                  className="text-red-500 hover:text-red-700 text-xs mt-1"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* 💵 Subtotal */}
+      <div className="flex justify-between py-1 text-gray-700">
+        <span>Subtotal</span>
+        <span>${subtotal.toFixed(2)}</span>
       </div>
 
-      {/* 👤 Cliente + Fecha */}
-      <div>
-        <CustomerInfoForm onSubmit={handleOrderSubmit} />
-
-        {/* 🔙 Botón Back to Menu */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleBackToMenu}
-            className="px-6 py-2 rounded-md font-semibold bg-[#1D9099] text-white hover:bg-[#00454E] transition-all"
-          >
-            ← Back to Menu
-          </button>
+      {/* 💸 Descuento */}
+      {discount > 0 && (
+        <div className="flex justify-between py-1 text-[#1D9099] font-medium">
+          <span>Discount ({appliedCoupon})</span>
+          <span>- ${(subtotal * discount).toFixed(2)}</span>
         </div>
+      )}
+
+      {/* 🧾 Total */}
+      <div className="flex justify-between border-t mt-3 pt-3 text-lg font-bold text-gray-900">
+        <span>Total</span>
+        <span>${total.toFixed(2)}</span>
       </div>
 
-      {/* Loader */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#1D9099] mx-auto mb-3"></div>
-            <p className="text-gray-700">Submitting your order...</p>
-          </div>
+      {/* 🏷️ Campo de cupón (debajo del total) */}
+      <div className="mt-4">
+        <CouponField />
+      </div>
+
+      {/* 🚀 Botón opcional */}
+      {cartItems.length > 0 && (
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-500">
+            Review your items before checkout.
+          </p>
         </div>
       )}
     </div>
