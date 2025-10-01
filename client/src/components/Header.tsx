@@ -1,34 +1,34 @@
-import React from "react";
-import { useCart } from "@/context/CartContext";
+import React, { useContext } from "react";
+import { Link } from "react-router-dom";
+import { ShoppingCart } from "lucide-react";
+import { CartContext } from "@/context/CartContext";
 
 export default function Header() {
-  const { cart } = useCart();
-
-  const scrollToOrder = () => {
-    const orderSection = document.querySelector("section.bg-card");
-    orderSection?.scrollIntoView({ behavior: "smooth" });
-  };
+  const { cartItems } = useContext(CartContext);
+  const cartCount = cartItems.length;
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md sticky top-0 z-50">
-      <div className="flex items-center space-x-3 cursor-pointer">
-        <img src="/attached_assets/tnclogo.png" alt="Logo" className="h-12" />
-        <h1 className="text-xl font-bold text-gray-800">
+    <header className="bg-white shadow-md py-3 px-6 flex justify-between items-center border-b">
+      <div className="flex items-center gap-3">
+        <img
+          src="/attached_assets/tnclogo.png"
+          alt="Logo"
+          className="h-10 w-auto"
+        />
+        <h1 className="font-bold text-lg text-gray-800">
           The Neighborhood Coffee
         </h1>
       </div>
 
-      <button
-        onClick={scrollToOrder}
-        className="relative bg-primary text-primary-foreground px-4 py-2 rounded-md font-semibold hover:opacity-90 transition"
-      >
-        🛒 Cart
-        {cart.length > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-            {cart.length}
+      <Link to="/order" className="relative flex items-center gap-2 text-gray-700 hover:text-black">
+        <ShoppingCart size={22} />
+        <span>Cart</span>
+        {cartCount > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 rounded-full">
+            {cartCount}
           </span>
         )}
-      </button>
+      </Link>
     </header>
   );
 }
