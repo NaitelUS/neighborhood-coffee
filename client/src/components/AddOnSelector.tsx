@@ -3,88 +3,87 @@ import React, { useEffect, useState } from "react";
 interface AddOn {
   id: string;
   name: string;
-  description?: string;
   price: number;
+  description?: string;
 }
 
 interface AddOnSelectorProps {
-  onAddOnSelect: (selectedAddOns: AddOn[]) => void;
+  onSelect: (selectedAddOns: AddOn[]) => void;
 }
 
-export default function AddOnSelector({ onAddOnSelect }: AddOnSelectorProps) {
+export default function AddOnSelector({ onSelect }: AddOnSelectorProps) {
   const [addons, setAddons] = useState<AddOn[]>([]);
   const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
-  const [showAddOns, setShowAddOns] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Cargar add-ons desde Airtable (Netlify Function)
+  // 🔹 Cargar Add-ons desde Airtable
   useEffect(() => {
-    fetch("/.netlify/functions/addons")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setAddons(data);
-      })
-      .catch((err) => console.error("Error fetching addons:", err));
+    const fetchAddons = async () => {
+      try {
+        const res = await fetch("/.netlify/functions/addons");
+        const data = await res.json();
+        setAddons(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("❌ Error loading Add-ons:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAddons();
   }, []);
 
-  // ✅ Notificar al padre cada vez que cambia la selección
+  // 🔹 Avisar al padre cuando cambien los Add-ons seleccionados
   useEffect(() => {
-    onAddOnSelect(selectedAddOns);
+    onSelect(selectedAddOns);
   }, [selectedAddOns]);
 
+  // 🔹 Maneja selección
   const toggleAddOn = (addon: AddOn) => {
-    setSelectedAddOns((prev) =>
-      prev.some((a) => a.id === addon.id)
-        ? prev.filter((a) => a.id !== addon.id)
-        : [...prev, addon]
-    );
+    setSelectedAddOns((prev) => {
+      const alreadySelected = prev.find((a) => a.id === addon.id);
+      if (alreadySelected) {
+        return prev.filter((a) => a.id !== addon.id);
+      } else {
+        return [...prev, addon];
+      }
+    });
   };
 
-  return (
-    <div className="mt-3 border-t border-gray-300 pt-3">
-      {/* Checkbox principal */}
-      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-        <input
-          type="checkbox"
-          className="accent-green-600"
-          checked={showAddOns}
-          onChange={(e) => setShowAddOns(e.target.checked)}
-        />
-        Customize your drink
-      </label>
+  if (loading) return <p className="text-sm text-gray-500">Loading add-ons...</p>;
 
-      {/* Lista desplegable de Add-ons */}
-      {showAddOns && (
-        <div className="mt-2 space-y-2 animate-fadeIn">
-          {addons.length > 0 ? (
-            addons.map((addon) => (
-              <div
-                key={addon.id}
-                className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 shadow-sm"
-              >
-                <div>
-                  <p className="text-sm font-semibold">{addon.name}</p>
-                  {addon.description && (
-                    <p className="text-xs text-gray-500">{addon.description}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    ${addon.price.toFixed(2)}
+  if (addons.length === 0) {
+    return <p className="text-sm text-gray-500">No add-ons available.</p>;
+  }
+
+  return (
+    <div className="border rounded-md p-3 bg-gray-50">
+      <p className="font-semibold text-gray-700 mb-2">Select Add-ons:</p>
+
+      <ul className="space-y-2">
+        {addons.map((addon) => (
+          <li key={addon.id} className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-sm text-gray-800">
+              <input
+                type="checkbox"
+                checked={selectedAddOns.some((a) => a.id === addon.id)}
+                onChange={() => toggleAddOn(addon)}
+              />
+              <span>
+                {addon.name}
+                {addon.description && (
+                  <span className="text-gray-500 text-xs ml-1">
+                    ({addon.description})
                   </span>
-                  <input
-                    type="checkbox"
-                    className="accent-green-600"
-                    checked={selectedAddOns.some((a) => a.id === addon.id)}
-                    onChange={() => toggleAddOn(addon)}
-                  />
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-xs text-gray-400">No add-ons available</p>
-          )}
-        </div>
-      )}
+                )}
+              </span>
+            </label>
+            <span className="text-sm font-medium text-gray-700">
+              +${addon.price.toFixed(2)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
