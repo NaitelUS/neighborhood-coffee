@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-interface CustomerInfoFormProps {
-  onSubmit: (info: any, schedule: string) => void;
-}
-
-export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
+export default function CustomerInfoForm({ onSubmit }: { onSubmit: any }) {
   const [info, setInfo] = useState({
     name: "",
     phone: "",
@@ -12,14 +8,10 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
     address: "",
   });
 
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    const now = new Date();
-    setDate(now.toISOString().split("T")[0]);
-    setTime(now.toTimeString().slice(0, 5));
-  }, []);
+  const [date, setDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+  const [time, setTime] = useState<string>("08:00");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,29 +22,32 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-xl shadow-md space-y-4"
+      className="bg-white shadow-md rounded-xl p-6 space-y-4"
     >
-      <h3 className="text-xl font-semibold text-gray-800">Your Info</h3>
+      <h2 className="text-2xl font-semibold text-gray-800 text-center">
+        Your Details
+      </h2>
 
       <input
         type="text"
         placeholder="Full name"
+        required
+        className="w-full border border-gray-300 rounded-md px-3 py-2"
         value={info.name}
         onChange={(e) => setInfo({ ...info, name: e.target.value })}
-        className="w-full border rounded-md p-2"
-        required
       />
 
       <input
         type="tel"
         placeholder="Phone number"
+        required
+        className="w-full border border-gray-300 rounded-md px-3 py-2"
         value={info.phone}
         onChange={(e) => setInfo({ ...info, phone: e.target.value })}
-        className="w-full border rounded-md p-2"
-        required
       />
 
-      <div className="flex gap-4">
+      {/* Pickup / Delivery */}
+      <div className="flex items-center gap-4">
         <label className="flex items-center gap-2">
           <input
             type="radio"
@@ -79,33 +74,45 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
         <input
           type="text"
           placeholder="Delivery address"
+          className="w-full border border-gray-300 rounded-md px-3 py-2"
           value={info.address}
           onChange={(e) => setInfo({ ...info, address: e.target.value })}
-          className="w-full border rounded-md p-2"
-          required
         />
       )}
 
+      {/* Date & Time */}
       <div className="grid grid-cols-2 gap-4">
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="border rounded-md p-2"
-        />
-        <input
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          className="border rounded-md p-2"
-        />
+        <div>
+          <label className="block text-gray-700 text-sm mb-1">
+            Select Date
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700 text-sm mb-1">
+            Select Time
+          </label>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            min="06:00"
+            max="11:00"
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+          />
+        </div>
       </div>
 
       <button
         type="submit"
-        className="w-full py-2 bg-[#1D9099] text-white rounded-md hover:bg-[#00454E]"
+        className="w-full bg-primary hover:bg-primaryHover text-white font-semibold py-3 rounded-lg mt-4"
       >
-        Continue
+        Place Order
       </button>
     </form>
   );
