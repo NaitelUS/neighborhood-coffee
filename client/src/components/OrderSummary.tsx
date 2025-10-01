@@ -1,59 +1,61 @@
 import React, { useContext } from "react";
 import { CartContext } from "@/context/CartContext";
 import CouponField from "@/components/CouponField";
+import { Trash2 } from "lucide-react";
 
 export default function OrderSummary() {
-  const { cartItems, discount, appliedCoupon, subtotal, total, removeFromCart } =
-    useContext(CartContext);
-
-  // 🔹 Descuento aplicado
-  const discountAmount = subtotal * discount;
+  const {
+    cartItems,
+    discount,
+    appliedCoupon,
+    removeFromCart,
+    subtotal,
+    total,
+  } = useContext(CartContext);
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-6">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800 text-center sm:text-left">
+    <div className="bg-white shadow-md rounded-2xl p-6 border border-gray-100">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
         Your Order
       </h2>
 
       {/* 🧾 Lista de productos */}
       {cartItems.length === 0 ? (
-        <p className="text-gray-500 text-center">Your cart is empty.</p>
+        <p className="text-center text-gray-500">Your cart is empty.</p>
       ) : (
-        <ul className="divide-y divide-gray-200 mb-4 space-y-3">
+        <ul className="divide-y divide-gray-200 mb-6 space-y-3">
           {cartItems.map((item, index) => {
             const addonsTotal =
-              item.addons?.reduce((sum, a) => sum + a.price, 0) || 0;
+              item.addons?.reduce((sum, addon) => sum + addon.price, 0) || 0;
             const itemTotal = item.price + addonsTotal;
 
             return (
-              <li
-                key={index}
-                className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-              >
-                <div>
-                  <p className="font-medium text-gray-800">{item.name}</p>
-                  {/* ✅ Add-ons debajo del nombre */}
-                  {item.addons && item.addons.length > 0 && (
-                    <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc space-y-1">
-                      {item.addons.map((addon, idx) => (
-                        <li key={idx}>
-                          {addon.name} (+${addon.price.toFixed(2)})
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-700 font-semibold">
-                    ${itemTotal.toFixed(2)}
-                  </span>
-                  <button
-                    onClick={() => removeFromCart(item.id)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    ✕ Remove
-                  </button>
+              <li key={index} className="pt-3 first:pt-0">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">{item.name}</p>
+                    {item.addons && item.addons.length > 0 && (
+                      <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
+                        {item.addons.map((addon, idx) => (
+                          <li key={idx}>
+                            {addon.name} (+${addon.price.toFixed(2)})
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-700 font-semibold">
+                      ${itemTotal.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => removeFromCart(item.id)}
+                      className="text-red-500 hover:text-red-600 transition"
+                      title="Remove item"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               </li>
             );
@@ -61,35 +63,35 @@ export default function OrderSummary() {
         </ul>
       )}
 
-      {/* 💵 Subtotal */}
-      <div className="flex justify-between py-1 text-gray-700">
+      {/* 💰 Subtotal */}
+      <div className="flex justify-between py-2 text-gray-700 text-base">
         <span>Subtotal</span>
         <span>${subtotal.toFixed(2)}</span>
       </div>
 
-      {/* 💸 Discount */}
+      {/* 💸 Descuento */}
       {discount > 0 && (
-        <div className="flex justify-between py-1 text-green-700 font-medium">
+        <div className="flex justify-between py-2 text-green-700 font-medium text-base">
           <span>Discount ({appliedCoupon})</span>
-          <span>- ${discountAmount.toFixed(2)}</span>
+          <span>- ${(subtotal * discount).toFixed(2)}</span>
         </div>
       )}
 
-      {/* 🧾 Total */}
-      <div className="flex justify-between border-t mt-3 pt-3 text-lg font-bold text-gray-900">
+      {/* 💵 Total final */}
+      <div className="flex justify-between border-t border-gray-200 mt-3 pt-3 text-lg font-bold text-gray-900">
         <span>Total</span>
         <span>${total.toFixed(2)}</span>
       </div>
 
-      {/* 🏷️ Campo de cupón (debajo del total) */}
-      <div className="mt-4">
+      {/* 🏷️ Campo de cupón */}
+      <div className="mt-6">
         <CouponField />
       </div>
 
-      {/* 🚀 Botón de confirmación (opcional) */}
+      {/* 🚀 Checkout */}
       {cartItems.length > 0 && (
         <button
-          className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 mt-4 rounded-lg font-semibold transition"
+          className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 mt-6 rounded-lg font-semibold shadow-sm transition"
           onClick={() => alert("Proceeding to checkout...")}
         >
           Proceed to Checkout
