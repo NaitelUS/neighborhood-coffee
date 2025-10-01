@@ -33,7 +33,8 @@ export default function MenuItem({ product }: MenuItemProps) {
   const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
 
   // ✅ Calcula total con Add-Ons
-  const totalPrice = product.price + selectedAddOns.reduce((sum, a) => sum + a.price, 0);
+  const totalPrice =
+    product.price + selectedAddOns.reduce((sum, a) => sum + a.price, 0);
 
   const handleAddToCart = () => {
     if (!selectedOption) {
@@ -99,11 +100,12 @@ export default function MenuItem({ product }: MenuItemProps) {
       </div>
 
       {/* ✅ Checkbox Customize */}
-      <label className="flex items-center gap-2 mb-3">
+      <label className="flex items-center gap-2 mb-3 cursor-pointer">
         <input
           type="checkbox"
           checked={customize}
           onChange={(e) => setCustomize(e.target.checked)}
+          className="accent-green-600"
         />
         <span className="font-medium">Customize your drink</span>
       </label>
@@ -111,7 +113,7 @@ export default function MenuItem({ product }: MenuItemProps) {
       {/* ✅ Add-Ons dinámicos */}
       {customize && (
         <AddOnSelector
-          onSelect={(addons) => {
+          onAddOnSelect={(addons) => {
             setSelectedAddOns(addons);
           }}
         />
