@@ -1,41 +1,33 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
-
-const TABLE = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
-
-export const handler: Handler = async (event) => {
+const handler: Handler = async () => {
   try {
-    const { id } = event.queryStringParameters || {};
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems");
 
-    if (!id) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing order ID" }),
-      };
-    }
+    const records = await table.select().all();
 
-    const records = await base(TABLE)
-      .select({
-        filterByFormula: `{Order} = '${id}'`,
-      })
-      .all();
-
-    const data = records.map((r) => ({
+    const items = records.map((r) => ({
       id: r.id,
-      ...r.fields,
+      orderId: r.fields.orderId,
+      product: r.fields.product,
+      quantity: r.fields.quantity || 1,
+      price: r.fields.price || 0,
+      addons: r.fields.addons || [],
     }));
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(items),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching order items:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to fetch order items", details: error.message }),
+    };
   }
 };
+
+export { handler };
