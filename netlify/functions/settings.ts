@@ -1,60 +1,36 @@
 import { Handler } from "@netlify/functions";
-import { base } from "../lib/airtableClient";
+import { getAirtableClient } from "../lib/airtableClient";
 
-// ✅ Nombre de la tabla
-const TABLE_NAME = process.env.AIRTABLE_TABLE_SETTINGS || "Settings";
+const TABLE_SETTINGS = process.env.AIRTABLE_TABLE_SETTINGS || "Settings";
 
 export const handler: Handler = async () => {
   try {
-    // 🔹 Obtener todos los registros de Settings
-    const records = await base(TABLE_NAME).select({}).all();
+    const base = getAirtableClient();
 
-    // 🧠 Convertir lista de settings en objeto clave-valor
-    const config: Record<string, any> = {};
+    // ✅ Obtener todos los registros activos de configuración
+    const records = await base(TABLE_SETTINGS).select({ maxRecords: 1 }).all();
 
-    records.forEach((rec) => {
-      const name = rec.get("name") as string;
-      const value = rec.get("value");
-      if (!name) return;
+    if (!records.length) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: "No settings found" }),
+      };
+    }
 
-      switch (name) {
-        case "open_hour":
-        case "close_hour":
-          config[name] = Number(value);
-          break;
+    const settings = records[0].fields;
 
-        case "active_days":
-        case "holiday_dates":
-          // Convierte texto plano "Monday,Tuesday" en array
-          if (typeof value === "string") {
-            config[name] = value
-              .split(",")
-              .map((v) => v.trim())
-              .filter(Boolean);
-          } else {
-            config[name] = [];
-          }
-          break;
-
-        default:
-          config[name] = value;
-          break;
-      }
-    });
-
-    // 🔧 Respuesta exitosa
     return {
       statusCode: 200,
-      body: JSON.stringify(config),
-      headers: {
-        "Content-Type": "application/json",
-      },
+      body: JSON.stringify({
+        message: "Settings loaded successfully",
+        settings,
+      }),
     };
-  } catch (err: any) {
-    console.error("❌ Error fetching settings:", err);
+  } catch (error) {
+    console.error("❌ Error fetching settings:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message || "Unknown error" }),
+      body: JSON.stringify({ message: "Server Error", error: String(error) }),
     };
   }
 };
