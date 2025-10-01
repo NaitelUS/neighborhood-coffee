@@ -1,77 +1,104 @@
 import { Handler } from "@netlify/functions";
-import { getAirtableClient } from "../lib/airtableClient";
+import Airtable from "airtable";
+
+// 🧩 Inicializa cliente Airtable
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID as string
+);
 
 const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
+// 🚀 Handler principal
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
-  }
-
   try {
-    const data = JSON.parse(event.body || "{}");
-    const {
-      customer_name,
-      customer_phone,
-      method,
-      address,
-      schedule,
-      subtotal,
-      discount_value,
-      coupon,
-      total,
-      status,
-      items,
-    } = data;
-
-    if (!customer_name || !customer_phone || !items?.length) {
+    // 🧠 Valida que haya body
+    if (!event.body) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "Missing required fields" }),
+        body: JSON.stringify({ error: "Missing request body" }),
       };
     }
 
-    const base = getAirtableClient();
+    const data = JSON.parse(event.body);
 
-    const formattedItems = items
-      .map((item: any) => {
-        let desc = `${item.name}`;
-        if (item.option) desc += ` (${item.option})`;
-        if (item.addons) desc += ` | Add-ons: ${item.addons}`;
-        return desc;
-      })
-      .join("\n");
+    const {
+      customer_name,
+      customer_phone,
+      address,
+      order_type, // Pickup | Delivery
+      schedule_date,
+      schedule_time,
+      subtotal,
+      discount,
+      total,
+      coupon_code,
+      items,
+    } = data;
 
-    const created = await base(TABLE_ORDERS).create([
+    // 🧱 Validaciones básicas
+    if (!customer_name || !items || !Array.isArray(items)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid order data" }),
+      };
+    }
+
+    // 🧾 Crea la orden principal
+    const orderRecord = await base(TABLE_ORDERS).create([
       {
         fields: {
-          customer_name,
-          customer_phone,
-          method,
-          address: address || "",
-          schedule,
-          subtotal,
-          discount_value,
-          coupon,
-          total,
-          status: status || "Received",
-          items: formattedItems,
+          Name: customer_name,
+          Phone: customer_phone || "",
+          Address: order_type === "Delivery" ? address || "" : "",
+          OrderType: order_type || "Pickup",
+          ScheduleDate: schedule_date || "",
+          ScheduleTime: schedule_time || "",
+          Subtotal: subtotal || 0,
+          Discount: discount || 0,
+          Total: total || 0,
+          Coupon: coupon_code || "",
+          Status: "Received",
         },
       },
     ]);
 
+    const orderId = orderRecord[0].id;
+
+    // 🧩 Crea los ítems de la orden
+    if (items && items.length > 0) {
+      const orderItems = items.map((item) => ({
+        fields: {
+          Order: [orderId],
+          ProductName: item.name,
+          Option: item.option || "",
+          Price: item.price || 0,
+          AddOns: item.addons
+            ? item.addons.map((a: any) => `${a.name} ($${a.price.toFixed(2)})`).join(", ")
+            : "",
+        },
+      }));
+
+      // 🚀 Inserta en lotes de 10 (límite de Airtable)
+      while (orderItems.length > 0) {
+        await base(TABLE_ORDERITEMS).create(orderItems.splice(0, 10));
+      }
+    }
+
+    // ✅ Éxito
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: "Order created successfully",
-        id: created[0].id,
+        success: true,
+        message: "Order successfully created",
+        orderId,
       }),
     };
-  } catch (err) {
-    console.error("❌ Error creating order:", err);
+  } catch (error) {
+    console.error("❌ Error creating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Server error", error: String(err) }),
+      body: JSON.stringify({ error: "Failed to create order" }),
     };
   }
 };
