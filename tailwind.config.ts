@@ -12,17 +12,17 @@ export default {
           "0%": {
             opacity: 0,
             transform: "scale(0.95)",
-            color: "hsl(140, 70%, 40%)", // tono verde oscuro
+            color: "hsl(140, 70%, 40%)",
           },
           "50%": {
             opacity: 1,
             transform: "scale(1.08)",
-            color: "hsl(140, 80%, 55%)", // verde brillante (highlight)
+            color: "hsl(140, 80%, 55%)",
           },
           "100%": {
             opacity: 1,
             transform: "scale(1)",
-            color: "hsl(142, 76%, 36%)", // regresa al verde base
+            color: "hsl(142, 76%, 36%)",
           },
         },
       },
@@ -30,11 +30,15 @@ export default {
         pulseOnce: "pulseOnce 1s ease-out forwards",
       },
 
-      // 🎨 Paleta base del tema
+      // 🎨 Paleta base del tema + colores personalizados
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         border: "hsl(var(--border))",
+
+        // ✅ Colores del tema corporativo
+        primary: "#1D9099",
+        primaryHover: "#00454E",
       },
     },
   },
