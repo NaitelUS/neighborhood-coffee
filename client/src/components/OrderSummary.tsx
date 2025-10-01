@@ -1,71 +1,112 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CartContext } from "@/context/CartContext";
-import CouponField from "@/components/CouponField";
+import OrderSummary from "@/components/OrderSummary";
+import CustomerInfoForm from "@/components/CustomerInfoForm";
 
-export default function OrderSummary() {
-  const { cartItems, discount, appliedCoupon } = useContext(CartContext);
+export default function OrderPage() {
+  const { cartItems, subtotal, discount, appliedCoupon, total, clearCart } =
+    useContext(CartContext);
 
-  const subtotal = cartItems.reduce((sum, item) => {
-    const addonsTotal =
-      item.addons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-    return sum + item.price + addonsTotal;
-  }, 0);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const discountAmount = subtotal * discount;
-  const total = subtotal - discountAmount;
+  // ✅ Redirigir al menú principal
+  const handleBackToMenu = () => {
+    navigate("/"); // regresa al home sin limpiar el carrito
+  };
+
+  // ✅ Enviar orden completa a Airtable
+  const handleOrderSubmit = async (info: any, schedule: string) => {
+    if (cartItems.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const orderData = {
+        customer_name: info.name,
+        customer_phone: info.phone,
+        method: info.method,
+        address: info.method === "Delivery" ? info.address : "",
+        schedule,
+        subtotal,
+        discount_value: discount,
+        coupon: appliedCoupon || null,
+        total,
+        status: "Received",
+        items: cartItems.map((item) => ({
+          name: item.name,
+          option: item.option,
+          price: item.price,
+          addons:
+            item.addons
+              ?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`)
+              .join(", ") || "",
+        })),
+      };
+
+      const res = await fetch("/.netlify/functions/orders-new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!res.ok) throw new Error("Failed to save order");
+
+      const result = await res.json();
+      const orderId = result.id || "N/A";
+
+      navigate(
+        `/thank-you?order_id=${orderId}&total=${total.toFixed(
+          2
+        )}&name=${encodeURIComponent(info.name)}&discount=${discount}&coupon=${
+          appliedCoupon || ""
+        }`
+      );
+
+      clearCart();
+    } catch (err) {
+      console.error("❌ Error sending order:", err);
+      alert("There was an error submitting your order.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-6 space-y-4">
-      <h2 className="text-2xl font-semibold text-gray-800 text-center">
-        Your Order
-      </h2>
-
-      {cartItems.length === 0 ? (
-        <p className="text-gray-500 text-center">Your cart is empty.</p>
-      ) : (
-        <ul className="divide-y divide-gray-200">
-          {cartItems.map((item, index) => (
-            <li key={index} className="py-3">
-              <div className="flex justify-between">
-                <div>
-                  <p className="font-medium text-gray-800">{item.name}</p>
-                  {item.addons && item.addons.length > 0 && (
-                    <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
-                      {item.addons.map((addon, idx) => (
-                        <li key={idx}>
-                          {addon.name} (+${addon.price.toFixed(2)})
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <span className="text-gray-700 font-semibold">
-                  ${(item.price + (item.addons?.reduce((aSum, a) => aSum + a.price, 0) || 0)).toFixed(2)}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="flex justify-between text-gray-700">
-        <span>Subtotal</span>
-        <span>${subtotal.toFixed(2)}</span>
+    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 mt-6 px-4">
+      {/* 🧾 Resumen */}
+      <div>
+        <OrderSummary />
       </div>
 
-      {discount > 0 && (
-        <div className="flex justify-between text-green-700 font-medium">
-          <span>Discount ({appliedCoupon})</span>
-          <span>- ${discountAmount.toFixed(2)}</span>
+      {/* 👤 Cliente + Fecha */}
+      <div>
+        <CustomerInfoForm onSubmit={handleOrderSubmit} />
+
+        {/* 🔙 Botón Back to Menu */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={handleBackToMenu}
+            className="px-6 py-2 rounded-md font-semibold bg-[#1D9099] text-white hover:bg-[#00454E] transition-all"
+          >
+            ← Back to Menu
+          </button>
+        </div>
+      </div>
+
+      {/* Loader */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-lg text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#1D9099] mx-auto mb-3"></div>
+            <p className="text-gray-700">Submitting your order...</p>
+          </div>
         </div>
       )}
-
-      <div className="flex justify-between border-t pt-3 text-lg font-bold text-gray-900">
-        <span>Total</span>
-        <span>${total.toFixed(2)}</span>
-      </div>
-
-      <CouponField />
     </div>
   );
 }
