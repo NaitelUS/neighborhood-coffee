@@ -1,156 +1,91 @@
-import { useState } from "react";
-import { useCart } from "@/hooks/useCart";
-import { useToast } from "@/hooks/use-toast";
+import React, { useContext } from "react";
+import { CartContext } from "@/context/CartContext";
+import CouponField from "@/components/CouponField";
 
 export default function OrderSummary() {
-  const { cart, clearCart } = useCart();
-  const { showToast, Toast } = useToast();
+  const { cartItems, discount, appliedCoupon } = useContext(CartContext);
 
-  const [couponCode, setCouponCode] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  const [isApplying, setIsApplying] = useState(false);
+  // 🔹 Subtotal antes de descuentos
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-  const total = subtotal - discount;
+  // 🔹 Descuento aplicado
+  const discountAmount = subtotal * discount;
 
-  const applyCoupon = async () => {
-    if (!couponCode) {
-      showToast("⚠️ Enter a coupon code first", "info");
-      return;
-    }
-
-    if (appliedCoupon) {
-      showToast("⚠️ Coupon already applied", "info");
-      return;
-    }
-
-    try {
-      setIsApplying(true);
-      const res = await fetch("/.netlify/functions/coupons");
-      const coupons = await res.json();
-
-      const found = coupons.find(
-        (c: any) =>
-          c.code?.toLowerCase() === couponCode.trim().toLowerCase() &&
-          c.active !== false
-      );
-
-      if (!found) {
-        showToast("❌ Invalid or expired coupon", "error");
-        return;
-      }
-
-      // 🔹 Calcular descuento
-      let discountValue = 0;
-      if (found.type === "percent") {
-        discountValue = subtotal * (found.value / 100);
-      } else if (found.type === "amount") {
-        discountValue = found.value;
-      }
-
-      // 🔹 Aplicar descuento y guardar estado
-      setDiscount(discountValue);
-      setAppliedCoupon(found.code);
-
-      // ✅ Mostrar toast amigable
-      const savedText =
-        found.type === "percent"
-          ? `${found.value}%`
-          : `$${discountValue.toFixed(2)}`;
-      showToast(
-        `✅ Coupon ${found.code} applied — You saved ${savedText}! 🎉`,
-        "success"
-      );
-    } catch (err) {
-      console.error(err);
-      showToast("❌ Error applying coupon", "error");
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  const clearCoupon = () => {
-    setCouponCode("");
-    setDiscount(0);
-    setAppliedCoupon(null);
-    showToast("Coupon cleared", "info");
-  };
+  // 🔹 Total final
+  const total = subtotal - discountAmount;
 
   return (
-    <div className="border rounded-lg p-5 bg-white shadow-sm">
-      <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+    <div className="bg-white shadow-md rounded-xl p-6">
+      <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+        Your Order
+      </h2>
 
-      {cart.length === 0 ? (
+      {/* 🧾 Lista de productos */}
+      {cartItems.length === 0 ? (
         <p className="text-gray-500">Your cart is empty.</p>
       ) : (
-        <>
-          <ul className="space-y-2 mb-4">
-            {cart.map((item, idx) => (
-              <li
-                key={idx}
-                className="flex justify-between text-gray-700 text-sm"
-              >
-                <span>{item.name}</span>
-                <span>${item.price.toFixed(2)}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="border-t border-gray-200 pt-3">
-            <div className="flex justify-between text-gray-700 text-sm mb-2">
-              <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
-            </div>
-
-            {discount > 0 && (
-              <div className="flex justify-between text-green-600 text-sm mb-2">
-                <span>Discount ({appliedCoupon})</span>
-                <span>- ${discount.toFixed(2)}</span>
+        <ul className="divide-y divide-gray-200 mb-4">
+          {cartItems.map((item, index) => (
+            <li key={index} className="py-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-medium text-gray-800">
+                    {item.name}
+                  </p>
+                  {/* ✅ Add-ons debajo del nombre */}
+                  {item.addons && item.addons.length > 0 && (
+                    <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
+                      {item.addons.map((addon, idx) => (
+                        <li key={idx}>
+                          {addon.name} (+${addon.price.toFixed(2)})
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <span className="text-gray-700 font-semibold">
+                  ${item.price.toFixed(2)}
+                </span>
               </div>
-            )}
-
-            <div className="flex justify-between font-semibold text-gray-900 text-base mb-3">
-              <span>Total</span>
-              <span>${total.toFixed(2)}</span>
-            </div>
-
-            {/* Cupón */}
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                placeholder="Enter coupon"
-                className="flex-1 border rounded px-3 py-2 text-sm"
-                disabled={!!appliedCoupon}
-              />
-              <button
-                onClick={applyCoupon}
-                disabled={isApplying || !!appliedCoupon}
-                className={`px-4 py-2 text-sm font-semibold rounded transition ${
-                  appliedCoupon
-                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
-              >
-                {appliedCoupon ? "Applied" : isApplying ? "..." : "Apply"}
-              </button>
-            </div>
-
-            {appliedCoupon && (
-              <button
-                onClick={clearCoupon}
-                className="text-xs text-red-500 underline"
-              >
-                Remove coupon
-              </button>
-            )}
-          </div>
-        </>
+            </li>
+          ))}
+        </ul>
       )}
 
-      <Toast />
+      {/* 💵 Subtotal */}
+      <div className="flex justify-between py-1 text-gray-700">
+        <span>Subtotal</span>
+        <span>${subtotal.toFixed(2)}</span>
+      </div>
+
+      {/* 💸 Discount */}
+      {discount > 0 && (
+        <div className="flex justify-between py-1 text-green-700 font-medium">
+          <span>Discount ({appliedCoupon})</span>
+          <span>- ${discountAmount.toFixed(2)}</span>
+        </div>
+      )}
+
+      {/* 🧾 Total */}
+      <div className="flex justify-between border-t mt-3 pt-3 text-lg font-bold text-gray-900">
+        <span>Total</span>
+        <span>${total.toFixed(2)}</span>
+      </div>
+
+      {/* 🏷️ Campo de cupón (debajo del total) */}
+      <div className="mt-4">
+        <CouponField />
+      </div>
+
+      {/* 🚀 Botón de confirmación (opcional) */}
+      {cartItems.length > 0 && (
+        <button
+          className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 mt-4 rounded-lg font-semibold"
+          onClick={() => alert("Proceeding to checkout...")}
+        >
+          Proceed to Checkout
+        </button>
+      )}
     </div>
   );
 }
