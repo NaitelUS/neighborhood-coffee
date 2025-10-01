@@ -1,33 +1,60 @@
 import { Handler } from "@netlify/functions";
-import { getAirtableClient } from "../lib/airtableClient";
+import { base } from "../lib/airtableClient";
 
-const handler: Handler = async () => {
+// ✅ Nombre de la tabla
+const TABLE_NAME = process.env.AIRTABLE_TABLE_SETTINGS || "Settings";
+
+export const handler: Handler = async () => {
   try {
-    const base = getAirtableClient();
-    const table = base(process.env.AIRTABLE_TABLE_SETTINGS || "Settings");
+    // 🔹 Obtener todos los registros de Settings
+    const records = await base(TABLE_NAME).select({}).all();
 
-    const records = await table.select().all();
+    // 🧠 Convertir lista de settings en objeto clave-valor
+    const config: Record<string, any> = {};
 
-    const settings = records.map((r) => ({
-      id: r.id,
-      opening_hour: r.fields.opening_hour || "06:00",
-      closing_hour: r.fields.closing_hour || "11:00",
-      closed_days: r.fields.closed_days || [],
-      vacation_start: r.fields.vacation_start || null,
-      vacation_end: r.fields.vacation_end || null,
-    }));
+    records.forEach((rec) => {
+      const name = rec.get("name") as string;
+      const value = rec.get("value");
+      if (!name) return;
 
+      switch (name) {
+        case "open_hour":
+        case "close_hour":
+          config[name] = Number(value);
+          break;
+
+        case "active_days":
+        case "holiday_dates":
+          // Convierte texto plano "Monday,Tuesday" en array
+          if (typeof value === "string") {
+            config[name] = value
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean);
+          } else {
+            config[name] = [];
+          }
+          break;
+
+        default:
+          config[name] = value;
+          break;
+      }
+    });
+
+    // 🔧 Respuesta exitosa
     return {
       statusCode: 200,
-      body: JSON.stringify(settings),
+      body: JSON.stringify(config),
+      headers: {
+        "Content-Type": "application/json",
+      },
     };
-  } catch (error) {
-    console.error("Error fetching settings:", error);
+  } catch (err: any) {
+    console.error("❌ Error fetching settings:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to fetch settings", details: error.message }),
+      body: JSON.stringify({ error: err.message || "Unknown error" }),
     };
   }
 };
-
-export { handler };
