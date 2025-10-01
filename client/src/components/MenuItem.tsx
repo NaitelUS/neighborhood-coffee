@@ -1,180 +1,147 @@
-import React, { useState, useEffect } from "react";
-import { useCart } from "@/context/CartContext";
-import { useToast } from "@/hooks/use-toast";
-import { getAddons } from "@/api/api";
-
-interface Addon {
-  id: string;
-  name: string;
-  price: number;
-  description?: string;
-}
+import React, { useState, useContext } from "react";
+import { CartContext } from "@/context/CartContext";
+import AddOnSelector from "@/components/AddOnSelector";
 
 interface MenuItemProps {
-  item: {
+  product: {
     id: string;
     name: string;
-    description: string;
-    price: number;
-    image_url?: string;
-  };
-  options?: {
-    optionName: string;
-    price?: number;
     description?: string;
-    image_url?: string;
-  }[];
+    price: number;
+    category?: string;
+    image_url?: string | null;
+  };
 }
 
-export default function MenuItem({ item, options = [] }: MenuItemProps) {
-  const { addToCart } = useCart();
-  const { showToast } = useToast();
-
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [selected, setSelected] = useState<any>(item);
-  const [addons, setAddons] = useState<Addon[]>([]);
-  const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
+export default function MenuItem({ product }: MenuItemProps) {
+  const { addToCart } = useContext(CartContext);
+  const [temperature, setTemperature] = useState<"Hot" | "Iced" | null>(null);
+  const [flavor, setFlavor] = useState<"Apple" | "Pineapple" | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [addons, setAddons] = useState<any[]>([]);
 
-  useEffect(() => {
-    // Cargar Add-ons desde Airtable
-    getAddons()
-      .then((data) => setAddons(data))
-      .catch((err) => console.error("Error loading addons:", err));
-  }, []);
+  // ✅ Precio base
+  const basePrice = product.price || 0;
+  const addonsTotal = addons.reduce((acc, a) => acc + (a.price || 0), 0);
+  const finalPrice = basePrice + addonsTotal;
 
-  useEffect(() => {
-    if (selectedOption && options.length > 0) {
-      const opt = options.find((o) => o.optionName === selectedOption);
-      setSelected(opt ? { ...item, ...opt } : item);
-    } else {
-      setSelected(item);
-    }
-  }, [selectedOption, options]);
+  // ✅ Fallback para imagen
+  const imageSrc =
+    product.image_url || "/attached_assets/tnclogo.png";
 
-  const handleOptionChange = (opt: string) => setSelectedOption(opt);
-
-  const handleAddonToggle = (addon: Addon) => {
-    setSelectedAddons((prev) =>
-      prev.find((a) => a.id === addon.id)
-        ? prev.filter((a) => a.id !== addon.id)
-        : [...prev, addon]
-    );
-  };
-
-  const handleAdd = () => {
-    try {
-      if (options.length > 0 && !selectedOption) {
-        showToast("⚠️ Please select an option before adding.", "warning");
-        return;
-      }
-
-      const basePrice = selected.price || item.price;
-      const addonsTotal = selectedAddons.reduce((acc, a) => acc + a.price, 0);
-      const totalPrice = basePrice + addonsTotal;
-
-      const productToAdd = {
-        id: selected.id,
-        name: selectedOption
-          ? `${item.name} - ${selectedOption}`
-          : item.name,
-        price: totalPrice,
-        image_url: selected.image_url || item.image_url,
-        description:
-          selected.description || item.description,
-        addons: selectedAddons.map((a) => a.name).join(", "),
-      };
-
-      addToCart(productToAdd);
-      showToast(
-        `✅ Added ${productToAdd.name} ($${productToAdd.price.toFixed(2)})`,
-        "success"
-      );
-      setSelectedAddons([]);
-      setShowCustomize(false);
-    } catch (err) {
-      console.error("Add to cart error:", err);
-      showToast("❌ Something went wrong adding this item", "error");
-    }
+  const handleAddToCart = () => {
+    addToCart({
+      ...product,
+      price: finalPrice,
+      temperature,
+      flavor,
+      addons,
+      quantity: 1,
+    });
   };
 
   return (
-    <div className="p-4 border rounded-lg shadow-sm bg-white flex flex-col items-center">
+    <div className="border border-border rounded-lg p-4 bg-white shadow-sm">
+      {/* 🖼 Imagen del producto */}
       <img
-        src={selected.image_url || "/placeholder.png"}
-        alt={selected.name}
-        className="w-32 h-32 object-cover rounded-lg mb-2"
+        src={imageSrc}
+        alt={product.name || "Coffee Item"}
+        className="w-full h-40 object-cover rounded-md border border-border"
+        onError={(e) => {
+          e.currentTarget.src = "/attached_assets/tnclogo.png";
+        }}
       />
-      <h3 className="font-semibold text-lg text-center">{selected.name}</h3>
-      <p className="text-sm text-gray-500 mb-1 text-center">
-        {selected.description}
-      </p>
-      <p className="font-bold mb-2">${selected.price.toFixed(2)}</p>
 
-      {/* Opciones Hot / Iced */}
-      {options.length > 0 && (
-        <div className="flex gap-2 mb-3">
-          {options.map((opt) => (
-            <button
-              key={opt.optionName}
-              onClick={() => handleOptionChange(opt.optionName)}
-              className={`px-3 py-1 rounded-full border ${
-                selectedOption === opt.optionName
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100"
-              }`}
-            >
-              {opt.optionName}
-            </button>
-          ))}
+      {/* 🧾 Información */}
+      <h3 className="text-lg font-semibold mt-3">{product.name}</h3>
+      {product.description && (
+        <p className="text-sm text-muted-foreground mt-1">
+          {product.description}
+        </p>
+      )}
+
+      {/* ☕ Toggle Hot/Iced */}
+      {product.category?.toLowerCase() === "drink" && (
+        <div className="flex gap-3 mt-3">
+          <button
+            className={`px-3 py-1 rounded-md text-sm border ${
+              temperature === "Hot"
+                ? "bg-amber-600 text-white"
+                : "hover:bg-amber-50"
+            }`}
+            onClick={() => setTemperature("Hot")}
+          >
+            Hot
+          </button>
+          <button
+            className={`px-3 py-1 rounded-md text-sm border ${
+              temperature === "Iced"
+                ? "bg-blue-600 text-white"
+                : "hover:bg-blue-50"
+            }`}
+            onClick={() => setTemperature("Iced")}
+          >
+            Iced
+          </button>
         </div>
       )}
 
-      {/* Customize toggle */}
-      <label className="flex items-center gap-2 mb-3 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={showCustomize}
-          onChange={(e) => setShowCustomize(e.target.checked)}
-        />
-        <span className="text-sm font-medium">Customize your drink</span>
-      </label>
+      {/* 🥧 Toggle Apple/Pineapple */}
+      {product.category?.toLowerCase() === "empanada" && (
+        <div className="flex gap-3 mt-3">
+          <button
+            className={`px-3 py-1 rounded-md text-sm border ${
+              flavor === "Apple"
+                ? "bg-amber-600 text-white"
+                : "hover:bg-amber-50"
+            }`}
+            onClick={() => setFlavor("Apple")}
+          >
+            Apple
+          </button>
+          <button
+            className={`px-3 py-1 rounded-md text-sm border ${
+              flavor === "Pineapple"
+                ? "bg-yellow-500 text-white"
+                : "hover:bg-yellow-50"
+            }`}
+            onClick={() => setFlavor("Pineapple")}
+          >
+            Pineapple
+          </button>
+        </div>
+      )}
 
-      {/* Addons list */}
-      {showCustomize && (
-        <div className="w-full mb-3 border-t pt-3">
-          {addons.length > 0 ? (
-            addons.map((addon) => (
-              <label
-                key={addon.id}
-                className="flex items-center justify-between text-sm mb-2 cursor-pointer"
-              >
-                <div>
-                  <input
-                    type="checkbox"
-                    checked={selectedAddons.some((a) => a.id === addon.id)}
-                    onChange={() => handleAddonToggle(addon)}
-                    className="mr-2"
-                  />
-                  {addon.name}
-                </div>
-                <span className="text-gray-600">
-                  +${addon.price.toFixed(2)}
-                </span>
-              </label>
-            ))
-          ) : (
-            <p className="text-xs text-gray-400">No addons available.</p>
+      {/* 🧩 Customize your drink */}
+      {product.category?.toLowerCase() === "drink" && (
+        <div className="mt-4">
+          <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showCustomize}
+              onChange={() => setShowCustomize(!showCustomize)}
+            />
+            Customize your drink
+          </label>
+
+          {showCustomize && (
+            <div className="mt-3 border-t border-border pt-3">
+              <AddOnSelector onChange={setAddons} />
+            </div>
           )}
         </div>
       )}
 
-      <button
-        onClick={handleAdd}
-        className="mt-auto bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition w-full"
-      >
-        Add to Cart
-      </button>
+      {/* 💰 Precio y botón */}
+      <div className="flex justify-between items-center mt-4">
+        <span className="font-semibold">${finalPrice.toFixed(2)}</span>
+        <button
+          onClick={handleAddToCart}
+          className="bg-amber-600 hover:bg-amber-700 text-white text-sm px-4 py-2 rounded-md transition"
+        >
+          Add to Order
+        </button>
+      </div>
     </div>
   );
 }
