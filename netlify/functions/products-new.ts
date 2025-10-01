@@ -1,67 +1,36 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from "@netlify/functions";
+import { getAirtableClient } from "../lib/airtableClient";
 
-// Inicializar conexión con Airtable
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
-
-// Nombre de la tabla (por variable o por defecto)
-const TABLE = process.env.AIRTABLE_TABLE_PRODUCTS || "Products";
-
-export const handler: Handler = async (event) => {
+const handler: Handler = async (event) => {
   try {
-    // Solo permite POST
-    if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({ error: "Method not allowed" }),
-      };
-    }
+    const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_PRODUCTS || "Products");
 
-    // Leer datos enviados
     const body = JSON.parse(event.body || "{}");
-    const {
-      name,
-      description,
-      price,
-      image_url,
-      active,
-    } = body;
 
-    // Crear registro en Airtable
-    const record = await base(TABLE).create([
+    const record = await table.create([
       {
         fields: {
-          Name: name || "New Product",
-          Description: description || "",
-          Price: Number(price) || 0,
-          Image_URL: image_url || "",
-          Active: !!active,
-          Created: new Date().toISOString(),
+          name: body.name,
+          description: body.description,
+          price: Number(body.price) || 0,
+          category: body.category || "Drink",
+          image_url: body.image_url || "",
         },
       },
     ]);
 
-    // Responder con ID creado
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify({
-        id: record[0].id,
-        message: "✅ Product created successfully",
-      }),
+      body: JSON.stringify({ id: record[0].id }),
     };
-  } catch (err: any) {
-    console.error("Error creating product:", err);
+  } catch (error) {
+    console.error("Error creating product:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: err.message || "Error creating product",
-      }),
+      body: JSON.stringify({ error: "Failed to create product", details: error.message }),
     };
   }
 };
+
+export { handler };
