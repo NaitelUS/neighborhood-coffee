@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CartContext } from "@/context/CartContext";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
+import Menu from "@/components/Menu"; // 👈 Asegúrate de tener este import
 
 export default function OrderPage() {
   const { cartItems, subtotal, discount, appliedCoupon, total, clearCart } =
@@ -70,14 +71,15 @@ export default function OrderPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mt-6">
-      {/* 🧾 Resumen */}
+    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 mt-10 px-4">
+      {/* 🧾 Columna izquierda: Menú de productos */}
       <div>
-        <OrderSummary />
+        <Menu />
       </div>
 
-      {/* 👤 Cliente + Fecha */}
-      <div>
+      {/* 💳 Columna derecha: resumen y forma del cliente */}
+      <div className="space-y-6">
+        <OrderSummary />
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
 
