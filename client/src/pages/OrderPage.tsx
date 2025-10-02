@@ -21,23 +21,35 @@ export default function OrderPage() {
     setLoading(true);
 
     try {
+      // 🧠 Separa fecha y hora (si el schedule viene en formato "YYYY-MM-DD HH:mm")
+      let schedule_date = "";
+      let schedule_time = "";
+      if (schedule) {
+        const parts = schedule.split(" ");
+        schedule_date = parts[0] || "";
+        schedule_time = parts[1] || "";
+      }
+
       const orderData = {
         customer_name: info.name,
         customer_phone: info.phone,
-        method: info.method,
+        order_type: info.method, // Pickup o Delivery
         address: info.method === "Delivery" ? info.address : "",
-        schedule,
+        schedule_date,
+        schedule_time,
         subtotal,
-        discount_value: discount,
-        coupon: appliedCoupon || null,
+        discount,
         total,
-        status: "Received",
+        coupon_code: appliedCoupon || "",
         items: cartItems.map((item) => ({
           name: item.name,
           option: item.option,
           price: item.price,
           addons:
-            item.addons?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`).join(", ") || "",
+            item.addons?.map((a) => ({
+              name: a.name,
+              price: a.price,
+            })) || [],
         })),
       };
 
@@ -51,13 +63,13 @@ export default function OrderPage() {
       if (!res.ok) throw new Error("Failed to save order");
 
       const result = await res.json();
-      const orderId = result.id || "N/A";
+      const orderId = result.orderId || "N/A";
 
-      // 🧾 Redirigir con datos
+      // ✅ Redirigir a Thank You
       navigate(
-        `/thank-you?order_id=${orderId}&total=${total.toFixed(2)}&name=${encodeURIComponent(
-          info.name
-        )}&discount=${discount}&coupon=${appliedCoupon || ""}`
+        `/thank-you?order_id=${orderId}&total=${total.toFixed(
+          2
+        )}&name=${encodeURIComponent(info.name)}`
       );
 
       clearCart();
@@ -71,27 +83,17 @@ export default function OrderPage() {
 
   return (
     <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mt-6 px-4">
-      {/* 🔙 Botón para volver al menú */}
-      <div className="md:col-span-2 mb-2">
-        <button
-          onClick={() => navigate("/")}
-          className="text-[#1D9099] hover:text-[#00454E] font-semibold flex items-center gap-2"
-        >
-          ← Add More Items
-        </button>
-      </div>
-
-      {/* 🧾 Resumen de la orden */}
+      {/* 🧾 Resumen */}
       <div>
         <OrderSummary />
       </div>
 
-      {/* 👤 Información del cliente + Fecha */}
+      {/* 👤 Cliente + Fecha */}
       <div>
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
 
-      {/* Loader (pantalla completa mientras se envía orden) */}
+      {/* Loader */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg text-center">
