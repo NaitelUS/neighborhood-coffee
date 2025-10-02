@@ -1,118 +1,183 @@
 import React, { useState } from "react";
+import { useContext } from "react";
+import { CartContext } from "@/context/CartContext";
 
-export default function CustomerInfoForm({ onSubmit }: { onSubmit: any }) {
+interface CustomerInfoFormProps {
+  onSubmit: (info: any, schedule: string) => void;
+}
+
+export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
+  const { cartItems } = useContext(CartContext);
+
   const [info, setInfo] = useState({
     name: "",
     phone: "",
-    method: "Pickup",
+    method: "Pickup", // Default
     address: "",
   });
 
-  const [date, setDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
-  const [time, setTime] = useState<string>("08:00");
+  // ✅ Fecha y hora actual por defecto
+  const now = new Date();
+  const defaultDate = now.toISOString().split("T")[0];
+  const defaultTime = now.toTimeString().slice(0, 5);
+
+  const [scheduleDate, setScheduleDate] = useState(defaultDate);
+  const [scheduleTime, setScheduleTime] = useState(defaultTime);
+
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setInfo((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const schedule = `${date} ${time}`;
+
+    if (!info.name || !info.phone) {
+      alert("Please fill out your name and phone number.");
+      return;
+    }
+
+    if (info.method === "Delivery" && !info.address) {
+      alert("Please enter your delivery address.");
+      return;
+    }
+
+    const schedule = `${scheduleDate} ${scheduleTime}`;
+    setLoading(true);
+
+    // ⏳ Llama al callback
     onSubmit(info, schedule);
+
+    // 🔒 Desactiva por 2s para evitar spam
+    setTimeout(() => setLoading(false), 2000);
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white shadow-md rounded-xl p-6 space-y-4"
+      className="bg-white p-6 rounded-xl shadow-md space-y-4"
     >
-      <h2 className="text-2xl font-semibold text-gray-800 text-center">
-        Your Details
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+        Customer Information
       </h2>
 
-      <input
-        type="text"
-        placeholder="Full name"
-        required
-        className="w-full border border-gray-300 rounded-md px-3 py-2"
-        value={info.name}
-        onChange={(e) => setInfo({ ...info, name: e.target.value })}
-      />
-
-      <input
-        type="tel"
-        placeholder="Phone number"
-        required
-        className="w-full border border-gray-300 rounded-md px-3 py-2"
-        value={info.phone}
-        onChange={(e) => setInfo({ ...info, phone: e.target.value })}
-      />
-
-      {/* Pickup / Delivery */}
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2">
-          <input
-            type="radio"
-            name="method"
-            value="Pickup"
-            checked={info.method === "Pickup"}
-            onChange={() => setInfo({ ...info, method: "Pickup" })}
-          />
-          Pickup
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="radio"
-            name="method"
-            value="Delivery"
-            checked={info.method === "Delivery"}
-            onChange={() => setInfo({ ...info, method: "Delivery" })}
-          />
-          Delivery
-        </label>
-      </div>
-
-      {info.method === "Delivery" && (
+      {/* Name */}
+      <div>
+        <label className="block text-gray-700 font-medium mb-1">Name</label>
         <input
           type="text"
-          placeholder="Delivery address"
-          className="w-full border border-gray-300 rounded-md px-3 py-2"
-          value={info.address}
-          onChange={(e) => setInfo({ ...info, address: e.target.value })}
+          name="name"
+          value={info.name}
+          onChange={handleChange}
+          className="w-full border border-gray-300 rounded-md p-2"
+          required
         />
-      )}
+      </div>
 
-      {/* Date & Time */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-gray-700 text-sm mb-1">
-            Select Date
+      {/* Phone */}
+      <div>
+        <label className="block text-gray-700 font-medium mb-1">Phone</label>
+        <input
+          type="tel"
+          name="phone"
+          value={info.phone}
+          onChange={handleChange}
+          className="w-full border border-gray-300 rounded-md p-2"
+          required
+        />
+      </div>
+
+      {/* Pickup / Delivery */}
+      <div>
+        <label className="block text-gray-700 font-medium mb-1">
+          Order Method
+        </label>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="method"
+              value="Pickup"
+              checked={info.method === "Pickup"}
+              onChange={handleChange}
+            />
+            Pickup
           </label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-          />
-        </div>
-        <div>
-          <label className="block text-gray-700 text-sm mb-1">
-            Select Time
+
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="method"
+              value="Delivery"
+              checked={info.method === "Delivery"}
+              onChange={handleChange}
+            />
+            Delivery
           </label>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            min="06:00"
-            max="11:00"
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-          />
         </div>
       </div>
 
+      {/* Address (solo si Delivery) */}
+      {info.method === "Delivery" && (
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">
+            Address
+          </label>
+          <input
+            type="text"
+            name="address"
+            value={info.address}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-md p-2"
+            required
+          />
+        </div>
+      )}
+
+      {/* Fecha */}
+      <div>
+        <label className="block text-gray-700 font-medium mb-1">
+          Select Date
+        </label>
+        <input
+          type="date"
+          value={scheduleDate}
+          onChange={(e) => setScheduleDate(e.target.value)}
+          className="w-full border border-gray-300 rounded-md p-2"
+        />
+      </div>
+
+      {/* Hora */}
+      <div>
+        <label className="block text-gray-700 font-medium mb-1">
+          Select Time
+        </label>
+        <input
+          type="time"
+          value={scheduleTime}
+          onChange={(e) => setScheduleTime(e.target.value)}
+          className="w-full border border-gray-300 rounded-md p-2"
+          min="06:00"
+          max="11:00"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Available: 6:00 AM – 11:00 AM (Mon–Sat)
+        </p>
+      </div>
+
+      {/* ✅ Botón Place Order */}
       <button
         type="submit"
-        className="w-full bg-primary hover:bg-primaryHover text-white font-semibold py-3 rounded-lg mt-4"
+        disabled={loading || cartItems.length === 0}
+        className={`w-full py-3 rounded-lg font-semibold text-white transition ${
+          loading || cartItems.length === 0
+            ? "bg-gray-300 cursor-not-allowed"
+            : "bg-[#1D9099] hover:bg-[#00454E]"
+        }`}
       >
-        Place Order
+        {loading ? "Submitting..." : "Place Order"}
       </button>
     </form>
   );
