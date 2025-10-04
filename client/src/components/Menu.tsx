@@ -22,13 +22,11 @@ export default function Menu() {
     const fetchProducts = async () => {
       try {
         const response = await fetch("/.netlify/functions/products");
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
         const data = await response.json();
 
-        // ✅ Filtra productos disponibles
+        // ✅ Filtrar productos disponibles
         const validProducts = Array.isArray(data)
           ? data.filter((p) => p.available !== false)
           : [];
@@ -45,30 +43,21 @@ export default function Menu() {
     fetchProducts();
   }, []);
 
-  if (loading) {
-    return <p className="text-center text-gray-600 mt-10">Loading menu...</p>;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center text-red-600 mt-10">
-        ⚠️ {error}
-      </div>
-    );
-  }
+  if (loading) return <p className="text-center text-gray-600 mt-10">Loading menu...</p>;
+  if (error) return <p className="text-center text-red-500 mt-10">{error}</p>;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">
-        Our Menu
-      </h1>
+    <div className="max-w-7xl mx-auto px-6 py-10">
+      <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">Our Menu</h1>
 
       {products.length === 0 ? (
         <p className="text-center text-gray-500">No products available.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
           {products.map((product) => (
-            <MenuItem key={product.id} product={product} />
+            <div key={product.id} className="flex justify-center">
+              <MenuItem product={product} />
+            </div>
           ))}
         </div>
       )}
