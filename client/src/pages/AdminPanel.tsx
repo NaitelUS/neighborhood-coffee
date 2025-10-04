@@ -1,85 +1,45 @@
-import React, { useEffect, useState } from "react";
-import AdminOrders from "./AdminOrders";
-import AdminProducts from "./AdminProducts";
+// client/src/pages/AdminPanel.tsx
+import React, { useState } from "react";
+import AdminOrders from "@/pages/AdminOrders";
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<"orders" | "products" | "settings">("orders");
+  const [password, setPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState("");
 
-  // ✅ Redirigir si no hay login
-  useEffect(() => {
-    const isAuth = localStorage.getItem("adminAuth");
-    if (!isAuth) {
-      window.location.href = "/admin-login";
+  const handleLogin = () => {
+    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || "";
+    if (password.trim() === adminPass.trim()) {
+      setIsAuthenticated(true);
+      setError("");
+    } else {
+      setError("Incorrect password. Please try again.");
     }
-  }, []);
+  };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 🔸 Header fijo */}
-      <header className="bg-[#1D9099] text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
-        <h1 className="text-xl font-bold">☕ The Neighborhood Coffee</h1>
-        <button
-          onClick={() => {
-            localStorage.removeItem("adminAuth");
-            window.location.href = "/admin-login";
-          }}
-          className="bg-white text-[#00454E] px-3 py-1 rounded font-semibold hover:bg-gray-200"
-        >
-          Logout
-        </button>
-      </header>
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-white p-6 rounded-lg shadow-md w-80">
+          <h1 className="text-2xl font-bold text-center mb-4">Admin Login</h1>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter admin password"
+            className="border border-gray-300 w-full px-3 py-2 rounded mb-3"
+          />
+          {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+          <button
+            onClick={handleLogin}
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded font-semibold"
+          >
+            Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-      {/* 🔹 Tabs de navegación */}
-      <nav className="flex justify-center gap-3 bg-[#00454E] py-3">
-        <button
-          onClick={() => setActiveTab("orders")}
-          className={`px-4 py-2 rounded-md font-semibold text-sm transition ${
-            activeTab === "orders"
-              ? "bg-[#1D9099] text-white"
-              : "bg-white text-[#00454E] hover:bg-[#E0F7FA]"
-          }`}
-        >
-          Orders
-        </button>
-        <button
-          onClick={() => setActiveTab("products")}
-          className={`px-4 py-2 rounded-md font-semibold text-sm transition ${
-            activeTab === "products"
-              ? "bg-[#1D9099] text-white"
-              : "bg-white text-[#00454E] hover:bg-[#E0F7FA]"
-          }`}
-        >
-          Products
-        </button>
-        <button
-          onClick={() => setActiveTab("settings")}
-          className={`px-4 py-2 rounded-md font-semibold text-sm transition ${
-            activeTab === "settings"
-              ? "bg-[#1D9099] text-white"
-              : "bg-white text-[#00454E] hover:bg-[#E0F7FA]"
-          }`}
-        >
-          Settings
-        </button>
-      </nav>
-
-      {/* 🔸 Contenido dinámico */}
-      <main className="p-6">
-        {activeTab === "orders" && <AdminOrders />}
-        {activeTab === "products" && <AdminProducts />}
-        {activeTab === "settings" && (
-          <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-sm border">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Settings</h2>
-            <p className="text-gray-600 mb-3">
-              Aquí podrás configurar horarios, días festivos y límites de pedidos diarios.
-            </p>
-
-            <p className="text-sm text-gray-500">
-              (Próximamente: edición directa de la tabla Settings en Airtable)
-            </p>
-          </div>
-        )}
-      </main>
-    </div>
-  );
+  return <AdminOrders />;
 }
