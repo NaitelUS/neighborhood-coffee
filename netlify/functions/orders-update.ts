@@ -1,44 +1,35 @@
 import { Handler } from "@netlify/functions";
 import { getAirtableClient } from "../lib/airtableClient";
 
-const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
-
-export const handler: Handler = async (event) => {
-  if (event.httpMethod !== "PUT") {
-    return { statusCode: 405, body: "Method Not Allowed" };
-  }
-
+const handler: Handler = async (event) => {
   try {
-    const { id, status } = JSON.parse(event.body || "{}");
+    if (!event.body) {
+      return { statusCode: 400, body: "Missing body" };
+    }
 
+    const { id, status } = JSON.parse(event.body);
     if (!id || !status) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Missing id or status" }),
-      };
+      return { statusCode: 400, body: "Missing id or status" };
     }
 
     const base = getAirtableClient();
+    const table = base(process.env.AIRTABLE_TABLE_ORDERS || "Orders");
 
-    const updated = await base(TABLE_ORDERS).update([
-      {
-        id,
-        fields: { status },
-      },
+    const updated = await table.update([
+      { id, fields: { Status: status } },
     ]);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        message: "Order updated successfully",
-        updated: updated[0].fields,
-      }),
+      body: JSON.stringify({ success: true, record: updated[0] }),
     };
   } catch (error) {
-    console.error("❌ Error updating order:", error);
+    console.error("Error updating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Server Error", error: String(error) }),
+      body: JSON.stringify({ error: "Failed to update order" }),
     };
   }
 };
+
+export { handler };
