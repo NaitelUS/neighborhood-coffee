@@ -1,131 +1,85 @@
-import React, { useState } from "react";
-
-interface EndpointResult {
-  name: string;
-  url: string;
-  method?: string;
-  response?: any;
-  error?: string;
-}
-
-const endpoints = [
-  { name: "Products", url: "/.netlify/functions/products" },
-  { name: "Add-ons", url: "/.netlify/functions/addons" },
-  { name: "Coupons", url: "/.netlify/functions/coupons" },
-  { name: "Settings", url: "/.netlify/functions/settings" },
-  { name: "Orders (GET)", url: "/.netlify/functions/orders-get" },
-  { name: "Feedback (GET)", url: "/.netlify/functions/feedback" },
-  { name: "Check Coupon (WELCOME10)", url: "/.netlify/functions/checkCoupon?code=WELCOME10" },
-];
+import React, { useEffect, useState } from "react";
+import AdminOrders from "./AdminOrders";
+import AdminProducts from "./AdminProducts";
 
 export default function AdminPanel() {
-  const [password, setPassword] = useState("");
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [results, setResults] = useState<EndpointResult[]>([]);
+  const [activeTab, setActiveTab] = useState<"orders" | "products" | "settings">("orders");
 
-  const handleLogin = () => {
-    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
-    if (password === adminPass) {
-      setIsAuthorized(true);
-    } else {
-      alert("Incorrect password");
+  // ✅ Redirigir si no hay login
+  useEffect(() => {
+    const isAuth = localStorage.getItem("adminAuth");
+    if (!isAuth) {
+      window.location.href = "/admin-login";
     }
-  };
-
-  const testEndpoint = async (endpoint: EndpointResult) => {
-    try {
-      const res = await fetch(endpoint.url);
-      const json = await res.json();
-
-      setResults((prev) =>
-        prev.map((r) =>
-          r.name === endpoint.name ? { ...r, response: json, error: undefined } : r
-        )
-      );
-    } catch (error) {
-      setResults((prev) =>
-        prev.map((r) =>
-          r.name === endpoint.name
-            ? { ...r, error: String(error), response: undefined }
-            : r
-        )
-      );
-    }
-  };
-
-  const testAll = async () => {
-    setResults(endpoints.map((e) => ({ ...e })));
-
-    for (const endpoint of endpoints) {
-      await testEndpoint(endpoint);
-    }
-  };
-
-  if (!isAuthorized) {
-    return (
-      <div className="max-w-md mx-auto mt-20 bg-white shadow-md rounded-xl p-6 text-center">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-          Admin Panel Access
-        </h2>
-        <input
-          type="password"
-          className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4"
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          onClick={handleLogin}
-          className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 rounded-lg"
-        >
-          Enter
-        </button>
-      </div>
-    );
-  }
+  }, []);
 
   return (
-    <div className="max-w-5xl mx-auto mt-10 bg-white shadow-lg rounded-xl p-6">
-      <h2 className="text-3xl font-bold text-amber-700 mb-6 text-center">
-        ☕ Admin Panel — Endpoint Tester
-      </h2>
+    <div className="min-h-screen bg-gray-50">
+      {/* 🔸 Header fijo */}
+      <header className="bg-[#1D9099] text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
+        <h1 className="text-xl font-bold">☕ The Neighborhood Coffee</h1>
+        <button
+          onClick={() => {
+            localStorage.removeItem("adminAuth");
+            window.location.href = "/admin-login";
+          }}
+          className="bg-white text-[#00454E] px-3 py-1 rounded font-semibold hover:bg-gray-200"
+        >
+          Logout
+        </button>
+      </header>
 
-      <button
-        onClick={testAll}
-        className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-semibold mb-6"
-      >
-        Test All Endpoints
-      </button>
+      {/* 🔹 Tabs de navegación */}
+      <nav className="flex justify-center gap-3 bg-[#00454E] py-3">
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`px-4 py-2 rounded-md font-semibold text-sm transition ${
+            activeTab === "orders"
+              ? "bg-[#1D9099] text-white"
+              : "bg-white text-[#00454E] hover:bg-[#E0F7FA]"
+          }`}
+        >
+          Orders
+        </button>
+        <button
+          onClick={() => setActiveTab("products")}
+          className={`px-4 py-2 rounded-md font-semibold text-sm transition ${
+            activeTab === "products"
+              ? "bg-[#1D9099] text-white"
+              : "bg-white text-[#00454E] hover:bg-[#E0F7FA]"
+          }`}
+        >
+          Products
+        </button>
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`px-4 py-2 rounded-md font-semibold text-sm transition ${
+            activeTab === "settings"
+              ? "bg-[#1D9099] text-white"
+              : "bg-white text-[#00454E] hover:bg-[#E0F7FA]"
+          }`}
+        >
+          Settings
+        </button>
+      </nav>
 
-      <div className="space-y-4">
-        {results.map((r) => (
-          <div
-            key={r.name}
-            className="border border-gray-200 rounded-lg p-4 bg-gray-50"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-gray-800">{r.name}</h3>
-              <a
-                href={r.url}
-                target="_blank"
-                className="text-sm text-blue-500 hover:underline"
-              >
-                Open ↗
-              </a>
-            </div>
+      {/* 🔸 Contenido dinámico */}
+      <main className="p-6">
+        {activeTab === "orders" && <AdminOrders />}
+        {activeTab === "products" && <AdminProducts />}
+        {activeTab === "settings" && (
+          <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-sm border">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Settings</h2>
+            <p className="text-gray-600 mb-3">
+              Aquí podrás configurar horarios, días festivos y límites de pedidos diarios.
+            </p>
 
-            {r.error ? (
-              <p className="text-red-500 text-sm">❌ {r.error}</p>
-            ) : r.response ? (
-              <pre className="bg-white text-xs p-3 rounded border overflow-x-auto">
-                {JSON.stringify(r.response, null, 2)}
-              </pre>
-            ) : (
-              <p className="text-gray-400 text-sm italic">Pending...</p>
-            )}
+            <p className="text-sm text-gray-500">
+              (Próximamente: edición directa de la tabla Settings en Airtable)
+            </p>
           </div>
-        ))}
-      </div>
+        )}
+      </main>
     </div>
   );
 }
