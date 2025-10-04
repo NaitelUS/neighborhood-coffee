@@ -21,6 +21,8 @@ export default function App() {
 
           <main className="flex-1 bg-gray-50">
             <Routes>
+              <Route path="/barista" element={<BaristaPanel />} />
+              
               {/* ✅ Menú principal con productos */}
               <Route path="/" element={<Menu />} />
 
