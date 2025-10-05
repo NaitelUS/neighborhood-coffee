@@ -7,7 +7,6 @@ export default function DeliveryPage() {
 
   const DELIVERY_PASSWORD = import.meta.env.VITE_DELIVERY_PASSWORD;
 
-  // Revisar si ya está autenticado
   useEffect(() => {
     const auth = localStorage.getItem("deliveryAuth");
     if (auth === "true") setAuthenticated(true);
@@ -22,7 +21,6 @@ export default function DeliveryPage() {
     }
   };
 
-  // Cargar órdenes filtradas
   useEffect(() => {
     if (authenticated) {
       fetch("/.netlify/functions/orders-get")
@@ -31,20 +29,20 @@ export default function DeliveryPage() {
           const filtered = data
             .filter(
               (o: any) =>
-                o.fields.OrderType === "Delivery" &&
-                ["Ready", "Out for Delivery"].includes(o.fields.Status)
+                o.order_type?.toLowerCase() === "delivery" &&
+                ["Ready", "Out for Delivery"].includes(o.status)
             )
             .sort(
               (a: any, b: any) =>
-                new Date(a.fields.ScheduleDate).getTime() -
-                new Date(b.fields.ScheduleDate).getTime()
+                new Date(a.created_at).getTime() -
+                new Date(b.created_at).getTime()
             );
           setOrders(filtered);
-        });
+        })
+        .catch((err) => console.error("Error fetching orders:", err));
     }
   }, [authenticated]);
 
-  // Mostrar login si no está autenticado
   if (!authenticated) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
@@ -66,7 +64,6 @@ export default function DeliveryPage() {
     );
   }
 
-  // Vista de órdenes
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-center mb-4">🚚 Delivery Orders</h1>
@@ -82,17 +79,16 @@ export default function DeliveryPage() {
             >
               <div className="flex justify-between items-center mb-1">
                 <h2 className="font-semibold text-lg">#{order.id}</h2>
-                <span className="text-xs text-gray-500">{order.fields.Status}</span>
+                <span className="text-xs text-gray-500">{order.status}</span>
               </div>
 
-              <p className="text-gray-800"><strong>👤</strong> {order.fields.Name}</p>
-              <p className="text-gray-800"><strong>📞</strong> {order.fields.Phone}</p>
-              <p className="text-gray-800"><strong>📍</strong> {order.fields.Address}</p>
+              <p className="text-gray-800"><strong>👤</strong> {order.name}</p>
+              <p className="text-gray-800"><strong>📞</strong> {order.phone}</p>
               <p className="text-gray-700">
-                🗓 {order.fields.ScheduleDate} — 🕓 {order.fields.ScheduleTime}
+                🕓 {order.schedule_time || "N/A"}
               </p>
               <p className="mt-1 font-bold text-lg text-green-700">
-                💲{Number(order.fields.Total).toFixed(2)}
+                💲{Number(order.total).toFixed(2)}
               </p>
 
               <button
@@ -108,7 +104,6 @@ export default function DeliveryPage() {
     </div>
   );
 
-  // función para completar orden
   async function handleComplete(orderId: string) {
     const confirmAction = window.confirm("Mark this order as completed?");
     if (!confirmAction) return;
@@ -119,7 +114,7 @@ export default function DeliveryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: orderId,
-          fields: { Status: "Completed" },
+          fields: { status: "Completed" }, // <-- usar minúsculas
         }),
       });
 
