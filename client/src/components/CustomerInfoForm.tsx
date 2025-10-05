@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import dayjs from "dayjs";
 
 interface CustomerInfoFormProps {
-  onSubmit: (info: any, schedule: string) => void;
+  onSubmit: (info: any, schedule_date: string, schedule_time: string) => void;
 }
 
 export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
@@ -26,8 +26,8 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
       return;
     }
 
-    const schedule = `${date} ${time}`;
-    onSubmit({ name, phone, method, address }, schedule);
+    // 🚀 Mandamos fecha y hora por separado
+    onSubmit({ name, phone, method, address }, date, time);
   };
 
   return (
