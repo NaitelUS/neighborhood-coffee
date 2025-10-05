@@ -9,6 +9,8 @@ import AdminOrders from "@/pages/AdminOrders";
 import AdminPanel from "@/pages/AdminPanel";
 import AdminProducts from "@/pages/AdminProducts";
 import { CartProvider } from "@/context/CartContext";
+import DeliveryPage from "./pages/DeliveryPage";
+
 
 export default function App() {
   return (
@@ -23,6 +25,9 @@ export default function App() {
             <Routes>
               {/* 🏠 Menú principal (productos) */}
               <Route path="/" element={<Menu />} />
+
+              <Route path="/delivery" element={<DeliveryPage />} />
+
 
               {/* 🧾 Orden y forma del cliente */}
               <Route path="/order" element={<OrderPage />} />
