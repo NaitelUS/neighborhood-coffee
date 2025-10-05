@@ -28,26 +28,29 @@ export default function OrderPage() {
     }
 
     const orderData = {
-      customer_name: info.name,
-      customer_phone: info.phone,
-      order_type: info.method,
-      address: info.method === "Delivery" ? info.address || "" : "",
-      schedule_date: schedule ? schedule.split("T")[0] : "",
-      schedule_time: schedule ? schedule.split("T")[1] : "",
-      subtotal,
-      discount,
-      total,
-      coupon_code: appliedCoupon || null,
-      status: "Received",
-      items: cartItems.map((item) => ({
-        name: item.name,
-        option: item.option,
-        price: item.price,
-        addons:
-          item.addons?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`).join(", ") ||
-          "",
-      })),
-    };
+  customer_name: info.name,
+  customer_phone: info.phone,
+  address: info.method === "Delivery" ? info.address || "" : "",
+  order_type: info.method || "Pickup",
+  schedule_date: new Date().toLocaleDateString("en-CA"), // YYYY-MM-DD
+  schedule_time: schedule
+    ? schedule
+    : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  subtotal,
+  discount,
+  total,
+  coupon_code: appliedCoupon || null,
+  status: "Received",
+  items: cartItems.map((item) => ({
+    name: item.name,
+    option: item.option,
+    price: item.price,
+    addons:
+      item.addons?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`).join(", ") ||
+      "",
+  })),
+};
+
 
     console.log("📦 Enviando orden a Netlify:", orderData);
     alert("Debug: revisa la consola del navegador (F12 > Console)");
