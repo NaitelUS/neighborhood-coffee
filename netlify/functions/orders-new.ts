@@ -1,6 +1,7 @@
 import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
+// 🧩 Inicializa cliente Airtable
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID as string
 );
@@ -8,8 +9,10 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
 const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
+// 🚀 Handler principal
 export const handler: Handler = async (event) => {
   try {
+    // 🧠 Verifica cuerpo
     if (!event.body) {
       return {
         statusCode: 400,
@@ -19,21 +22,21 @@ export const handler: Handler = async (event) => {
 
     const data = JSON.parse(event.body);
 
-    // ✅ Nombres sincronizados con OrderPage.jsx
     const {
       customer_name,
       customer_phone,
       address,
-      method, // Pickup | Delivery
-      schedule,
+      order_type, // Pickup | Delivery
+      schedule_date,
+      schedule_time,
       subtotal,
-      discount_value,
+      discount,
       total,
-      coupon,
+      coupon_code,
       items,
     } = data;
 
-    // Validaciones básicas
+    // 🧱 Validaciones básicas
     if (!customer_name || !items || !Array.isArray(items)) {
       return {
         statusCode: 400,
@@ -41,19 +44,20 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // 📦 Crear orden principal
+    // 🧾 Crea la orden principal
     const orderRecord = await base(TABLE_ORDERS).create([
       {
         fields: {
           Name: customer_name,
           Phone: customer_phone || "",
-          Address: method === "Delivery" ? address || "" : "",
-          OrderType: method || "Pickup",
-          ScheduleTime: schedule || "",
+          Address: order_type === "Delivery" ? address || "" : "",
+          OrderType: order_type || "Pickup",
+          ScheduleDate: schedule_date || "",
+          ScheduleTime: schedule_time || "",
           Subtotal: subtotal || 0,
-          Discount: discount_value || 0,
+          Discount: discount || 0,
           Total: total || 0,
-          Coupon: coupon || "",
+          Coupon: coupon_code || "",
           Status: "Received",
         },
       },
@@ -61,28 +65,34 @@ export const handler: Handler = async (event) => {
 
     const orderId = orderRecord[0].id;
 
-    // 🧾 Crear ítems de la orden
-    if (items && items.length > 0) {
+    // 🧩 Crea los ítems de la orden
+    if (Array.isArray(items) && items.length > 0) {
       const orderItems = items.map((item) => ({
         fields: {
           Order: [orderId],
           ProductName: item.name,
           Option: item.option || "",
-          Price: item.price || 0,
-          AddOns: item.addons
+          Price: typeof item.price === "number" ? item.price : 0,
+          AddOns: Array.isArray(item.addons)
             ? item.addons
-                .map((a: any) => `${a.name} ($${a.price.toFixed(2)})`)
+                .map((a: any) => {
+                  const name = a?.name || "Unnamed";
+                  const price =
+                    typeof a?.price === "number" ? a.price.toFixed(2) : "0.00";
+                  return `${name} ($${price})`;
+                })
                 .join(", ")
             : "",
         },
       }));
 
-      // 🚀 Inserta por lotes (máximo 10 registros por llamada)
+      // 🚀 Inserta en lotes de 10 (Airtable limita por batch)
       while (orderItems.length > 0) {
         await base(TABLE_ORDERITEMS).create(orderItems.splice(0, 10));
       }
     }
 
+    // ✅ Éxito
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -91,14 +101,11 @@ export const handler: Handler = async (event) => {
         orderId,
       }),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Error creating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: "Failed to create order",
-        details: error.message,
-      }),
+      body: JSON.stringify({ error: "Failed to create order" }),
     };
   }
 };
