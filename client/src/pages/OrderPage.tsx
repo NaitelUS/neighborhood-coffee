@@ -11,46 +11,70 @@ export default function OrderPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  // ✅ Enviar orden completa a Airtable
   const handleOrderSubmit = async (info: any, schedule: string) => {
+    console.log("🧠 Info del cliente recibido:", info);
+    console.log("🧠 Schedule recibido:", schedule);
+    console.log("🛒 Items en carrito:", cartItems);
+
     if (cartItems.length === 0) {
       alert("Your cart is empty.");
       return;
     }
 
+    if (!info || !info.name) {
+      alert("Missing customer info — please fill out the form.");
+      return;
+    }
+
+    const orderData = {
+      customer_name: info.name,
+      customer_phone: info.phone,
+      order_type: info.method,
+      address: info.method === "Delivery" ? info.address || "" : "",
+      schedule_date: schedule ? schedule.split("T")[0] : "",
+      schedule_time: schedule ? schedule.split("T")[1] : "",
+      subtotal,
+      discount,
+      total,
+      coupon_code: appliedCoupon || null,
+      status: "Received",
+      items: cartItems.map((item) => ({
+        name: item.name,
+        option: item.option,
+        price: item.price,
+        addons:
+          item.addons?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`).join(", ") ||
+          "",
+      })),
+    };
+
+    console.log("📦 Enviando orden a Netlify:", orderData);
+    alert("Debug: revisa la consola del navegador (F12 > Console)");
+
     setLoading(true);
 
     try {
-      const orderData = {
-        customer_name: info.name,
-        customer_phone: info.phone,
-        method: info.method,
-        address: info.method === "Delivery" ? info.address : "",
-        schedule,
-        subtotal,
-        discount_value: discount,
-        coupon: appliedCoupon || null,
-        total,
-        status: "Received",
-        items: cartItems.map((item) => ({
-          name: item.name,
-          option: item.option,
-          price: item.price,
-          addons:
-            item.addons?.map((a) => `${a.name} (+$${a.price.toFixed(2)})`).join(", ") || "",
-        })),
-      };
-
       const res = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData),
       });
 
-      if (!res.ok) throw new Error("Failed to save order");
+      console.log("📨 Respuesta del servidor:", res);
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("❌ Error HTTP:", errText);
+        throw new Error("Failed to save order");
+      }
 
       const result = await res.json();
-      const orderId = result.id || "N/A";
+      console.log("✅ Resultado:", result);
 
+      const orderId = result.id || result.orderId || "N/A";
+
+      // 🧾 Redirigir al Thank You
       navigate(
         `/thank-you?order_id=${orderId}&total=${total.toFixed(2)}&name=${encodeURIComponent(
           info.name
@@ -59,21 +83,21 @@ export default function OrderPage() {
 
       clearCart();
     } catch (err) {
-      console.error("❌ Error sending order:", err);
-      alert("There was an error submitting your order.");
+      console.error("🚨 Error al enviar la orden:", err);
+      alert("There was an error submitting your order. Check console for details.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-      {/* 🧾 Resumen del pedido */}
+    <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mt-6">
+      {/* 🧾 Resumen */}
       <div>
         <OrderSummary />
       </div>
 
-      {/* 👤 Información del cliente */}
+      {/* 👤 Cliente + Fecha */}
       <div>
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
@@ -82,7 +106,7 @@ export default function OrderPage() {
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#1D9099] mx-auto mb-3"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-amber-600 mx-auto mb-3"></div>
             <p className="text-gray-700">Submitting your order...</p>
           </div>
         </div>
