@@ -1,7 +1,6 @@
 import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
-// 🔑 Inicializar cliente de Airtable
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID as string
 );
@@ -12,7 +11,6 @@ const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 export const handler: Handler = async (event) => {
   try {
     if (!event.body) {
-      console.error("❌ Missing body in request");
       return {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing request body" }),
@@ -20,83 +18,69 @@ export const handler: Handler = async (event) => {
     }
 
     const data = JSON.parse(event.body);
-    console.log("📦 Incoming Order Data:", data);
 
+    // ✅ Nombres sincronizados con OrderPage.jsx
     const {
-      customer_name = "",
-      customer_phone = "",
-      address = "",
-      method = "Pickup", // Pickup | Delivery
-      schedule = "",
-      subtotal = 0,
-      discount_value = 0,
-      total = 0,
-      coupon = "",
-      items = [],
+      customer_name,
+      customer_phone,
+      address,
+      method, // Pickup | Delivery
+      schedule,
+      subtotal,
+      discount_value,
+      total,
+      coupon,
+      items,
     } = data;
 
-    if (!customer_name || !Array.isArray(items) || items.length === 0) {
-      console.error("❌ Invalid order data:", data);
+    // Validaciones básicas
+    if (!customer_name || !items || !Array.isArray(items)) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: "Invalid order data" }),
       };
     }
 
-    // 🧾 Crear registro principal en Orders
+    // 📦 Crear orden principal
     const orderRecord = await base(TABLE_ORDERS).create([
       {
         fields: {
           Name: customer_name,
-          Phone: customer_phone,
-          Address: method === "Delivery" ? address : "",
-          OrderType: method,
+          Phone: customer_phone || "",
+          Address: method === "Delivery" ? address || "" : "",
+          OrderType: method || "Pickup",
           ScheduleTime: schedule || "",
-          Subtotal: subtotal,
-          Discount: discount_value,
-          Total: total,
-          Coupon: coupon,
+          Subtotal: subtotal || 0,
+          Discount: discount_value || 0,
+          Total: total || 0,
+          Coupon: coupon || "",
           Status: "Received",
-          CreatedTime: new Date().toISOString(),
         },
       },
     ]);
 
     const orderId = orderRecord[0].id;
-    console.log("✅ Order created with ID:", orderId);
 
-    // 🧩 Crear los ítems vinculados
-    if (Array.isArray(items) && items.length > 0) {
-      const orderItems = items.map((item) => {
-        const addons =
-          Array.isArray(item.addons) && item.addons.length > 0
+    // 🧾 Crear ítems de la orden
+    if (items && items.length > 0) {
+      const orderItems = items.map((item) => ({
+        fields: {
+          Order: [orderId],
+          ProductName: item.name,
+          Option: item.option || "",
+          Price: item.price || 0,
+          AddOns: item.addons
             ? item.addons
-                .map((a: any) =>
-                  a && a.name && typeof a.price === "number"
-                    ? `${a.name} ($${a.price.toFixed(2)})`
-                    : ""
-                )
-                .filter(Boolean)
+                .map((a: any) => `${a.name} ($${a.price.toFixed(2)})`)
                 .join(", ")
-            : "";
+            : "",
+        },
+      }));
 
-        return {
-          fields: {
-            Order: [orderId],
-            ProductName: item.name || "Unnamed",
-            Option: item.option || "",
-            Price: typeof item.price === "number" ? item.price : 0,
-            AddOns: addons,
-          },
-        };
-      });
-
-      console.log("🧾 Items to insert:", JSON.stringify(orderItems, null, 2));
-
+      // 🚀 Inserta por lotes (máximo 10 registros por llamada)
       while (orderItems.length > 0) {
         await base(TABLE_ORDERITEMS).create(orderItems.splice(0, 10));
       }
-      console.log("✅ All items inserted successfully");
     }
 
     return {
@@ -113,7 +97,7 @@ export const handler: Handler = async (event) => {
       statusCode: 500,
       body: JSON.stringify({
         error: "Failed to create order",
-        details: error.message || error.toString(),
+        details: error.message,
       }),
     };
   }
