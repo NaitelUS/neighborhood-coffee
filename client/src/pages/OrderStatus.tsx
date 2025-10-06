@@ -1,150 +1,141 @@
-import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 
-interface OrderItem {
+interface Order {
   id: string;
-  ProductName: string;
-  Quantity: number;
-  Price: number;
-  Option?: string;
-  AddOns?: string[];
-}
-
-interface OrderData {
-  id?: string;
-  CustomerName?: string;
-  Total?: number;
-  Discount?: number;
-  CouponCode?: string;
-  Status?: string;
-  Items?: OrderItem[];
+  name: string;
+  phone: string;
+  order_type: string;
+  total: number;
+  status: string;
+  schedule_date?: string;
+  schedule_time?: string;
+  address?: string;
+  notes?: string;
 }
 
 export default function OrderStatus() {
-  const { orderId } = useParams<{ orderId: string }>();
-  const [order, setOrder] = useState<OrderData | null>(null);
+  const [searchParams] = useSearchParams();
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  const fetchOrder = async () => {
-    try {
-      const res = await fetch(`/.netlify/functions/orders-get?id=${orderId}`);
-      const data = await res.json();
-      setOrder(data);
-    } catch (err) {
-      console.error("Error fetching order:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const orderId = searchParams.get("id");
 
   useEffect(() => {
-    if (orderId) {
-      fetchOrder();
-
-      // ⏱️ Auto-refresh cada 30s
-      const interval = setInterval(fetchOrder, 30000);
-      return () => clearInterval(interval);
+    if (!orderId) {
+      setLoading(false);
+      setNotFound(true);
+      return;
     }
+
+    fetch(`/.netlify/functions/orders-get?id=${orderId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.id) {
+          setOrder(data);
+        } else {
+          setNotFound(true);
+        }
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
   }, [orderId]);
 
   if (loading) {
     return (
-      <div className="text-center p-6">
-        <p className="text-gray-500">Loading order status...</p>
+      <div className="text-center py-20">
+        <p className="text-gray-600">Checking your order status...</p>
       </div>
     );
   }
 
-  if (!order) {
+  if (notFound || !order) {
     return (
-      <div className="text-center p-6">
-        <h1 className="text-2xl font-bold text-red-600 mb-3">
-          Order not found
+      <div className="text-center py-20">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
+          Order not found.
         </h1>
+        <p className="text-gray-600 mb-6">
+          Please verify your order number or contact support.
+        </p>
         <Link
           to="/"
-          className="text-blue-600 underline hover:text-blue-800 font-medium"
+          className="inline-block bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium"
         >
-          Back to Home
+          Return to Menu
         </Link>
       </div>
     );
   }
 
+  // 🎨 Colores por estado
   const statusColor: Record<string, string> = {
-    Pending: "bg-yellow-100 text-yellow-800",
-    "In Process": "bg-blue-100 text-blue-800",
-    "Ready for Pickup": "bg-green-100 text-green-800",
-    Completed: "bg-gray-100 text-gray-800",
-    Cancelled: "bg-red-100 text-red-800",
+    Received: "bg-gray-100 text-gray-800 border-gray-300",
+    "In Process": "bg-blue-50 text-blue-700 border-blue-300",
+    Ready: "bg-green-50 text-green-700 border-green-300",
+    "Out for Delivery": "bg-amber-50 text-amber-700 border-amber-300",
+    Completed: "bg-teal-50 text-teal-700 border-teal-300",
   };
 
-  const statusClass = statusColor[order.Status || "Pending"] || "bg-gray-100";
-
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white rounded-xl shadow">
-      <h1 className="text-3xl font-bold text-center mb-4 text-blue-700">
-        ☕ Order Status
+    <div className="max-w-md mx-auto bg-white shadow-md rounded-xl p-6 mt-10">
+      <h1 className="text-2xl font-bold text-center text-teal-700 mb-4">
+        🔍 Order Status
       </h1>
 
       <div className="text-center mb-4">
-        <p className="text-gray-600 text-sm mb-1">
-          <strong>Order ID:</strong> {orderId}
+        <p className="text-gray-700 font-mono text-lg mb-1">
+          Order #: {order.id}
         </p>
-        <span
-          className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${statusClass}`}
-        >
-          {order.Status || "Pending"}
-        </span>
-        <p className="text-xs text-gray-400 mt-1">(Auto-refresh every 30s)</p>
+        <p className="text-gray-500 text-sm">
+          {order.order_type} — {order.schedule_date} {order.schedule_time}
+        </p>
       </div>
 
-      {/* 🧾 Items */}
-      {order.Items && order.Items.length > 0 && (
-        <div className="border-t pt-4 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2 text-center">
-            Your Order
-          </h2>
-          <ul className="divide-y divide-gray-200">
-            {order.Items.map((item) => (
-              <li key={item.id} className="py-3">
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-800">
-                    {item.ProductName}
-                  </span>
-                  <span className="text-gray-600">
-                    ${item.Price.toFixed(2)}
-                  </span>
-                </div>
+      <div
+        className={`p-4 rounded-lg text-center font-semibold border ${
+          statusColor[order.status] || "bg-gray-50 border-gray-200"
+        }`}
+      >
+        {order.status === "Received" && "📦 Your order has been received!"}
+        {order.status === "In Process" && "☕ Barista is preparing your drink..."}
+        {order.status === "Ready" && "✅ Your order is ready for pickup!"}
+        {order.status === "Out for Delivery" &&
+          "🚚 Your order is out for delivery!"}
+        {order.status === "Completed" &&
+          "🎉 Your order has been completed. Enjoy!"}
+      </div>
 
-                {item.Option && (
-                  <p className="text-sm text-gray-500 ml-2">
-                    Option: {item.Option}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* 💰 Totales */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        {order.Discount && order.Discount > 0 && order.CouponCode && (
-          <p className="text-sm text-green-700 mb-1">
-            🎉 You saved ${order.Discount.toFixed(2)} with{" "}
-            <strong>{order.CouponCode}</strong>
+      <div className="mt-4 border-t pt-3 text-gray-700 text-sm">
+        <p>
+          <strong>Name:</strong> {order.name}
+        </p>
+        <p>
+          <strong>Phone:</strong> {order.phone}
+        </p>
+        {order.address && (
+          <p>
+            <strong>Address:</strong> {order.address}
           </p>
         )}
-        <p className="text-lg font-semibold text-gray-800">
-          Total: ${order.Total?.toFixed(2)}
+        {order.notes && (
+          <p>
+            <strong>Notes:</strong> {order.notes}
+          </p>
+        )}
+      </div>
+
+      <div className="bg-teal-50 p-4 rounded-lg mt-4 text-center">
+        <p className="text-lg font-semibold text-teal-800">
+          Total: ${order.total.toFixed(2)}
         </p>
       </div>
 
-      <div className="text-center mt-6">
+      <div className="mt-6 text-center">
         <Link
           to="/"
-          className="text-blue-600 underline hover:text-blue-800 font-medium"
+          className="inline-block bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium"
         >
           Back to Menu
         </Link>
