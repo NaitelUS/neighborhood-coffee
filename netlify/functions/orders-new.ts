@@ -1,35 +1,45 @@
 import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
+// Inicializar conexión
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
 
-const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS!;
-const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
+const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
-// 🧠 Genera consecutivo real
+// 🧠 Función auxiliar: obtener siguiente número consecutivo
 async function getNextOrderNumber() {
-  const records = await base(TABLE_ORDERS)
-    .select({
-      sort: [{ field: "OrderNumber", direction: "desc" }],
-      maxRecords: 1,
-    })
-    .firstPage();
+  try {
+    const records = await base(TABLE_ORDERS)
+      .select({
+        sort: [{ field: "OrderNumber", direction: "desc" }],
+        maxRecords: 1,
+      })
+      .firstPage();
 
-  if (records.length > 0) {
-    const last = records[0].fields["OrderNumber"];
-    if (typeof last === "number") return last + 1;
+    if (records.length > 0) {
+      const last = records[0].fields["OrderNumber"];
+      if (typeof last === "number") return last + 1;
+    }
+    return 1; // Si no hay registros
+  } catch (err) {
+    console.error("⚠️ Error fetching last order number:", err);
+    return 1; // fallback
   }
-  return 1;
 }
 
 export const handler: Handler = async (event) => {
   try {
     const orderData = JSON.parse(event.body || "{}");
+    console.log("🧾 Incoming order:", orderData);
+
+    // Obtener número consecutivo
     const nextNumber = await getNextOrderNumber();
     const shortId = `TNC-${String(nextNumber).padStart(3, "0")}`;
 
+    // Crear orden principal
     const createdOrder = await base(TABLE_ORDERS).create([
       {
         fields: {
@@ -51,10 +61,13 @@ export const handler: Handler = async (event) => {
       },
     ]);
 
+    console.log(`✅ Order created: ${shortId}`);
+
+    // Crear los ítems relacionados
     if (Array.isArray(orderData.items) && orderData.items.length > 0) {
       const orderItems = orderData.items.map((item: any) => ({
         fields: {
-          Order: shortId,
+          Order: shortId, // no es link, solo texto
           ProductName: item.name,
           Option: item.option || "",
           Price: item.price || 0,
@@ -69,17 +82,27 @@ export const handler: Handler = async (event) => {
         },
       }));
 
+      // Airtable permite máximo 10 registros por batch
       while (orderItems.length > 0) {
-        await base(TABLE_ORDERITEMS).create(orderItems.splice(0, 10));
+        const batch = orderItems.splice(0, 10);
+        await base(TABLE_ORDERITEMS).create(batch);
       }
+
+      console.log("✅ OrderItems saved successfully");
+    } else {
+      console.warn("⚠️ No order items found in request");
     }
 
+    // Respuesta exitosa
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, orderId: shortId }),
     };
   } catch (err) {
-    console.error("Error creating order:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "Failed" }) };
+    console.error("❌ Error creating order:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, error: "Failed to create order" }),
+    };
   }
 };
