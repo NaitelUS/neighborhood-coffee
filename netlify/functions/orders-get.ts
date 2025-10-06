@@ -12,23 +12,29 @@ export const handler: Handler = async (event) => {
     const { id } = event.queryStringParameters || {};
 
     const records = await base(TABLE_ORDERS)
-      .select({ sort: [{ field: "CreatedTime", direction: "desc" }] })
+      .select({
+        sort: [{ field: "CreatedTime", direction: "desc" }],
+      })
       .all();
 
     const orders = records.map((record) => ({
       id: record.fields.OrderID || record.id,
+      order_number: record.fields.OrderNumber || null,
       name: record.fields.Name || "",
       phone: record.fields.Phone || "",
       order_type: record.fields.OrderType || "Pickup",
       total: record.fields.Total || 0,
+      discount: record.fields.Discount || 0,
+      coupon: record.fields.Coupon || "",
       status: record.fields.Status || "Received",
       schedule_date: record.fields.ScheduleDate || "",
       schedule_time: record.fields.ScheduleTime || "",
+      address: record.fields.Address || "",
       notes: record.fields.Notes || "",
       created_at: record.fields.CreatedTime || "",
-      address: record.fields.Address || "",
     }));
 
+    // Si viene ID → devolver solo esa orden
     if (id) {
       const found = orders.find((o) => o.id === id);
       return {
@@ -37,6 +43,7 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // Si no hay ID → devolver todas
     return {
       statusCode: 200,
       body: JSON.stringify(orders),
