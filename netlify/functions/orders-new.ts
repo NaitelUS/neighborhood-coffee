@@ -1,108 +1,59 @@
 import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
-// 🧩 Inicializa cliente Airtable
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID as string
+  process.env.AIRTABLE_BASE_ID!
 );
 
-const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
-const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
+const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS!;
+const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
 
-// 🚀 Handler principal
 export const handler: Handler = async (event) => {
   try {
-    // 🧠 Verifica cuerpo
-    if (!event.body) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing request body" }),
-      };
-    }
+    const data = JSON.parse(event.body || "{}");
 
-    const data = JSON.parse(event.body);
-
-    const {
-      customer_name,
-      customer_phone,
-      address,
-      order_type, // Pickup | Delivery
-      schedule_date,
-      schedule_time,
-      subtotal,
-      discount,
-      total,
-      coupon_code,
-      items,
-    } = data;
-
-    // 🧱 Validaciones básicas
-    if (!customer_name || !items || !Array.isArray(items)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid order data" }),
-      };
-    }
-
-    // 🧾 Crea la orden principal
+    // ✅ Crear la orden principal
     const orderRecord = await base(TABLE_ORDERS).create([
       {
         fields: {
-          Name: customer_name,
-          Phone: customer_phone || "",
-          Address: order_type === "Delivery" ? address || "" : "",
-          OrderType: order_type || "Pickup",
-          ScheduleDate: schedule_date || "",
-          ScheduleTime: schedule_time || "",
-          Subtotal: subtotal || 0,
-          Discount: discount || 0,
-          Total: total || 0,
-          Coupon: coupon_code || "",
-          Status: "Received",
+          Name: data.customer_name,
+          Phone: data.customer_phone,
+          Address: data.address,
+          OrderType: data.order_type,
+          ScheduleDate: data.schedule_date,
+          ScheduleTime: data.schedule_time,
+          Subtotal: data.subtotal,
+          Discount: data.discount,
+          Total: data.total,
+          Coupon: data.coupon_code,
+          Status: data.status || "Received",
         },
       },
     ]);
 
     const orderId = orderRecord[0].id;
 
-    // 🧩 Crea los ítems de la orden
-    if (Array.isArray(items) && items.length > 0) {
-      const orderItems = items.map((item) => ({
-        fields: {
-          Order: [orderId],
-          ProductName: item.name,
-          Option: item.option || "",
-          Price: typeof item.price === "number" ? item.price : 0,
-          AddOns: Array.isArray(item.addons)
-            ? item.addons
-                .map((a: any) => {
-                  const name = a?.name || "Unnamed";
-                  const price =
-                    typeof a?.price === "number" ? a.price.toFixed(2) : "0.00";
-                  return `${name} ($${price})`;
-                })
-                .join(", ")
-            : "",
-        },
-      }));
-
-      // 🚀 Inserta en lotes de 10 (Airtable limita por batch)
-      while (orderItems.length > 0) {
-        await base(TABLE_ORDERITEMS).create(orderItems.splice(0, 10));
-      }
+    // ✅ Crear los items asociados
+    if (data.items && Array.isArray(data.items)) {
+      await base(TABLE_ORDERITEMS).create(
+        data.items.map((item: any) => ({
+          fields: {
+            Order: [orderId],
+            ProductName: item.name,
+            Option: item.option,
+            Price: item.price,
+            AddOns: item.addons || "", // ✅ ahora se graba correctamente
+          },
+        }))
+      );
     }
 
-    // ✅ Éxito
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        message: "Order successfully created",
-        orderId,
-      }),
+      body: JSON.stringify({ success: true, orderId }),
     };
-  } catch (error) {
-    console.error("❌ Error creating order:", error);
+  } catch (err) {
+    console.error("❌ Error creating order:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Failed to create order" }),
