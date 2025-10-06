@@ -10,10 +10,12 @@ const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
 
 export const handler: Handler = async () => {
   try {
+    // 🧾 Obtener órdenes principales
     const ordersRecords = await base(TABLE_ORDERS)
       .select({ sort: [{ field: "CreatedTime", direction: "desc" }] })
       .all();
 
+    // 🧱 Obtener los OrderItems
     const itemsRecords = await base(TABLE_ORDERITEMS)
       .select({ sort: [{ field: "CreatedTime", direction: "asc" }] })
       .all();
@@ -35,6 +37,7 @@ export const handler: Handler = async () => {
       }
     });
 
+    // 🧩 Combinar órdenes con sus items
     const formatted = ordersRecords.map((r) => ({
       id: r.id,
       name: r.fields["Name"] || "",
@@ -56,6 +59,9 @@ export const handler: Handler = async () => {
     return { statusCode: 200, body: JSON.stringify(formatted) };
   } catch (err) {
     console.error("❌ Error fetching orders:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "Failed to fetch orders" }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to fetch orders" }),
+    };
   }
 };
