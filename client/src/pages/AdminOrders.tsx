@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 export default function AdminOrders() {
   const [authenticated, setAuthenticated] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const [filter, setFilter] = useState("All");
   const [passwordInput, setPasswordInput] = useState("");
   const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "admin2025!";
 
@@ -23,7 +25,6 @@ export default function AdminOrders() {
       const res = await fetch("/.netlify/functions/orders-get");
       const data = await res.json();
 
-      // Ordenar por fecha de entrega descendente
       const sorted = data.sort(
         (a: any, b: any) =>
           new Date(b.schedule_date + " " + b.schedule_time).getTime() -
@@ -31,12 +32,13 @@ export default function AdminOrders() {
       );
 
       setOrders(sorted);
+      applyFilter(filter, sorted);
     } catch (err) {
       console.error("Error fetching orders:", err);
     }
   };
 
-  // 🕒 Auto-refresh cada 20 s
+  // 🕒 Auto-refresh cada 20 segundos
   useEffect(() => {
     if (authenticated) {
       fetchOrders();
@@ -44,13 +46,6 @@ export default function AdminOrders() {
       return () => clearInterval(interval);
     }
   }, [authenticated]);
-
-  // Cargar autenticación previa
-  useEffect(() => {
-    if (localStorage.getItem("adminAuth") === "true") {
-      setAuthenticated(true);
-    }
-  }, []);
 
   // 📅 Formato legible
   const formatDateTime = (date: string, time: string) => {
@@ -75,14 +70,27 @@ export default function AdminOrders() {
         body: JSON.stringify({ id: orderId, status }),
       });
       if (res.ok) {
-        setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status } : o))
+        const updated = orders.map((o) =>
+          o.id === orderId ? { ...o, status } : o
         );
+        setOrders(updated);
+        applyFilter(filter, updated);
       } else alert("Error updating status");
     } catch (err) {
       console.error("Error updating:", err);
     }
   };
+
+  // 🎯 Aplicar filtro
+  const applyFilter = (status: string, data = orders) => {
+    if (status === "All") setFilteredOrders(data);
+    else setFilteredOrders(data.filter((o) => o.status === status));
+  };
+
+  // 🧩 Filtro dinámico
+  useEffect(() => {
+    applyFilter(filter);
+  }, [filter, orders]);
 
   // 🔒 Pantalla de login
   if (!authenticated)
@@ -110,15 +118,34 @@ export default function AdminOrders() {
   // 🧾 Panel principal
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold text-center text-teal-700 mb-6">
+      <h1 className="text-2xl font-bold text-center text-teal-700 mb-4">
         ☕ Barista Orders Panel
       </h1>
 
-      {orders.length === 0 ? (
-        <p className="text-center text-gray-500">No active orders</p>
+      {/* Filtro de estatus */}
+      <div className="flex flex-wrap justify-center gap-2 mb-6">
+        {["All", "Received", "In Progress", "Ready", "Out for Delivery", "Completed", "Cancelled"].map(
+          (status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                filter === status
+                  ? "bg-teal-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {status}
+            </button>
+          )
+        )}
+      </div>
+
+      {filteredOrders.length === 0 ? (
+        <p className="text-center text-gray-500">No orders found</p>
       ) : (
         <div className="space-y-6">
-          {orders.map((o) => (
+          {filteredOrders.map((o) => (
             <div
               key={o.id}
               className="bg-white p-5 rounded-xl shadow-sm border border-gray-200"
