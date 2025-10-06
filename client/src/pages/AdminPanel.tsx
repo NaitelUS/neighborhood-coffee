@@ -1,11 +1,21 @@
-// client/src/pages/AdminPanel.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminOrders from "@/pages/AdminOrders";
 
 export default function AdminPanel() {
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // ⏱️ Auto-refresh cada 30 segundos
+  useEffect(() => {
+    if (isAuthenticated) {
+      const interval = setInterval(() => {
+        setRefreshKey((prev) => prev + 1);
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   const handleLogin = () => {
     const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || "";
@@ -41,5 +51,5 @@ export default function AdminPanel() {
     );
   }
 
-  return <AdminOrders />;
+  return <AdminOrders key={refreshKey} />;
 }
