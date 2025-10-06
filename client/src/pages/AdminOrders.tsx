@@ -1,106 +1,198 @@
-// client/src/pages/AdminOrders.tsx
 import React, { useEffect, useState } from "react";
 
-interface Order {
-  id: string;
-  name: string;
-  phone: string;
-  order_type: string;
-  total: number;
-  status: string;
-  schedule_date: string;
-  schedule_time: string;
-  notes?: string;
-  created_at: string;
-}
-
 export default function AdminOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [passwordInput, setPasswordInput] = useState("");
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "admin2025!";
 
+  // 🔐 Login simple
+  const handleLogin = () => {
+    if (passwordInput === ADMIN_PASSWORD) {
+      localStorage.setItem("adminAuth", "true");
+      setAuthenticated(true);
+      fetchOrders();
+    } else {
+      alert("Incorrect password");
+    }
+  };
+
+  // 🔄 Obtener órdenes
   const fetchOrders = async () => {
     try {
       const res = await fetch("/.netlify/functions/orders-get");
       const data = await res.json();
-      setOrders(data);
-    } catch (err) {
-      console.error("Error fetching orders:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateStatus = async (id: string, newStatus: string) => {
-    try {
-      await fetch("/.netlify/functions/orders-update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: newStatus }),
-      });
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
+      setOrders(
+        data
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.schedule_date + " " + b.schedule_time).getTime() -
+              new Date(a.schedule_date + " " + a.schedule_time).getTime()
+          )
       );
     } catch (err) {
-      console.error("Error updating status:", err);
+      console.error("Error fetching orders:", err);
     }
   };
 
+  // ⚙️ Inicial
   useEffect(() => {
-    fetchOrders();
+    if (localStorage.getItem("adminAuth") === "true") {
+      setAuthenticated(true);
+      fetchOrders();
+    }
   }, []);
 
-  if (loading) return <p className="text-center mt-10">Loading orders...</p>;
+  // 📅 Formato legible
+  const formatDateTime = (date: string, time: string) => {
+    if (!date || !time) return "";
+    const dt = new Date(`${date}T${time}`);
+    return dt.toLocaleString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // 🔄 Cambiar estado
+  const updateStatus = async (orderId: string, status: string) => {
+    try {
+      const res = await fetch("/.netlify/functions/orders-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: orderId, status }),
+      });
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status } : o))
+        );
+      } else alert("Error updating status");
+    } catch (err) {
+      console.error("Error updating:", err);
+    }
+  };
+
+  if (!authenticated)
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+        <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+          Barista Access
+        </h2>
+        <input
+          type="password"
+          placeholder="Enter admin password"
+          value={passwordInput}
+          onChange={(e) => setPasswordInput(e.target.value)}
+          className="border p-2 rounded mb-2 w-64 text-center"
+        />
+        <button
+          onClick={handleLogin}
+          className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg"
+        >
+          Login
+        </button>
+      </div>
+    );
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-gray-700 text-center">
-        ☕ Active Orders
+    <div className="p-4 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold text-center text-teal-700 mb-6">
+        ☕ Barista Orders Panel
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            className="p-4 bg-white shadow-sm rounded-lg border border-gray-200"
-          >
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">
-              {order.id}
-            </h2>
-            <p className="text-lg text-gray-700 font-semibold mb-2">
-              {order.name} — ${order.total.toFixed(2)}
-            </p>
-            <p className="text-sm text-gray-600">
-              {order.order_type} | {order.schedule_date} {order.schedule_time}
-            </p>
-            {order.notes && (
-              <p className="text-sm mt-2 text-gray-800">
-                📝 <strong>Notes:</strong> {order.notes}
-              </p>
-            )}
-            <p className="text-sm mt-2 text-gray-600">
-              📞 {order.phone}
-            </p>
+      {orders.length === 0 ? (
+        <p className="text-center text-gray-500">No active orders</p>
+      ) : (
+        <div className="space-y-6">
+          {orders.map((o) => (
+            <div
+              key={o.id}
+              className="bg-white p-5 rounded-xl shadow-sm border border-gray-200"
+            >
+              {/* 1️⃣ Número de orden */}
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                #{o.id}
+              </h2>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {["Received", "In Process", "Ready", "Out for Delivery", "Completed"].map(
-                (s) => (
-                  <button
-                    key={s}
-                    onClick={() => updateStatus(order.id, s)}
-                    className={`px-2 py-1 rounded text-xs font-semibold border ${
-                      order.status === s
-                        ? "bg-amber-600 text-white"
-                        : "hover:bg-amber-100 border-gray-300"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                )
+              {/* 2️⃣ Nombre del cliente */}
+              <p className="text-xl font-semibold text-gray-800 mb-1">
+                {o.name}
+              </p>
+
+              {/* 3️⃣ Tipo de orden */}
+              <p className="text-gray-700 font-medium mb-1">
+                {o.order_type === "Pickup" ? "Pickup" : "Delivery"}
+              </p>
+
+              {/* 4️⃣ Fecha y hora de entrega */}
+              <p className="text-gray-600 mb-3 font-medium">
+                {formatDateTime(o.schedule_date, o.schedule_time)}
+              </p>
+
+              {/* 5️⃣ Orden completa */}
+              {o.items && o.items.length > 0 ? (
+                <div className="border-t border-b border-gray-300 py-3 mb-3">
+                  {o.items.map((item: any, idx: number) => (
+                    <div key={idx} className="text-lg text-gray-900 font-semibold mb-2">
+                      {item.product_name}
+                      {item.option && (
+                        <span className="text-gray-600 ml-2 text-base">
+                          ({item.option})
+                        </span>
+                      )}
+                      {item.addons && (
+                        <p className="text-sm text-gray-600 ml-2">
+                          + {item.addons}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-base mb-3 italic">
+                  (No items found)
+                </p>
               )}
+
+              {/* 👤 Detalles del cliente */}
+              <div className="text-sm text-gray-700 mb-4 space-y-1">
+                {o.notes && <p>📝 Notes: {o.notes}</p>}
+                {o.phone && <p>📞 {o.phone}</p>}
+                {o.address && <p>🏠 {o.address}</p>}
+              </div>
+
+              {/* 🔘 Botones de acción */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                {o.order_type === "Pickup" ? (
+                  <button
+                    onClick={() => updateStatus(o.id, "Ready")}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold"
+                  >
+                    ✅ Ready
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => updateStatus(o.id, "Out for Delivery")}
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg font-semibold"
+                  >
+                    🚚 Out for Delivery
+                  </button>
+                )}
+
+                <button
+                  onClick={() => updateStatus(o.id, "Cancelled")}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold"
+                >
+                  ❌ Cancelled
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
