@@ -8,56 +8,26 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS!;
 const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
 
+// 🧠 Generar ID corto tipo TNC-4823
+function generateShortId() {
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `TNC-${random}`;
+}
+
 export const handler: Handler = async (event) => {
   try {
     const orderData = JSON.parse(event.body || "{}");
+    const shortId = generateShortId(); // ✅ ID corto global
 
-    // 🧾 Crear la orden principal
-    const order = await base(TABLE_ORDERS).create([
+    // 🧾 Crear orden principal
+    const createdOrder = await base(TABLE_ORDERS).create([
       {
         fields: {
+          OrderID: shortId, // ✅ Usamos este campo en Airtable
           Name: orderData.name,
           Phone: orderData.phone,
           OrderType: orderData.orderType,
           Address: orderData.address || "",
-          ScheduleDate: orderData.scheduleDate,
-          ScheduleTime: orderData.scheduleTime,
-          ScheduleTimeDisplay: orderData.scheduleTimeDisplay,
-          Subtotal: orderData.subtotal,
-          Discount: orderData.discount,
-          Total: orderData.total,
-          Coupon: orderData.coupon || "",
-          Status: "Received",
-        },
-      },
-    ]);
-
-    const orderId = order[0].id;
-
-    // 🧱 Crear los OrderItems con AddOns incluidos
-    if (Array.isArray(orderData.items) && orderData.items.length > 0) {
-      await base(TABLE_ORDERITEMS).create(
-        orderData.items.map((item) => ({
-          fields: {
-            Order: [orderId],
-            ProductName: item.name,
-            Option: item.option || "",
-            Price: item.price || 0,
-            AddOns: item.addons || "", // ✅ Guarda los AddOns en texto plano
-          },
-        }))
-      );
-    }
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, id: orderId }),
-    };
-  } catch (err) {
-    console.error("❌ Error creating order:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to create order" }),
-    };
-  }
-};
+          ScheduleDate: orderData.scheduleDate || "",
+          ScheduleTime: orderData.scheduleTime || "",
+          Schedule
