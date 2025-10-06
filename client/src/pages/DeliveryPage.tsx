@@ -4,7 +4,6 @@ export default function DeliveryPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [orders, setOrders] = useState<any[]>([]);
-
   const DELIVERY_PASSWORD = "delivery2025!";
 
   const handleLogin = () => {
@@ -17,8 +16,7 @@ export default function DeliveryPage() {
   };
 
   useEffect(() => {
-    const auth = localStorage.getItem("deliveryAuth");
-    if (auth === "true") setAuthenticated(true);
+    if (localStorage.getItem("deliveryAuth") === "true") setAuthenticated(true);
   }, []);
 
   const fetchOrders = async () => {
@@ -33,8 +31,8 @@ export default function DeliveryPage() {
         )
         .sort(
           (a: any, b: any) =>
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime()
+            new Date(b.schedule_date + " " + b.schedule_time).getTime() -
+            new Date(a.schedule_date + " " + a.schedule_time).getTime()
         );
       setOrders(filtered);
     } catch (err) {
@@ -47,31 +45,25 @@ export default function DeliveryPage() {
   }, [authenticated]);
 
   const handleComplete = async (orderId: string) => {
-    const confirmAction = window.confirm("Mark this order as completed?");
-    if (!confirmAction) return;
-
+    if (!window.confirm("Mark this order as completed?")) return;
     try {
       const res = await fetch("/.netlify/functions/orders-update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: orderId, status: "Completed" }),
       });
-
-      if (res.ok) {
-        setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      } else {
-        alert("Error updating order");
-      }
+      if (res.ok) setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      else alert("Error updating order");
     } catch (err) {
-      console.error("Error:", err);
+      console.error(err);
       alert("Network error");
     }
   };
 
   const formatDateTime = (date: string, time: string) => {
     if (!date || !time) return "";
-    const fullDate = new Date(`${date}T${time}`);
-    return fullDate.toLocaleString("en-US", {
+    const dt = new Date(`${date}T${time}`);
+    return dt.toLocaleString("en-US", {
       weekday: "short",
       month: "short",
       day: "2-digit",
@@ -81,7 +73,7 @@ export default function DeliveryPage() {
     });
   };
 
-  if (!authenticated) {
+  if (!authenticated)
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <h2 className="text-xl font-semibold mb-3">Delivery Access</h2>
@@ -100,42 +92,35 @@ export default function DeliveryPage() {
         </button>
       </div>
     );
-  }
 
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-center mb-4">🚚 Delivery Orders</h1>
-
       {orders.length === 0 ? (
         <p className="text-center text-gray-500">No delivery orders available</p>
       ) : (
         <ul className="space-y-4">
-          {orders.map((order) => (
+          {orders.map((o) => (
             <li
-              key={order.id}
+              key={o.id}
               className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
             >
               <h2 className="font-bold text-xl text-gray-800 mb-1">
-                {order.id}
+                #{o.id} — 💲{Number(o.total).toFixed(2)}
               </h2>
               <p className="text-gray-700 text-lg font-semibold mb-1">
-                👤 {order.name}
+                👤 {o.name}
               </p>
-              <p className="text-gray-700 mb-1">📞 {order.phone}</p>
-              {order.address && (
-                <p className="text-gray-600 text-sm mb-1">🏠 {order.address}</p>
-              )}
+              <p className="text-gray-700 mb-1">📞 {o.phone}</p>
+              {o.address && <p className="text-gray-600 mb-1">🏠 {o.address}</p>}
               <p className="text-gray-800 mt-2 font-medium">
-                🕓 {formatDateTime(order.schedule_date, order.schedule_time)}
+                🕓 {formatDateTime(o.schedule_date, o.schedule_time)}
               </p>
-              <p className="text-green-700 font-bold text-lg mt-1">
-                💲{Number(order.total).toFixed(2)}
-              </p>
-              {order.notes && (
-                <p className="text-sm text-gray-600 mt-1">📝 {order.notes}</p>
+              {o.notes && (
+                <p className="text-sm text-gray-600 mt-1">📝 {o.notes}</p>
               )}
               <button
-                onClick={() => handleComplete(order.id)}
+                onClick={() => handleComplete(o.id)}
                 className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold"
               >
                 ✅ Mark as Completed
