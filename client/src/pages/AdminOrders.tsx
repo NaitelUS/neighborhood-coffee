@@ -22,24 +22,33 @@ export default function AdminOrders() {
     try {
       const res = await fetch("/.netlify/functions/orders-get");
       const data = await res.json();
-      setOrders(
-        data
-          .sort(
-            (a: any, b: any) =>
-              new Date(b.schedule_date + " " + b.schedule_time).getTime() -
-              new Date(a.schedule_date + " " + a.schedule_time).getTime()
-          )
+
+      // Ordenar por fecha de entrega descendente
+      const sorted = data.sort(
+        (a: any, b: any) =>
+          new Date(b.schedule_date + " " + b.schedule_time).getTime() -
+          new Date(a.schedule_date + " " + a.schedule_time).getTime()
       );
+
+      setOrders(sorted);
     } catch (err) {
       console.error("Error fetching orders:", err);
     }
   };
 
-  // ⚙️ Inicial
+  // 🕒 Auto-refresh cada 20 s
+  useEffect(() => {
+    if (authenticated) {
+      fetchOrders();
+      const interval = setInterval(fetchOrders, 20000);
+      return () => clearInterval(interval);
+    }
+  }, [authenticated]);
+
+  // Cargar autenticación previa
   useEffect(() => {
     if (localStorage.getItem("adminAuth") === "true") {
       setAuthenticated(true);
-      fetchOrders();
     }
   }, []);
 
@@ -75,6 +84,7 @@ export default function AdminOrders() {
     }
   };
 
+  // 🔒 Pantalla de login
   if (!authenticated)
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
@@ -97,6 +107,7 @@ export default function AdminOrders() {
       </div>
     );
 
+  // 🧾 Panel principal
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-center text-teal-700 mb-6">
@@ -127,7 +138,7 @@ export default function AdminOrders() {
                 {o.order_type === "Pickup" ? "Pickup" : "Delivery"}
               </p>
 
-              {/* 4️⃣ Fecha y hora de entrega */}
+              {/* 4️⃣ Fecha y hora */}
               <p className="text-gray-600 mb-3 font-medium">
                 {formatDateTime(o.schedule_date, o.schedule_time)}
               </p>
@@ -136,7 +147,10 @@ export default function AdminOrders() {
               {o.items && o.items.length > 0 ? (
                 <div className="border-t border-b border-gray-300 py-3 mb-3">
                   {o.items.map((item: any, idx: number) => (
-                    <div key={idx} className="text-lg text-gray-900 font-semibold mb-2">
+                    <div
+                      key={idx}
+                      className="text-lg text-gray-900 font-semibold mb-2"
+                    >
                       {item.product_name}
                       {item.option && (
                         <span className="text-gray-600 ml-2 text-base">
@@ -181,7 +195,6 @@ export default function AdminOrders() {
                     🚚 Out for Delivery
                   </button>
                 )}
-
                 <button
                   onClick={() => updateStatus(o.id, "Cancelled")}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold"
