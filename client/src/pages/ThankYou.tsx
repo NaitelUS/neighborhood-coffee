@@ -8,6 +8,18 @@ export default function ThankYou() {
 
   const orderId = searchParams.get("id");
 
+  // 🧠 Formatear fecha completa y legible (para cliente)
+  const formatFullDate = (dateString?: string) => {
+    if (!dateString) return "No Date";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long", // Sunday
+      month: "long", // October
+      day: "numeric", // 5
+      year: "numeric", // 2025
+    });
+  };
+
   useEffect(() => {
     const fetchOrder = async () => {
       try {
@@ -51,12 +63,28 @@ export default function ThankYou() {
 
   return (
     <div className="max-w-md mx-auto p-6 mt-10 bg-white shadow-lg rounded-xl text-center">
+      {/* 🎉 Encabezado */}
       <h1 className="text-2xl font-bold text-teal-700 mb-3">
         🎉 Your order has been received!
       </h1>
 
       {/* 🧾 ID */}
       <p className="text-gray-700 mb-4 font-mono">Order ID: {order.id}</p>
+
+      {/* 🕓 Bloque de fecha/hora destacado */}
+      <div className="mt-5 mb-6 bg-teal-50 rounded-xl border border-teal-200 shadow-sm p-4 text-left">
+        <p className="text-teal-700 font-semibold mb-2 flex items-center gap-2">
+          🕓 {order.order_type === "Delivery" ? "Delivery Schedule" : "Pickup Schedule"}
+        </p>
+
+        <p className="text-gray-800 font-medium">
+          <strong>Date:</strong> {formatFullDate(order.schedule_date)}
+        </p>
+
+        <p className="text-gray-800 font-medium">
+          <strong>Time:</strong> {order.schedule_time || "Not specified"}
+        </p>
+      </div>
 
       {/* ☕ Productos */}
       {order.items && order.items.length > 0 && (
@@ -82,13 +110,8 @@ export default function ThankYou() {
         </div>
       )}
 
-      {/* 💵 Total y hora */}
+      {/* 💵 Total */}
       <div className="text-gray-700 text-left border-t pt-3 mb-4">
-        {order.schedule_time && (
-          <p>
-            <strong>Pickup Time:</strong> {order.schedule_time}
-          </p>
-        )}
         <p>
           <strong>Total:</strong> 💲{Number(order.total).toFixed(2)}
         </p>
