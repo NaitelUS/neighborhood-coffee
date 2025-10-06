@@ -139,6 +139,21 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
           />
         </div>
       </div>
+      
+{/* 📝 Special Instructions */}
+      <div className="mb-4">
+      <label className="block text-gray-700 font-medium mb-1">
+      Special Instructions (optional)
+      </label>
+      <textarea
+        name="notes"
+        placeholder="Example: Leave order outside, No sugar, extra shot..."
+        value={formData.notes || ""}
+        onChange={handleChange}
+        className="w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:ring-2 focus:ring-teal-500"
+        rows={3}
+  />
+</div>
 
       {/* ✅ Submit */}
       <button
