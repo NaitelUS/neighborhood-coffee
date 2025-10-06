@@ -14,6 +14,8 @@ exports.handler = async () => {
 
     for (const record of orders) {
       const orderId = record.id;
+
+      // 🔗 Obtener los items relacionados
       const linkedItems = await base(process.env.AIRTABLE_TABLE_ORDERITEMS!)
         .select({
           filterByFormula: `{Order} = '${orderId}'`,
@@ -48,7 +50,7 @@ exports.handler = async () => {
       body: JSON.stringify(results),
     };
   } catch (error) {
-    console.error("Error fetching orders:", error);
+    console.error("❌ Error fetching orders:", error);
     return { statusCode: 500, body: "Error fetching orders" };
   }
 };
