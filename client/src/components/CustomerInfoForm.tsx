@@ -10,6 +10,7 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
   const [phone, setPhone] = useState("");
   const [method, setMethod] = useState<"Pickup" | "Delivery">("Pickup");
   const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState(""); // ✅ nuevo campo
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [time, setTime] = useState(dayjs().format("HH:mm"));
 
@@ -26,8 +27,8 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
       return;
     }
 
-    // 🚀 Mandamos fecha y hora por separado
-    onSubmit({ name, phone, method, address }, date, time);
+    // 🚀 Mandamos fecha, hora y notas
+    onSubmit({ name, phone, method, address, notes }, date, time);
   };
 
   return (
@@ -139,21 +140,21 @@ export default function CustomerInfoForm({ onSubmit }: CustomerInfoFormProps) {
           />
         </div>
       </div>
-      
-{/* 📝 Special Instructions */}
+
+      {/* 📝 Special Instructions */}
       <div className="mb-4">
-      <label className="block text-gray-700 font-medium mb-1">
-      Special Instructions (optional)
-      </label>
-      <textarea
-        name="notes"
-        placeholder="Example: Leave order outside, No sugar, extra shot..."
-        value={formData.notes || ""}
-        onChange={handleChange}
-        className="w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:ring-2 focus:ring-teal-500"
-        rows={3}
-  />
-</div>
+        <label className="block text-gray-700 font-medium mb-1">
+          Special Instructions (optional)
+        </label>
+        <textarea
+          name="notes"
+          placeholder="Example: Leave order outside, No sugar, extra shot..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:ring-2 focus:ring-teal-500"
+          rows={3}
+        />
+      </div>
 
       {/* ✅ Submit */}
       <button
