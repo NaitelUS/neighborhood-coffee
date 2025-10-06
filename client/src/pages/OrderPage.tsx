@@ -1,6 +1,5 @@
-// client/src/pages/OrderPage.tsx
 import React, { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { CartContext } from "@/context/CartContext";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
@@ -69,10 +68,23 @@ export default function OrderPage() {
     <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 px-4 mt-6">
       <div>
         <OrderSummary />
+
+        {/* 🛍️ Botón restaurado */}
+        <div className="mt-4 text-center">
+          <Link
+            to="/"
+            className="inline-block text-teal-700 font-semibold border border-teal-600 hover:bg-teal-50 rounded-lg px-5 py-2 transition-all"
+          >
+            + Want to add more items?
+          </Link>
+        </div>
       </div>
+
       <div>
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
+
+      {/* Loading overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg text-center">
