@@ -1,35 +1,57 @@
 import { Handler } from "@netlify/functions";
-import { getAirtableClient } from "../lib/airtableClient";
+import Airtable from "airtable";
 
-const handler: Handler = async (event) => {
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
+
+const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+
+export const handler: Handler = async (event) => {
   try {
-    if (!event.body) {
-      return { statusCode: 400, body: "Missing body" };
-    }
+    const body = JSON.parse(event.body || "{}");
+    const { id, status } = body;
 
-    const { id, status } = JSON.parse(event.body);
     if (!id || !status) {
-      return { statusCode: 400, body: "Missing id or status" };
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing id or status" }),
+      };
     }
 
-    const base = getAirtableClient();
-    const table = base(process.env.AIRTABLE_TABLE_ORDERS || "Orders");
+    // Buscar el record por OrderID (TNC-001)
+    const records = await base(TABLE_ORDERS)
+      .select({
+        filterByFormula: `{OrderID} = '${id}'`,
+        maxRecords: 1,
+      })
+      .firstPage();
 
-    const updated = await table.update([
-      { id, fields: { Status: status } },
+    if (records.length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "Order not found" }),
+      };
+    }
+
+    const recordId = records[0].id;
+
+    await base(TABLE_ORDERS).update([
+      {
+        id: recordId,
+        fields: { Status: status },
+      },
     ]);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, record: updated[0] }),
+      body: JSON.stringify({ success: true }),
     };
-  } catch (error) {
-    console.error("Error updating order:", error);
+  } catch (err) {
+    console.error("❌ Error updating order:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Failed to update order" }),
     };
   }
 };
-
-export { handler };
