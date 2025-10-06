@@ -1,4 +1,3 @@
-// client/src/pages/ThankYou.tsx
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -12,6 +11,7 @@ interface Order {
   schedule_date?: string;
   schedule_time?: string;
   notes?: string;
+  items?: { product_name: string; option?: string; addons?: string }[];
 }
 
 export default function ThankYou() {
@@ -31,15 +31,14 @@ export default function ThankYou() {
       .finally(() => setLoading(false));
   }, [orderId]);
 
-  if (loading) {
+  if (loading)
     return (
-      <div className="text-center py-20">
-        <p className="text-gray-600">Loading your order...</p>
+      <div className="text-center py-20 text-gray-600">
+        Loading your order...
       </div>
     );
-  }
 
-  if (!order) {
+  if (!order)
     return (
       <div className="text-center py-20">
         <h1 className="text-2xl font-bold text-red-600 mb-4">
@@ -50,7 +49,6 @@ export default function ThankYou() {
         </Link>
       </div>
     );
-  }
 
   return (
     <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 mt-10">
@@ -67,20 +65,31 @@ export default function ThankYou() {
         </p>
       </div>
 
-      <div className="border-t pt-4 mb-4 text-sm text-gray-700">
+      {order.items && order.items.length > 0 && (
+        <div className="border-t border-b py-3 mb-4 text-sm text-gray-800">
+          {order.items.map((item, idx) => (
+            <div key={idx} className="mb-2">
+              <strong>{item.product_name}</strong> {item.option && `(${item.option})`}
+              {item.addons && <p className="text-gray-600 text-xs">+ {item.addons}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="text-sm text-gray-700 mb-4">
         <p><strong>👤 Name:</strong> {order.name}</p>
         <p><strong>📞 Phone:</strong> {order.phone}</p>
         {order.address && <p><strong>🏠 Address:</strong> {order.address}</p>}
         {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
       </div>
 
-      <div className="bg-teal-50 p-4 rounded-lg text-center">
+      <div className="bg-teal-50 p-4 rounded-lg text-center mb-4">
         <p className="text-xl font-semibold text-teal-800">
           Total: ${Number(order.total).toFixed(2)}
         </p>
       </div>
 
-      <div className="mt-6 text-center space-y-3">
+      <div className="text-center space-y-3">
         <Link
           to={`/status?id=${order.id}`}
           className="block w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-700"
