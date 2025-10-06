@@ -5,7 +5,7 @@ export default function AdminPanel() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
-  const ADMIN_PASSWORD = "admin2025!";
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "admin2025!";
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
