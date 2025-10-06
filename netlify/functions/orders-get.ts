@@ -1,39 +1,74 @@
 import { Handler } from "@netlify/functions";
-import { getAirtableClient } from "../lib/airtableClient";
+import Airtable from "airtable";
 
-const handler: Handler = async () => {
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
+
+const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS!;
+const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
+
+export const handler: Handler = async () => {
   try {
-    const base = getAirtableClient();
-    const table = base(process.env.AIRTABLE_TABLE_ORDERS || "Orders");
-
-    const records = await table
+    // 🧾 Obtener órdenes principales
+    const ordersRecords = await base(TABLE_ORDERS)
       .select({
         sort: [{ field: "CreatedTime", direction: "desc" }],
       })
       .all();
 
-    const orders = records.map((record) => ({
-      id: record.id,
-      name: record.fields.Name || "",
-      phone: record.fields.Phone || "",
-      order_type: record.fields.OrderType || "Pickup",
-      total: record.fields.Total || 0,
-      status: record.fields.Status || "Received",
-      schedule_time: record.fields.ScheduleTime || "",
-      created_at: record.fields.CreatedTime || "",
+    // 🧱 Obtener todos los items relacionados
+    const itemsRecords = await base(TABLE_ORDERITEMS)
+      .select({
+        sort: [{ field: "CreatedTime", direction: "asc" }],
+      })
+      .all();
+
+    // Agrupar items por ID de orden
+    const itemsByOrder: Record<string, any[]> = {};
+    itemsRecords.forEach((r) => {
+      const orderIds = r.fields["Order"];
+      if (Array.isArray(orderIds)) {
+        orderIds.forEach((oid) => {
+          if (!itemsByOrder[oid]) itemsByOrder[oid] = [];
+          itemsByOrder[oid].push({
+            id: r.id,
+            ProductName: r.fields["ProductName"] || "",
+            Option: r.fields["Option"] || "",
+            AddOns: r.fields["AddOns"] || "",
+            Price: r.fields["Price"] || 0,
+          });
+        });
+      }
+    });
+
+    // Combinar órdenes con sus items
+    const formatted = ordersRecords.map((r) => ({
+      id: r.id,
+      name: r.fields["Name"] || "",
+      phone: r.fields["Phone"] || "",
+      address: r.fields["Address"] || "",
+      order_type: r.fields["OrderType"] || "",
+      schedule_date: r.fields["ScheduleDate"] || "",
+      schedule_time: r.fields["ScheduleTimeDisplay"] || r.fields["ScheduleTime"] || "",
+      subtotal: r.fields["Subtotal"] || 0,
+      discount: r.fields["Discount"] || 0,
+      total: r.fields["Total"] || 0,
+      coupon_code: r.fields["Coupon"] || "",
+      status: r.fields["Status"] || "Received",
+      created_at: r.fields["CreatedTime"] || "",
+      items: itemsByOrder[r.id] || [], // ✅ ahora incluye productos y AddOns
     }));
 
     return {
       statusCode: 200,
-      body: JSON.stringify(orders),
+      body: JSON.stringify(formatted),
     };
-  } catch (error) {
-    console.error("Error fetching orders:", error);
+  } catch (err) {
+    console.error("❌ Error fetching orders:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Failed to fetch orders" }),
     };
   }
 };
-
-export { handler };
