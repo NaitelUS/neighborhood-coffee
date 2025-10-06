@@ -1,4 +1,3 @@
-// client/src/pages/DeliveryPage.tsx
 import React, { useEffect, useState } from "react";
 
 export default function DeliveryPage() {
@@ -22,26 +21,29 @@ export default function DeliveryPage() {
     if (auth === "true") setAuthenticated(true);
   }, []);
 
-  useEffect(() => {
-    if (authenticated) {
-      fetch("/.netlify/functions/orders-get")
-        .then((res) => res.json())
-        .then((data) => {
-          const filtered = data
-            .filter(
-              (o: any) =>
-                o.order_type?.toLowerCase() === "delivery" &&
-                ["Ready", "Out for Delivery"].includes(o.status)
-            )
-            .sort(
-              (a: any, b: any) =>
-                new Date(b.created_at).getTime() -
-                new Date(a.created_at).getTime()
-            );
-          setOrders(filtered);
-        })
-        .catch((err) => console.error("Error fetching orders:", err));
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch("/.netlify/functions/orders-get");
+      const data = await res.json();
+      const filtered = data
+        .filter(
+          (o: any) =>
+            o.order_type?.toLowerCase() === "delivery" &&
+            ["Ready", "Out for Delivery"].includes(o.status)
+        )
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime()
+        );
+      setOrders(filtered);
+    } catch (err) {
+      console.error("Error fetching delivery orders:", err);
     }
+  };
+
+  useEffect(() => {
+    if (authenticated) fetchOrders();
   }, [authenticated]);
 
   const handleComplete = async (orderId: string) => {
@@ -61,9 +63,22 @@ export default function DeliveryPage() {
         alert("Error updating order");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error:", err);
       alert("Network error");
     }
+  };
+
+  const formatDateTime = (date: string, time: string) => {
+    if (!date || !time) return "";
+    const fullDate = new Date(`${date}T${time}`);
+    return fullDate.toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "2-digit",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   if (!authenticated) {
@@ -94,31 +109,36 @@ export default function DeliveryPage() {
       {orders.length === 0 ? (
         <p className="text-center text-gray-500">No delivery orders available</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {orders.map((order) => (
             <li
               key={order.id}
-              className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+              className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
             >
-              <h2 className="font-bold text-xl mb-1">{order.id}</h2>
-              <p className="text-gray-800"><strong>👤</strong> {order.name}</p>
-              <p className="text-gray-800"><strong>📞</strong> {order.phone}</p>
-              <p className="text-gray-700 mb-1">
-                🕓 {order.schedule_date} {order.schedule_time}
+              <h2 className="font-bold text-xl text-gray-800 mb-1">
+                {order.id}
+              </h2>
+              <p className="text-gray-700 text-lg font-semibold mb-1">
+                👤 {order.name}
               </p>
-              <p className="font-bold text-lg text-green-700 mb-1">
+              <p className="text-gray-700 mb-1">📞 {order.phone}</p>
+              {order.address && (
+                <p className="text-gray-600 text-sm mb-1">🏠 {order.address}</p>
+              )}
+              <p className="text-gray-800 mt-2 font-medium">
+                🕓 {formatDateTime(order.schedule_date, order.schedule_time)}
+              </p>
+              <p className="text-green-700 font-bold text-lg mt-1">
                 💲{Number(order.total).toFixed(2)}
               </p>
-              {order.address && (
-                <p className="text-gray-600 text-sm mb-2">
-                  🏠 {order.address}
-                </p>
+              {order.notes && (
+                <p className="text-sm text-gray-600 mt-1">📝 {order.notes}</p>
               )}
               <button
                 onClick={() => handleComplete(order.id)}
-                className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg"
+                className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold"
               >
-                Mark as Completed
+                ✅ Mark as Completed
               </button>
             </li>
           ))}
