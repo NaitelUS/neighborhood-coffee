@@ -8,22 +8,33 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS!;
 const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
 
-// 🧠 Generar ID corto tipo TNC-4823
-function generateShortId() {
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `TNC-${random}`;
+// 🧠 Genera consecutivo real
+async function getNextOrderNumber() {
+  const records = await base(TABLE_ORDERS)
+    .select({
+      sort: [{ field: "OrderNumber", direction: "desc" }],
+      maxRecords: 1,
+    })
+    .firstPage();
+
+  if (records.length > 0) {
+    const last = records[0].fields["OrderNumber"];
+    if (typeof last === "number") return last + 1;
+  }
+  return 1;
 }
 
 export const handler: Handler = async (event) => {
   try {
     const orderData = JSON.parse(event.body || "{}");
-    const shortId = generateShortId();
+    const nextNumber = await getNextOrderNumber();
+    const shortId = `TNC-${String(nextNumber).padStart(3, "0")}`;
 
-    // 🧾 Crear la orden principal
     const createdOrder = await base(TABLE_ORDERS).create([
       {
         fields: {
           OrderID: shortId,
+          OrderNumber: nextNumber,
           Name: orderData.customer_name,
           Phone: orderData.customer_phone,
           OrderType: orderData.order_type,
@@ -40,7 +51,6 @@ export const handler: Handler = async (event) => {
       },
     ]);
 
-    // 🧩 Crear los ítems relacionados
     if (Array.isArray(orderData.items) && orderData.items.length > 0) {
       const orderItems = orderData.items.map((item: any) => ({
         fields: {
@@ -50,12 +60,10 @@ export const handler: Handler = async (event) => {
           Price: item.price || 0,
           AddOns: Array.isArray(item.addons)
             ? item.addons
-                .map((a: any) => {
-                  const name = a?.name || "Unnamed";
-                  const price =
-                    typeof a?.price === "number" ? a.price.toFixed(2) : "0.00";
-                  return `${name} ($${price})`;
-                })
+                .map(
+                  (a: any) =>
+                    `${a?.name || "Unnamed"} ($${(a?.price || 0).toFixed(2)})`
+                )
                 .join(", ")
             : "",
         },
@@ -66,16 +74,12 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    // ✅ Devolver ID corto
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, orderId: shortId }),
     };
   } catch (err) {
-    console.error("❌ Error creating order:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to create order" }),
-    };
+    console.error("Error creating order:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: "Failed" }) };
   }
 };
