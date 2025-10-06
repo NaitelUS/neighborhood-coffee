@@ -1,15 +1,17 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+// 🧩 Componentes principales
 import Header from "./components/Header";
 import Menu from "./components/Menu";
 import OrderPage from "./pages/OrderPage";
 import ThankYou from "./pages/ThankYou";
-import AdminOrders from "./pages/AdminOrders";
-import AdminPanel from "./pages/AdminPanel";
-import DeliveryPage from "./pages/DeliveryPage";
 import OrderStatus from "./pages/OrderStatus";
+import AdminPanel from "./pages/AdminPanel";
+import AdminOrders from "./pages/AdminOrders";
+import DeliveryPage from "./pages/DeliveryPage";
 
+// 🧠 Contexto global del carrito
 import { CartProvider } from "./context/CartContext";
 
 export default function App() {
@@ -17,24 +19,34 @@ export default function App() {
     <Router>
       <CartProvider>
         <div className="min-h-screen bg-gray-50">
-          {/* 🧠 Header global */}
+          {/* 🌐 Header visible en todas las páginas */}
           <Header />
 
-          {/* 📦 Contenido dinámico por ruta */}
           <Routes>
+            {/* 🏠 Menú principal */}
             <Route path="/" element={<Menu />} />
+
+            {/* 🛒 Página de orden */}
             <Route path="/order" element={<OrderPage />} />
+
+            {/* ✅ Confirmación de orden */}
             <Route path="/thank-you" element={<ThankYou />} />
+
+            {/* 🔍 Estado de orden */}
             <Route path="/status" element={<OrderStatus />} />
+
+            {/* 🧑‍🍳 Panel de administración */}
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
+
+            {/* 🚚 Página del repartidor */}
             <Route path="/delivery" element={<DeliveryPage />} />
 
-            {/* 🧭 Fallback: si ruta no existe */}
+            {/* ⚠️ Página no encontrada */}
             <Route
               path="*"
               element={
-                <div className="text-center mt-20 text-gray-500 text-lg">
+                <div className="text-center mt-20 text-gray-600 text-lg">
                   Page not found
                 </div>
               }
