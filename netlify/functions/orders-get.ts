@@ -10,21 +10,14 @@ const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
 
 export const handler: Handler = async () => {
   try {
-    // 🧾 Obtener órdenes principales
     const ordersRecords = await base(TABLE_ORDERS)
-      .select({
-        sort: [{ field: "CreatedTime", direction: "desc" }],
-      })
+      .select({ sort: [{ field: "CreatedTime", direction: "desc" }] })
       .all();
 
-    // 🧱 Obtener todos los items relacionados
     const itemsRecords = await base(TABLE_ORDERITEMS)
-      .select({
-        sort: [{ field: "CreatedTime", direction: "asc" }],
-      })
+      .select({ sort: [{ field: "CreatedTime", direction: "asc" }] })
       .all();
 
-    // Agrupar items por ID de orden
     const itemsByOrder: Record<string, any[]> = {};
     itemsRecords.forEach((r) => {
       const orderIds = r.fields["Order"];
@@ -42,7 +35,6 @@ export const handler: Handler = async () => {
       }
     });
 
-    // Combinar órdenes con sus items
     const formatted = ordersRecords.map((r) => ({
       id: r.id,
       name: r.fields["Name"] || "",
@@ -50,25 +42,20 @@ export const handler: Handler = async () => {
       address: r.fields["Address"] || "",
       order_type: r.fields["OrderType"] || "",
       schedule_date: r.fields["ScheduleDate"] || "",
-      schedule_time: r.fields["ScheduleTimeDisplay"] || r.fields["ScheduleTime"] || "",
+      schedule_time:
+        r.fields["ScheduleTimeDisplay"] || r.fields["ScheduleTime"] || "",
       subtotal: r.fields["Subtotal"] || 0,
       discount: r.fields["Discount"] || 0,
       total: r.fields["Total"] || 0,
       coupon_code: r.fields["Coupon"] || "",
       status: r.fields["Status"] || "Received",
       created_at: r.fields["CreatedTime"] || "",
-      items: itemsByOrder[r.id] || [], // ✅ ahora incluye productos y AddOns
+      items: itemsByOrder[r.id] || [],
     }));
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(formatted),
-    };
+    return { statusCode: 200, body: JSON.stringify(formatted) };
   } catch (err) {
     console.error("❌ Error fetching orders:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to fetch orders" }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: "Failed to fetch orders" }) };
   }
 };
