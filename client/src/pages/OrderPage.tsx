@@ -1,3 +1,4 @@
+// client/src/pages/OrderPage.tsx
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "@/context/CartContext";
@@ -11,7 +12,6 @@ export default function OrderPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // ✅ Enviar orden completa a Airtable
   const handleOrderSubmit = async (
     info: any,
     schedule_date: string,
@@ -30,41 +30,32 @@ export default function OrderPage() {
         customer_phone: info.phone,
         address: info.method === "Delivery" ? info.address : "",
         order_type: info.method,
-        schedule_date, // YYYY-MM-DD
-        schedule_time, // HH:mm
+        schedule_date,
+        schedule_time,
         subtotal,
         discount,
         total,
         coupon_code: appliedCoupon || "",
-        status: "Received",
+        notes: info.notes || "",
         items: cartItems.map((item) => ({
           name: item.name,
           option: item.option || "",
           price: item.price,
-          addons:
-            item.addons?.map(
-              (a) => `${a.name} (+$${a.price.toFixed(2)})`
-            ).join(", ") || "",
+          addons: item.addons || [],
         })),
       };
 
-      console.log("🚀 Sending order:", orderData);
-
-      // 🧠 Guardar en Airtable
       const res = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData),
       });
 
-      if (!res.ok) throw new Error("Failed to save order");
-
       const result = await res.json();
-      const orderId = result.orderId || "N/A";
+      if (!result.success) throw new Error("Order creation failed");
 
-      // ✅ Redirigir a Thank You con ID correcto
+      const orderId = result.orderId;
       navigate(`/thank-you?id=${orderId}`);
-
       clearCart();
     } catch (err) {
       console.error("❌ Error sending order:", err);
@@ -76,27 +67,12 @@ export default function OrderPage() {
 
   return (
     <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 px-4 mt-6">
-      {/* 🧾 Resumen de orden */}
       <div>
         <OrderSummary />
-
-        {/* 🔁 Botón para regresar al menú */}
-        <div className="mt-2 text-center">
-          <button
-            onClick={() => navigate("/")}
-            className="text-[#1D9099] font-medium underline hover:text-[#00454E]"
-          >
-            + Add more items?
-          </button>
-        </div>
       </div>
-
-      {/* 👤 Forma del cliente */}
       <div>
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
-
-      {/* Loader */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg text-center">
