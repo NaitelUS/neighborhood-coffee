@@ -1,63 +1,47 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// 🧩 Páginas principales
-import Menu from "./pages/Menu";
+import Header from "./components/Header";
+import Menu from "./components/Menu";
 import OrderPage from "./pages/OrderPage";
 import ThankYou from "./pages/ThankYou";
-import OrderStatus from "./pages/OrderStatus";
+import AdminOrders from "./pages/AdminOrders";
 import AdminPanel from "./pages/AdminPanel";
 import DeliveryPage from "./pages/DeliveryPage";
+import OrderStatus from "./pages/OrderStatus";
 
-// 🧠 Contexto global del carrito
-import { CartProvider } from "@/context/CartContext";
-
-// 🎨 Estilos globales (Tailwind)
-import "./index.css";
+import { CartProvider } from "./context/CartContext";
 
 export default function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <Routes>
+    <Router>
+      <CartProvider>
+        <div className="min-h-screen bg-gray-50">
+          {/* 🧠 Header global */}
+          <Header />
 
-          {/* ☕ Página principal (menú) */}
-          <Route path="/" element={<Menu />} />
+          {/* 📦 Contenido dinámico por ruta */}
+          <Routes>
+            <Route path="/" element={<Menu />} />
+            <Route path="/order" element={<OrderPage />} />
+            <Route path="/thank-you" element={<ThankYou />} />
+            <Route path="/status" element={<OrderStatus />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/delivery" element={<DeliveryPage />} />
 
-          {/* 🧾 Resumen y envío de orden */}
-          <Route path="/order" element={<OrderPage />} />
-
-          {/* ✅ Confirmación de pedido (usa ?id=) */}
-          <Route path="/thank-you" element={<ThankYou />} />
-
-          {/* 🔍 Seguimiento de pedido (usa ?id=) */}
-          <Route path="/status" element={<OrderStatus />} />
-
-          {/* 🧑‍🍳 Panel del barista/admin */}
-          <Route path="/admin" element={<AdminPanel />} />
-
-          {/* 🚚 Panel del repartidor */}
-          <Route path="/delivery" element={<DeliveryPage />} />
-
-          {/* 🚫 Fallback (opcional) */}
-          <Route
-            path="*"
-            element={
-              <div className="flex flex-col items-center justify-center min-h-screen text-center">
-                <h1 className="text-3xl font-bold text-gray-700 mb-3">
+            {/* 🧭 Fallback: si ruta no existe */}
+            <Route
+              path="*"
+              element={
+                <div className="text-center mt-20 text-gray-500 text-lg">
                   Page not found
-                </h1>
-                <a
-                  href="/"
-                  className="text-[#1D9099] hover:text-[#00454E] underline"
-                >
-                  Go back to home
-                </a>
-              </div>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </CartProvider>
+                </div>
+              }
+            />
+          </Routes>
+        </div>
+      </CartProvider>
+    </Router>
   );
 }
