@@ -1,55 +1,48 @@
-import React, { useEffect, useState } from "react";
-import AdminOrders from "@/pages/AdminOrders";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
   const [password, setPassword] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [error, setError] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // ⏱️ Auto-refresh cada 30 segundos
-  useEffect(() => {
-    if (isAuthenticated) {
-      const interval = setInterval(() => {
-        setRefreshKey((prev) => prev + 1);
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
+  const [authenticated, setAuthenticated] = useState(false);
+  const ADMIN_PASSWORD = "admin2025!";
 
   const handleLogin = () => {
-    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || "";
-    if (password.trim() === adminPass.trim()) {
-      setIsAuthenticated(true);
-      setError("");
+    if (password === ADMIN_PASSWORD) {
+      localStorage.setItem("adminAuth", "true");
+      setAuthenticated(true);
+      navigate("/admin/orders");
     } else {
-      setError("Incorrect password. Please try again.");
+      alert("Incorrect password");
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="bg-white p-6 rounded-lg shadow-md w-80">
-          <h1 className="text-2xl font-bold text-center mb-4">Admin Login</h1>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter admin password"
-            className="border border-gray-300 w-full px-3 py-2 rounded mb-3"
-          />
-          {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-          <button
-            onClick={handleLogin}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded font-semibold"
-          >
-            Login
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const auth = localStorage.getItem("adminAuth");
+    if (auth === "true") {
+      setAuthenticated(true);
+      navigate("/admin/orders");
+    }
+  }, [navigate]);
 
-  return <AdminOrders key={refreshKey} />;
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+      <h2 className="text-xl font-semibold mb-4 text-gray-700">
+        Admin Access
+      </h2>
+      <input
+        type="password"
+        placeholder="Enter admin password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="border p-2 rounded mb-3 w-64 text-center"
+      />
+      <button
+        onClick={handleLogin}
+        className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded"
+      >
+        Login
+      </button>
+    </div>
+  );
 }
