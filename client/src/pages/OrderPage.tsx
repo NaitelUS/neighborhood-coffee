@@ -30,8 +30,8 @@ export default function OrderPage() {
         customer_phone: info.phone,
         address: info.method === "Delivery" ? info.address : "",
         order_type: info.method,
-        schedule_date, // 🧩 se guarda como texto YYYY-MM-DD
-        schedule_time, // 🧩 se guarda como texto HH:mm
+        schedule_date, // YYYY-MM-DD
+        schedule_time, // HH:mm
         subtotal,
         discount,
         total,
@@ -62,12 +62,8 @@ export default function OrderPage() {
       const result = await res.json();
       const orderId = result.orderId || "N/A";
 
-      // ✅ Redirigir a Thank You
-      navigate(
-        `/thank-you?order_id=${orderId}&total=${total.toFixed(
-          2
-        )}&name=${encodeURIComponent(info.name)}`
-      );
+      // ✅ Redirigir a Thank You con ID correcto
+      navigate(`/thank-you?id=${orderId}`);
 
       clearCart();
     } catch (err) {
@@ -83,6 +79,16 @@ export default function OrderPage() {
       {/* 🧾 Resumen de orden */}
       <div>
         <OrderSummary />
+
+        {/* 🔁 Botón para regresar al menú */}
+        <div className="mt-2 text-center">
+          <button
+            onClick={() => navigate("/")}
+            className="text-[#1D9099] font-medium underline hover:text-[#00454E]"
+          >
+            + Add more items?
+          </button>
+        </div>
       </div>
 
       {/* 👤 Forma del cliente */}
