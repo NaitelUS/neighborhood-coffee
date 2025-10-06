@@ -35,17 +35,18 @@ export const handler: Handler = async (event) => {
 
     // ✅ Crear los items asociados
     if (data.items && Array.isArray(data.items)) {
-      await base(TABLE_ORDERITEMS).create(
-        data.items.map((item: any) => ({
-          fields: {
-            Order: [orderId],
-            ProductName: item.name,
-            Option: item.option,
-            Price: item.price,
-            AddOns: item.addons || "", // ✅ ahora se graba correctamente
-          },
-        }))
-      );
+   await base(TABLE_ORDERITEMS).create(
+  orderData.items.map((item) => ({
+    fields: {
+      Order: [orderId],
+      ProductName: item.name,
+      Option: item.option,
+      Price: item.price,
+      AddOns: item.addons || "", // ✅ guarda AddOns en texto plano
+    },
+  }))
+);
+
     }
 
     return {
