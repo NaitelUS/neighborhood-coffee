@@ -10,48 +10,48 @@ const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS!;
 
 export const handler: Handler = async (event) => {
   try {
-    const data = JSON.parse(event.body || "{}");
+    const orderData = JSON.parse(event.body || "{}");
 
-    // ✅ Crear la orden principal
-    const orderRecord = await base(TABLE_ORDERS).create([
+    // 🧾 Crear la orden principal
+    const order = await base(TABLE_ORDERS).create([
       {
         fields: {
-          Name: data.customer_name,
-          Phone: data.customer_phone,
-          Address: data.address,
-          OrderType: data.order_type,
-          ScheduleDate: data.schedule_date,
-          ScheduleTime: data.schedule_time,
-          Subtotal: data.subtotal,
-          Discount: data.discount,
-          Total: data.total,
-          Coupon: data.coupon_code,
-          Status: data.status || "Received",
+          Name: orderData.name,
+          Phone: orderData.phone,
+          OrderType: orderData.orderType,
+          Address: orderData.address || "",
+          ScheduleDate: orderData.scheduleDate,
+          ScheduleTime: orderData.scheduleTime,
+          ScheduleTimeDisplay: orderData.scheduleTimeDisplay,
+          Subtotal: orderData.subtotal,
+          Discount: orderData.discount,
+          Total: orderData.total,
+          Coupon: orderData.coupon || "",
+          Status: "Received",
         },
       },
     ]);
 
-    const orderId = orderRecord[0].id;
+    const orderId = order[0].id;
 
-    // ✅ Crear los items asociados
-    if (data.items && Array.isArray(data.items)) {
-   await base(TABLE_ORDERITEMS).create(
-  orderData.items.map((item) => ({
-    fields: {
-      Order: [orderId],
-      ProductName: item.name,
-      Option: item.option,
-      Price: item.price,
-      AddOns: item.addons || "", // ✅ guarda AddOns en texto plano
-    },
-  }))
-);
-
+    // 🧱 Crear los OrderItems con AddOns incluidos
+    if (Array.isArray(orderData.items) && orderData.items.length > 0) {
+      await base(TABLE_ORDERITEMS).create(
+        orderData.items.map((item) => ({
+          fields: {
+            Order: [orderId],
+            ProductName: item.name,
+            Option: item.option || "",
+            Price: item.price || 0,
+            AddOns: item.addons || "", // ✅ Guarda los AddOns en texto plano
+          },
+        }))
+      );
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, orderId }),
+      body: JSON.stringify({ success: true, id: orderId }),
     };
   } catch (err) {
     console.error("❌ Error creating order:", err);
