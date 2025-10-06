@@ -7,10 +7,40 @@ export default function DeliveryPage() {
 
   const DELIVERY_PASSWORD = import.meta.env.VITE_DELIVERY_PASSWORD;
 
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch("/.netlify/functions/orders-get");
+      const data = await res.json();
+      const filtered = data
+        .filter(
+          (o: any) =>
+            o.order_type?.toLowerCase() === "delivery" &&
+            ["Ready", "Out for Delivery"].includes(o.status)
+        )
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime()
+        );
+      setOrders(filtered);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    }
+  };
+
   useEffect(() => {
     const auth = localStorage.getItem("deliveryAuth");
     if (auth === "true") setAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (authenticated) {
+      fetchOrders();
+      // ⏱️ Auto-refresh cada 30 segundos
+      const interval = setInterval(fetchOrders, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [authenticated]);
 
   const handleLogin = () => {
     if (passwordInput === DELIVERY_PASSWORD) {
@@ -20,28 +50,6 @@ export default function DeliveryPage() {
       alert("Incorrect password");
     }
   };
-
-  useEffect(() => {
-    if (authenticated) {
-      fetch("/.netlify/functions/orders-get")
-        .then((res) => res.json())
-        .then((data) => {
-          const filtered = data
-            .filter(
-              (o: any) =>
-                o.order_type?.toLowerCase() === "delivery" &&
-                ["Ready", "Out for Delivery"].includes(o.status)
-            )
-            .sort(
-              (a: any, b: any) =>
-                new Date(a.created_at).getTime() -
-                new Date(b.created_at).getTime()
-            );
-          setOrders(filtered);
-        })
-        .catch((err) => console.error("Error fetching orders:", err));
-    }
-  }, [authenticated]);
 
   if (!authenticated) {
     return (
@@ -64,9 +72,39 @@ export default function DeliveryPage() {
     );
   }
 
+  async function handleComplete(orderId: string) {
+    const confirmAction = window.confirm("Mark this order as completed?");
+    if (!confirmAction) return;
+
+    try {
+      const res = await fetch("/.netlify/functions/orders-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: orderId,
+          fields: { status: "Completed" },
+        }),
+      });
+
+      if (res.ok) {
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      } else {
+        alert("Error updating order");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error");
+    }
+  }
+
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold text-center mb-4">🚚 Delivery Orders</h1>
+      <h1 className="text-2xl font-bold text-center mb-1">
+        🚚 Delivery Orders
+      </h1>
+      <p className="text-center text-xs text-gray-400 mb-3">
+        Auto-refresh every 30s
+      </p>
 
       {orders.length === 0 ? (
         <p className="text-center text-gray-500">No delivery orders available</p>
@@ -82,11 +120,9 @@ export default function DeliveryPage() {
                 <span className="text-xs text-gray-500">{order.status}</span>
               </div>
 
-              <p className="text-gray-800"><strong>👤</strong> {order.name}</p>
-              <p className="text-gray-800"><strong>📞</strong> {order.phone}</p>
-              <p className="text-gray-700">
-                🕓 {order.schedule_time || "N/A"}
-              </p>
+              <p><strong>👤</strong> {order.name}</p>
+              <p><strong>📞</strong> {order.phone}</p>
+              <p>🕓 {order.schedule_time || "N/A"}</p>
               <p className="mt-1 font-bold text-lg text-green-700">
                 💲{Number(order.total).toFixed(2)}
               </p>
@@ -103,29 +139,4 @@ export default function DeliveryPage() {
       )}
     </div>
   );
-
-  async function handleComplete(orderId: string) {
-    const confirmAction = window.confirm("Mark this order as completed?");
-    if (!confirmAction) return;
-
-    try {
-      const res = await fetch("/.netlify/functions/orders-update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: orderId,
-          fields: { status: "Completed" }, // <-- usar minúsculas
-        }),
-      });
-
-      if (res.ok) {
-        setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      } else {
-        alert("Error updating order");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Network error");
-    }
-  }
 }
