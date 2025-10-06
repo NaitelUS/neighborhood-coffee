@@ -1,57 +1,63 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Header from "@/components/Header";
-import Menu from "@/components/Menu"; // ✅ Página principal: productos
-import OrderPage from "@/pages/OrderPage";
-import ThankYou from "@/pages/ThankYou";
-import Feedback from "@/pages/Feedback";
-import NotFound from "@/pages/NotFound";
-import AdminOrders from "@/pages/AdminOrders";
-import AdminPanel from "@/pages/AdminPanel";
-import AdminProducts from "@/pages/AdminProducts";
-import { CartProvider } from "@/context/CartContext";
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// 🧩 Páginas principales
+import Menu from "./pages/Menu";
+import OrderPage from "./pages/OrderPage";
+import ThankYou from "./pages/ThankYou";
+import OrderStatus from "./pages/OrderStatus";
+import AdminPanel from "./pages/AdminPanel";
 import DeliveryPage from "./pages/DeliveryPage";
 
+// 🧠 Contexto global del carrito
+import { CartProvider } from "@/context/CartContext";
+
+// 🎨 Estilos globales (Tailwind)
+import "./index.css";
 
 export default function App() {
   return (
     <CartProvider>
-      <Router>
-        <div className="flex flex-col min-h-screen bg-gray-50">
-          {/* ✅ Header visible en todas las páginas */}
-          <Header />
+      <BrowserRouter>
+        <Routes>
 
-          {/* ✅ Contenido principal */}
-          <main className="flex-1 px-4 sm:px-8 py-6">
-            <Routes>
-              {/* 🏠 Menú principal (productos) */}
-              <Route path="/" element={<Menu />} />
+          {/* ☕ Página principal (menú) */}
+          <Route path="/" element={<Menu />} />
 
-              <Route path="/delivery" element={<DeliveryPage />} />
+          {/* 🧾 Resumen y envío de orden */}
+          <Route path="/order" element={<OrderPage />} />
 
+          {/* ✅ Confirmación de pedido (usa ?id=) */}
+          <Route path="/thank-you" element={<ThankYou />} />
 
-              {/* 🧾 Orden y forma del cliente */}
-              <Route path="/order" element={<OrderPage />} />
+          {/* 🔍 Seguimiento de pedido (usa ?id=) */}
+          <Route path="/status" element={<OrderStatus />} />
 
-              {/* ✅ Página de confirmación */}
-              <Route path="/thank-you/:orderId" element={<ThankYou />} />
+          {/* 🧑‍🍳 Panel del barista/admin */}
+          <Route path="/admin" element={<AdminPanel />} />
 
-              {/* ⭐ Feedback */}
-              <Route path="/feedback" element={<Feedback />} />
+          {/* 🚚 Panel del repartidor */}
+          <Route path="/delivery" element={<DeliveryPage />} />
 
-              {/* 🧠 Panel administrativo */}
-              <Route path="/admin" element={<AdminOrders />} />
-              <Route path="/admin-panel" element={<AdminPanel />} />
-              <Route
-                path="/admin-panel/products"
-                element={<AdminProducts />}
-              />
-
-              {/* ❌ 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
+          {/* 🚫 Fallback (opcional) */}
+          <Route
+            path="*"
+            element={
+              <div className="flex flex-col items-center justify-center min-h-screen text-center">
+                <h1 className="text-3xl font-bold text-gray-700 mb-3">
+                  Page not found
+                </h1>
+                <a
+                  href="/"
+                  className="text-[#1D9099] hover:text-[#00454E] underline"
+                >
+                  Go back to home
+                </a>
+              </div>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </CartProvider>
   );
 }
