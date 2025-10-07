@@ -16,13 +16,12 @@ export const handler = async (event: any) => {
     const body = JSON.parse(event.body || "{}");
     console.log("🧾 Creating order:", body);
 
-    // Generar número legible si no viene del frontend
+    // Generar número legible tipo TNC-001
     const orderNumber =
       body.orderNumber || `TNC-${Date.now().toString().slice(-3)}`;
-
     const createdAt = new Date().toISOString();
 
-    // Crear registro principal en Orders
+    // 1️⃣ Crear registro principal en Orders
     const orderRecord = await base("Orders").create([
       {
         fields: {
@@ -46,7 +45,7 @@ export const handler = async (event: any) => {
 
     const orderId = orderRecord[0].id;
 
-    // 🧱 Actualizar OrderID dentro de la misma orden
+    // 2️⃣ Actualizar campo OrderID con el recordId
     await base("Orders").update([
       {
         id: orderId,
@@ -54,9 +53,7 @@ export const handler = async (event: any) => {
       },
     ]);
 
-    console.log("✅ Order created:", orderNumber, "→", orderId);
-
-    // 🧾 Crear los OrderItems usando OrderNumber
+    // 3️⃣ Crear los OrderItems
     if (body.items && body.items.length > 0) {
       const itemsToCreate = body.items.map((item: any) => ({
         fields: {
@@ -79,7 +76,7 @@ export const handler = async (event: any) => {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        message: "Order created successfully",
+        message: "✅ Order created successfully",
         orderNumber,
         orderId,
       }),
@@ -90,7 +87,7 @@ export const handler = async (event: any) => {
       statusCode: 500,
       body: JSON.stringify({
         success: false,
-        message: "Order creation failed",
+        message: "💥 Order creation failed",
         error: error.message,
       }),
     };
