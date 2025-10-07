@@ -39,8 +39,9 @@ exports.handler = async (event) => {
     }
 
     const formattedOrderNumber = `TNC-${String(nextNumber).padStart(3, "0")}`;
+    const createdAt = new Date().toISOString();
 
-    // 2️⃣ Crear la orden en Airtable
+    // 2️⃣ Crear la orden principal
     const newOrder = await base(process.env.AIRTABLE_TABLE_ORDERS!).create([
       {
         fields: {
@@ -54,14 +55,15 @@ exports.handler = async (event) => {
           Notes: notes || "",
           Status: "Received",
           OrderNumber: formattedOrderNumber,
-          CreatedAt: new Date().toISOString(),
+          CreatedAt: createdAt, // 🔹 Aquí se llena explícitamente
         },
       },
     ]);
 
     const orderId = newOrder[0].id;
+    console.log(`✅ New order created: ${formattedOrderNumber} (${orderId})`);
 
-    // 3️⃣ Agregar los items relacionados
+    // 3️⃣ Crear los items relacionados
     if (Array.isArray(items) && items.length > 0) {
       const orderItems = items.map((item) => ({
         fields: {
@@ -76,7 +78,6 @@ exports.handler = async (event) => {
       await base(process.env.AIRTABLE_TABLE_ORDERITEMS!).create(orderItems);
     }
 
-    // 4️⃣ Respuesta
     return {
       statusCode: 200,
       body: JSON.stringify({
