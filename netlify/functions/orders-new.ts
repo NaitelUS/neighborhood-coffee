@@ -14,53 +14,57 @@ export const handler = async (event: any) => {
 
   try {
     const body = JSON.parse(event.body || "{}");
-    console.log("Creating order with body:", body);
+    console.log("🧾 Creating order with body:", body);
 
-    // Generar número TNC si no viene
-    const orderNumber = body.orderNumber || `TNC-${Date.now().toString().slice(-3)}`;
+    // ✅ Generar número de orden si no viene del frontend
+    const orderNumber =
+      body.orderNumber || `TNC-${Date.now().toString().slice(-3)}`;
 
-    // Crear registro en Orders
+    // ✅ Fecha/hora exacta de creación (hora del sistema)
+    const createdAt = new Date().toISOString();
+
+    // 🧱 Crear registro principal en tabla Orders
     const orderRecord = await base("Orders").create([
       {
         fields: {
           Name: body.name,
           Phone: body.phone,
-          OrderType: body.order_type,
+          OrderType: body.order_type || "",
           Address: body.address || "",
           ScheduleDate: body.schedule_date || "",
           ScheduleTime: body.schedule_time || "",
-          Subtotal: body.subtotal,
-          Discount: body.discount,
-          Total: body.total,
+          Subtotal: Number(body.subtotal) || 0,
+          Discount: Number(body.discount) || 0,
+          Total: Number(body.total) || 0,
           Coupon: body.coupon || "",
           Status: "Received",
           Notes: body.notes || "",
           OrderNumber: orderNumber,
+          CreatedAt: createdAt, // 🕒 ← campo controlado por tu sistema
         },
       },
     ]);
 
     console.log("✅ Order created:", orderRecord[0].id);
-
     const orderId = orderRecord[0].id;
 
-    // Crear registros en OrderItems
+    // 🧃 Crear los items asociados a la orden
     if (body.items && body.items.length > 0) {
       const itemRecords = body.items.map((item: any) => ({
         fields: {
           Order: [orderId],
-          ProductName: item.product_name || item.name,
+          ProductName: item.product_name || item.name || "Unnamed Item",
           Option: item.option || "",
           AddOns:
-            item.addons && item.addons.length > 0
+            Array.isArray(item.addons) && item.addons.length > 0
               ? item.addons.join(", ")
               : "",
-          Price: item.price,
+          Price: Number(item.price) || 0,
         },
       }));
 
       await base("OrderItems").create(itemRecords);
-      console.log(`🧃 Created ${itemRecords.length} items`);
+      console.log(`🧩 Created ${itemRecords.length} items for order.`);
     }
 
     return {
@@ -72,7 +76,7 @@ export const handler = async (event: any) => {
       }),
     };
   } catch (error: any) {
-    console.error("❌ Error creating order:", error);
+    console.error("💥 Error creating order:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({
