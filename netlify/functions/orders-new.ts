@@ -1,108 +1,95 @@
-import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
-// Inicializar conexión
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
 
-const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
-const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
-
-// 🧠 Función auxiliar: obtener siguiente número consecutivo
-async function getNextOrderNumber() {
+exports.handler = async (event) => {
   try {
-    const records = await base(TABLE_ORDERS)
+    const body = JSON.parse(event.body);
+
+    const {
+      name,
+      phone,
+      address,
+      order_type,
+      schedule_date,
+      schedule_time,
+      total,
+      notes,
+      items,
+    } = body;
+
+    // 1️⃣ Obtener el siguiente número consecutivo
+    const existingOrders = await base(process.env.AIRTABLE_TABLE_ORDERS!)
       .select({
-        sort: [{ field: "OrderNumber", direction: "desc" }],
+        fields: ["OrderNumber"],
+        sort: [{ field: "CreatedAt", direction: "desc" }],
         maxRecords: 1,
       })
       .firstPage();
 
-    if (records.length > 0) {
-      const last = records[0].fields["OrderNumber"];
-      if (typeof last === "number") return last + 1;
+    let nextNumber = 1;
+    if (existingOrders.length > 0) {
+      const lastOrderNumber = existingOrders[0].get("OrderNumber");
+      if (lastOrderNumber && typeof lastOrderNumber === "string") {
+        const num = parseInt(lastOrderNumber.replace("TNC-", ""), 10);
+        if (!isNaN(num)) nextNumber = num + 1;
+      }
     }
-    return 1; // Si no hay registros
-  } catch (err) {
-    console.error("⚠️ Error fetching last order number:", err);
-    return 1; // fallback
-  }
-}
 
-export const handler: Handler = async (event) => {
-  try {
-    const orderData = JSON.parse(event.body || "{}");
-    console.log("🧾 Incoming order:", orderData);
+    const formattedOrderNumber = `TNC-${String(nextNumber).padStart(3, "0")}`;
 
-    // Obtener número consecutivo
-    const nextNumber = await getNextOrderNumber();
-    const shortId = `TNC-${String(nextNumber).padStart(3, "0")}`;
-
-    // Crear orden principal
-    const createdOrder = await base(TABLE_ORDERS).create([
+    // 2️⃣ Crear la orden en Airtable
+    const newOrder = await base(process.env.AIRTABLE_TABLE_ORDERS!).create([
       {
         fields: {
-          OrderID: shortId,
-          OrderNumber: nextNumber,
-          Name: orderData.customer_name,
-          Phone: orderData.customer_phone,
-          OrderType: orderData.order_type,
-          Address: orderData.address || "",
-          ScheduleDate: orderData.schedule_date || "",
-          ScheduleTime: orderData.schedule_time || "",
-          Subtotal: orderData.subtotal,
-          Discount: orderData.discount,
-          Total: orderData.total,
-          Coupon: orderData.coupon_code || "",
-          Notes: orderData.notes || "",
+          Name: name,
+          Phone: phone,
+          Address: address || "",
+          OrderType: order_type,
+          ScheduleDate: schedule_date,
+          ScheduleTime: schedule_time,
+          Total: total,
+          Notes: notes || "",
           Status: "Received",
+          OrderNumber: formattedOrderNumber,
+          CreatedAt: new Date().toISOString(),
         },
       },
     ]);
 
-    console.log(`✅ Order created: ${shortId}`);
+    const orderId = newOrder[0].id;
 
-    // Crear los ítems relacionados
-    if (Array.isArray(orderData.items) && orderData.items.length > 0) {
-      const orderItems = orderData.items.map((item: any) => ({
+    // 3️⃣ Agregar los items relacionados
+    if (Array.isArray(items) && items.length > 0) {
+      const orderItems = items.map((item) => ({
         fields: {
-          Order: shortId, // no es link, solo texto
-          ProductName: item.name,
+          Order: [orderId],
+          ProductName: item.product_name,
           Option: item.option || "",
+          AddOns: item.addons || "",
           Price: item.price || 0,
-          AddOns: Array.isArray(item.addons)
-            ? item.addons
-                .map(
-                  (a: any) =>
-                    `${a?.name || "Unnamed"} ($${(a?.price || 0).toFixed(2)})`
-                )
-                .join(", ")
-            : "",
         },
       }));
 
-      // Airtable permite máximo 10 registros por batch
-      while (orderItems.length > 0) {
-        const batch = orderItems.splice(0, 10);
-        await base(TABLE_ORDERITEMS).create(batch);
-      }
-
-      console.log("✅ OrderItems saved successfully");
-    } else {
-      console.warn("⚠️ No order items found in request");
+      await base(process.env.AIRTABLE_TABLE_ORDERITEMS!).create(orderItems);
     }
 
-    // Respuesta exitosa
+    // 4️⃣ Respuesta
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, orderId: shortId }),
+      body: JSON.stringify({
+        success: true,
+        order_id: orderId,
+        order_number: formattedOrderNumber,
+      }),
     };
-  } catch (err) {
-    console.error("❌ Error creating order:", err);
+  } catch (error) {
+    console.error("❌ Error creating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: "Failed to create order" }),
+      body: JSON.stringify({ success: false, error: error.message }),
     };
   }
 };
