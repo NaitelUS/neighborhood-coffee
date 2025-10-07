@@ -1,92 +1,65 @@
 import Airtable from "airtable";
 
+const base = new Airtable({
+  apiKey: process.env.AIRTABLE_API_KEY,
+}).base(process.env.AIRTABLE_BASE_ID!);
+
 export const handler = async (event: any) => {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
+  }
+
   try {
-    if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: "Method Not Allowed" };
-    }
-
     const body = JSON.parse(event.body || "{}");
-    console.log("🧾 Received order:", JSON.stringify(body, null, 2));
+    console.log("Creating order with body:", body);
 
-    // ✅ Validar campos mínimos
-    if (!body.name || !body.phone || !body.items?.length) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          success: false,
-          error: "Missing name, phone or items",
-        }),
-      };
-    }
+    // Generar número TNC si no viene
+    const orderNumber = body.orderNumber || `TNC-${Date.now().toString().slice(-3)}`;
 
-    // 🧩 Verifica que las variables existan
-    const apiKey = process.env.AIRTABLE_API_KEY;
-    const baseId = process.env.AIRTABLE_BASE_ID;
-    const tableOrders = process.env.AIRTABLE_TABLE_ORDERS;
-    const tableOrderItems = process.env.AIRTABLE_TABLE_ORDERITEMS;
-
-    if (!apiKey || !baseId || !tableOrders || !tableOrderItems) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          success: false,
-          error: "Missing Airtable environment variables",
-          details: { apiKey, baseId, tableOrders, tableOrderItems },
-        }),
-      };
-    }
-
-    const base = new Airtable({ apiKey }).base(baseId);
-
-    // 🆔 Generar número de orden
-    const orderNumber =
-      body.orderNumber ||
-      `TNC-${Date.now().toString().slice(-3)}`;
-
-    const createdAt = new Date().toISOString();
-
-    // 🧾 Crear la orden
-    const orderResult = await base(tableOrders).create([
+    // Crear registro en Orders
+    const orderRecord = await base("Orders").create([
       {
         fields: {
           Name: body.name,
           Phone: body.phone,
-          OrderType: body.order_type || "",
+          OrderType: body.order_type,
           Address: body.address || "",
           ScheduleDate: body.schedule_date || "",
           ScheduleTime: body.schedule_time || "",
-          Subtotal: Number(body.subtotal) || 0,
-          Discount: Number(body.discount) || 0,
-          Total: Number(body.total) || 0,
+          Subtotal: body.subtotal,
+          Discount: body.discount,
+          Total: body.total,
           Coupon: body.coupon || "",
-          Notes: body.notes || "",
           Status: "Received",
+          Notes: body.notes || "",
           OrderNumber: orderNumber,
-          CreatedAt: createdAt,
         },
       },
     ]);
 
-    const orderId = orderResult[0].id;
-    console.log("✅ Order created:", orderId);
+    console.log("✅ Order created:", orderRecord[0].id);
 
-    // 🧃 Crear los productos (items)
-    const itemRecords = body.items.map((item: any) => ({
-      fields: {
-        Order: [orderId],
-        ProductName: item.product_name || item.name || "Unnamed",
-        Option: item.option || "",
-        AddOns:
-          Array.isArray(item.addons) && item.addons.length
+    const orderId = orderRecord[0].id;
+
+    // Crear registros en OrderItems
+    if (body.items && body.items.length > 0) {
+      const itemRecords = body.items.map((item: any) => ({
+        fields: {
+          Order: [orderId],
+          ProductName: item.product_name || item.name,
+          Option: item.option || "",
+          AddOns: item.addons && item.addons.length > 0
             ? item.addons.join(", ")
             : "",
-        Price: Number(item.price) || 0,
-      },
-    }));
+          Price: item.price,
+        },
+      }));
 
-    if (itemRecords.length > 0) {
-      await base(tableOrderItems).create(itemRecords);
+      await base("OrderItems").create(itemRecords);
+      console.log(`🧃 Created ${itemRecords.length} items`);
     }
 
     return {
@@ -95,18 +68,16 @@ export const handler = async (event: any) => {
         success: true,
         message: "Order created successfully",
         orderNumber,
-        orderId,
       }),
     };
   } catch (error: any) {
-    console.error("💥 Error creating order:", error);
+    console.error("❌ Error creating order:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({
         success: false,
         message: "Order creation failed",
         error: error.message,
-        stack: error.stack,
       }),
     };
   }
