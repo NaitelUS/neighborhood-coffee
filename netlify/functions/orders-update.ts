@@ -6,16 +6,14 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 
 exports.handler = async (event) => {
   try {
-    const body = JSON.parse(event.body);
-    const recordId = body.id;
-    const newStatus = body.status;
+    const { id, status } = JSON.parse(event.body);
 
-    if (!recordId || !newStatus) {
+    if (!id || !status) {
       return { statusCode: 400, body: "Missing id or status" };
     }
 
-    await base(process.env.AIRTABLE_TABLE_ORDERS!).update(recordId, {
-      Status: newStatus,
+    await base(process.env.AIRTABLE_TABLE_ORDERS!).update(id, {
+      Status: status,
     });
 
     return {
@@ -26,7 +24,7 @@ exports.handler = async (event) => {
     console.error("❌ Error updating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: "Error updating status" }),
+      body: JSON.stringify({ success: false, error: error.message }),
     };
   }
 };
