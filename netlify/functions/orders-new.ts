@@ -14,16 +14,15 @@ export const handler = async (event: any) => {
 
   try {
     const body = JSON.parse(event.body || "{}");
-    console.log("🧾 Creating order with body:", body);
+    console.log("🧾 Creating order:", body);
 
-    // ✅ Generar número de orden si no viene del frontend
+    // Generar número legible si no viene del frontend
     const orderNumber =
       body.orderNumber || `TNC-${Date.now().toString().slice(-3)}`;
 
-    // ✅ Fecha/hora exacta de creación (hora del sistema)
     const createdAt = new Date().toISOString();
 
-    // 🧱 Crear registro principal en tabla Orders
+    // Crear registro principal en Orders
     const orderRecord = await base("Orders").create([
       {
         fields: {
@@ -37,22 +36,31 @@ export const handler = async (event: any) => {
           Discount: Number(body.discount) || 0,
           Total: Number(body.total) || 0,
           Coupon: body.coupon || "",
-          Status: "Received",
           Notes: body.notes || "",
+          Status: "Received",
           OrderNumber: orderNumber,
-          CreatedAt: createdAt, // 🕒 ← campo controlado por tu sistema
+          CreatedAt: createdAt,
         },
       },
     ]);
 
-    console.log("✅ Order created:", orderRecord[0].id);
     const orderId = orderRecord[0].id;
 
-    // 🧃 Crear los items asociados a la orden
+    // 🧱 Actualizar OrderID dentro de la misma orden
+    await base("Orders").update([
+      {
+        id: orderId,
+        fields: { OrderID: orderId },
+      },
+    ]);
+
+    console.log("✅ Order created:", orderNumber, "→", orderId);
+
+    // 🧾 Crear los OrderItems usando OrderNumber
     if (body.items && body.items.length > 0) {
-      const itemRecords = body.items.map((item: any) => ({
+      const itemsToCreate = body.items.map((item: any) => ({
         fields: {
-          Order: [orderId],
+          OrderNumber: orderNumber,
           ProductName: item.product_name || item.name || "Unnamed Item",
           Option: item.option || "",
           AddOns:
@@ -63,8 +71,8 @@ export const handler = async (event: any) => {
         },
       }));
 
-      await base("OrderItems").create(itemRecords);
-      console.log(`🧩 Created ${itemRecords.length} items for order.`);
+      await base("OrderItems").create(itemsToCreate);
+      console.log(`🧩 Created ${itemsToCreate.length} items`);
     }
 
     return {
@@ -73,6 +81,7 @@ export const handler = async (event: any) => {
         success: true,
         message: "Order created successfully",
         orderNumber,
+        orderId,
       }),
     };
   } catch (error: any) {
