@@ -1,59 +1,44 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// 🧩 Componentes principales
-import Header from "./components/Header";
-import Menu from "./components/Menu";
-import OrderPage from "./pages/OrderPage";
-import ThankYou from "./pages/ThankYou";
-import OrderStatus from "./pages/OrderStatus";
-import AdminPanel from "./pages/AdminPanel";
-import AdminOrders from "./pages/AdminOrders";
-import DeliveryPage from "./pages/DeliveryPage";
+// 🧩 Componentes globales
+import Header from "@/components/Header";
+import Menu from "@/components/Menu";
 
-// 🧠 Contexto global del carrito
-import { CartProvider } from "./context/CartContext";
+// 🧱 Pages principales
+import OrderPage from "@/pages/OrderPage";
+import ThankYou from "@/pages/ThankYou";
+import AdminOrders from "@/pages/AdminOrders";
+import DeliveryPage from "@/pages/DeliveryPage";
+import OrderStatus from "@/pages/OrderStatus";
 
 export default function App() {
   return (
     <Router>
-      <CartProvider>
-        <div className="min-h-screen bg-gray-50">
-          {/* 🌐 Header visible en todas las páginas */}
-          <Header />
+      {/* 🧭 Encabezado fijo */}
+      <Header />
 
-          <Routes>
-            {/* 🏠 Menú principal */}
-            <Route path="/" element={<Menu />} />
+      {/* 📍 Rutas principales */}
+      <div className="pt-20"> {/* deja espacio bajo el header fijo */}
+        <Routes>
+          {/* 🏠 Página principal: Menú */}
+          <Route path="/" element={<Menu />} />
 
-            {/* 🛒 Página de orden */}
-            <Route path="/order" element={<OrderPage />} />
+          {/* ☕ Página de orden (cliente) */}
+          <Route path="/order" element={<OrderPage />} />
 
-            {/* ✅ Confirmación de orden */}
-            <Route path="/thank-you" element={<ThankYou />} />
+          {/* 🎉 Confirmación post-orden */}
+          <Route path="/thank-you" element={<ThankYou />} />
 
-            {/* 🔍 Estado de orden */}
-            <Route path="/status" element={<OrderStatus />} />
+          {/* 📦 Panel del barista (admin) */}
+          <Route path="/admin/orders" element={<AdminOrders />} />
 
-            {/* 🧑‍🍳 Panel de administración */}
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
+          {/* 🚚 Panel del repartidor */}
+          <Route path="/delivery" element={<DeliveryPage />} />
 
-            {/* 🚚 Página del repartidor */}
-            <Route path="/delivery" element={<DeliveryPage />} />
+          {/* 🔍 Estado de la orden (cliente) */}
+          <Route path="/status" element={<OrderStatus />} />
 
-            {/* ⚠️ Página no encontrada */}
-            <Route
-              path="*"
-              element={
-                <div className="text-center mt-20 text-gray-600 text-lg">
-                  Page not found
-                </div>
-              }
-            />
-          </Routes>
-        </div>
-      </CartProvider>
-    </Router>
-  );
-}
+          {/* 🧭 Ruta por defecto (redirige a menú) */}
+          <Route path="*" element={<Menu />} />
+        </Routes
