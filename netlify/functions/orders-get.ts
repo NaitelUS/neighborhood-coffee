@@ -7,7 +7,21 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 exports.handler = async () => {
   try {
     const orders = await base(process.env.AIRTABLE_TABLE_ORDERS!)
-      .select({ view: "Grid view" })
+      .select({
+        view: "Grid view",
+        fields: [
+          "OrderNumber",
+          "Name",
+          "Phone",
+          "Address",
+          "OrderType",
+          "ScheduleDate",
+          "ScheduleTime",
+          "Total",
+          "Notes",
+          "Status",
+        ],
+      })
       .all();
 
     const results = [];
@@ -15,14 +29,14 @@ exports.handler = async () => {
     for (const record of orders) {
       const orderId = record.id;
 
-      // Obtener ítems relacionados
-      const linkedItems = await base(process.env.AIRTABLE_TABLE_ORDERITEMS!)
+      // Obtener los items asociados
+      const orderItems = await base(process.env.AIRTABLE_TABLE_ORDERITEMS!)
         .select({
           filterByFormula: `{Order} = '${orderId}'`,
         })
         .all();
 
-      const items = linkedItems.map((i) => ({
+      const items = orderItems.map((i) => ({
         product_name: i.get("ProductName"),
         option: i.get("Option"),
         addons: i.get("AddOns"),
@@ -32,15 +46,15 @@ exports.handler = async () => {
       results.push({
         id: orderId,
         order_number: record.get("OrderNumber") || "",
-        name: record.get("Name"),
-        phone: record.get("Phone"),
-        address: record.get("Address"),
-        order_type: record.get("OrderType"),
-        schedule_date: record.get("ScheduleDate"),
-        schedule_time: record.get("ScheduleTime"),
-        notes: record.get("Notes"),
-        status: record.get("Status"),
-        total: record.get("Total"),
+        name: record.get("Name") || "",
+        phone: record.get("Phone") || "",
+        address: record.get("Address") || "",
+        order_type: record.get("OrderType") || "",
+        schedule_date: record.get("ScheduleDate") || "",
+        schedule_time: record.get("ScheduleTime") || "",
+        total: record.get("Total") || 0,
+        notes: record.get("Notes") || "",
+        status: record.get("Status") || "Received",
         items,
       });
     }
