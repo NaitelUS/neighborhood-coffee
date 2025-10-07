@@ -1,11 +1,14 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// 🧩 Componentes globales
+// 🧩 Contexto global del carrito
+import { CartProvider } from "@/context/CartContext";
+
+// 🧱 Componentes globales
 import Header from "@/components/Header";
 import Menu from "@/components/Menu";
 
-// 🧱 Pages principales
+// 🧱 Pages
 import OrderPage from "@/pages/OrderPage";
 import ThankYou from "@/pages/ThankYou";
 import AdminOrders from "@/pages/AdminOrders";
@@ -14,31 +17,37 @@ import OrderStatus from "@/pages/OrderStatus";
 
 export default function App() {
   return (
-    <Router>
-      {/* 🧭 Encabezado fijo */}
-      <Header />
+    <CartProvider>
+      <Router>
+        {/* 🧭 Encabezado fijo */}
+        <Header />
 
-      {/* 📍 Rutas principales */}
-      <div className="pt-20"> {/* deja espacio bajo el header fijo */}
-        <Routes>
-          {/* 🏠 Página principal: Menú */}
-          <Route path="/" element={<Menu />} />
+        {/* 🧭 Contenedor principal */}
+        <div className="pt-20">
+          <Routes>
+            {/* 🏠 Página principal: Menú */}
+            <Route path="/" element={<Menu />} />
 
-          {/* ☕ Página de orden (cliente) */}
-          <Route path="/order" element={<OrderPage />} />
+            {/* ☕ Pedido del cliente */}
+            <Route path="/order" element={<OrderPage />} />
 
-          {/* 🎉 Confirmación post-orden */}
-          <Route path="/thank-you" element={<ThankYou />} />
+            {/* 🎉 Confirmación */}
+            <Route path="/thank-you" element={<ThankYou />} />
 
-          {/* 📦 Panel del barista (admin) */}
-          <Route path="/admin/orders" element={<AdminOrders />} />
+            {/* 📦 Panel del barista */}
+            <Route path="/admin/orders" element={<AdminOrders />} />
 
-          {/* 🚚 Panel del repartidor */}
-          <Route path="/delivery" element={<DeliveryPage />} />
+            {/* 🚚 Panel del repartidor */}
+            <Route path="/delivery" element={<DeliveryPage />} />
 
-          {/* 🔍 Estado de la orden (cliente) */}
-          <Route path="/status" element={<OrderStatus />} />
+            {/* 🔍 Seguimiento del cliente */}
+            <Route path="/status" element={<OrderStatus />} />
 
-          {/* 🧭 Ruta por defecto (redirige a menú) */}
-          <Route path="*" element={<Menu />} />
-        </Routes
+            {/* 🚦 Fallback: redirige al menú */}
+            <Route path="*" element={<Menu />} />
+          </Routes>
+        </div>
+      </Router>
+    </CartProvider>
+  );
+}
