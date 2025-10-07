@@ -1,6 +1,7 @@
 import Airtable from "airtable";
 
-export const handler = async () => {
+// 👇 Esta es la función estándar que Netlify ejecuta
+export async function handler() {
   console.log("🚀 Starting Airtable test");
 
   try {
@@ -21,7 +22,6 @@ export const handler = async () => {
 
     const base = new Airtable({ apiKey: key }).base(baseId);
 
-    // Crear un registro de prueba en Orders
     const createdAt = new Date().toISOString();
     const orderNumber = `TEST-${Date.now().toString().slice(-3)}`;
 
@@ -63,5 +63,4 @@ export const handler = async () => {
       }),
     };
   }
-};
-test-airtable.ts
+}
