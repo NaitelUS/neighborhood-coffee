@@ -139,9 +139,12 @@ export default function AdminOrders() {
               key={o.id}
               className="bg-white p-5 rounded-xl shadow-md border border-gray-200"
             >
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                #{o.order_number || o.id}
+              <h2 className="text-xl font-bold text-gray-900 mb-1">
+                Order No: {o.order_number || o.id}
               </h2>
+              <p className="text-gray-600 text-sm mb-2">
+                Current Status: <strong>{o.status}</strong>
+              </p>
 
               <p className="text-xl font-semibold text-gray-800 mb-1">
                 {o.name}
