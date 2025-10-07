@@ -4,7 +4,6 @@ import { useLocation, Link } from "react-router-dom";
 export default function ThankYou() {
   const location = useLocation();
   const [order, setOrder] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const queryParams = new URLSearchParams(location.search);
@@ -18,32 +17,20 @@ export default function ThankYou() {
         const res = await fetch("/.netlify/functions/orders-get");
         const data = await res.json();
 
-        // Busca por OrderNumber o record.id
         const found = data.find(
           (o: any) =>
-            o.order_number === orderParam ||
-            o.id === orderParam
+            o.order_number === orderParam || o.id === orderParam
         );
 
         if (!found) setError("Order not found. Please check your link.");
         else setOrder(found);
       } catch (err) {
-        console.error("❌ Error loading order:", err);
         setError("Error loading order.");
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchOrder();
   }, [orderParam]);
-
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-screen text-gray-600">
-        Loading your order...
-      </div>
-    );
 
   if (error)
     return (
@@ -55,51 +42,54 @@ export default function ThankYou() {
       </div>
     );
 
+  if (!order)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Loading your order...</p>
+      </div>
+    );
+
   return (
-    <div className="max-w-xl mx-auto text-center p-6 bg-white shadow-md rounded-lg mt-10">
+    <div className="max-w-xl mx-auto text-center bg-white p-6 mt-10 shadow-md rounded-lg">
       <h1 className="text-2xl font-bold text-teal-700 mb-2">
         ☕ Thank You for Your Order!
       </h1>
-      <p className="text-gray-700 mb-4">
-        Your order has been received and is being prepared.
+      <p className="text-gray-700 mb-4">Your order has been received.</p>
+
+      <h2 className="text-xl font-bold mb-2">
+        Order No: {order.order_number || order.id}
+      </h2>
+      <p className="text-gray-700 mb-1">{order.name}</p>
+      <p className="text-gray-700 mb-2">
+        {order.order_type} – {order.schedule_date} {order.schedule_time}
       </p>
 
-      <div className="border-t border-b border-gray-200 py-3 mb-4">
-        <h2 className="text-xl font-bold mb-2">
-          Order #{order.order_number || order.id}
-        </h2>
-        <p className="text-gray-600">{order.name}</p>
-        <p className="text-gray-600 mb-2">
-          {order.order_type} – {order.schedule_date} {order.schedule_time}
-        </p>
-
-        {order.items && order.items.length > 0 ? (
-          <div className="text-left space-y-1 mt-3">
-            {order.items.map((item: any, idx: number) => (
-              <div key={idx}>
-                <p className="font-semibold">
-                  {item.product_name}{" "}
-                  {item.option && (
-                    <span className="text-gray-600 text-sm">
-                      ({item.option})
-                    </span>
-                  )}
-                </p>
-                {item.addons && (
-                  <p className="text-sm text-gray-600 ml-2">+ {item.addons}</p>
+      {order.items && order.items.length > 0 ? (
+        <div className="text-left border-t border-b border-gray-300 py-3 mb-4">
+          {order.items.map((item: any, i: number) => (
+            <div key={i} className="mb-2">
+              <p className="font-semibold">
+                {item.product_name}{" "}
+                {item.option && (
+                  <span className="text-sm text-gray-600">
+                    ({item.option})
+                  </span>
                 )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 italic">(No items found)</p>
-        )}
-      </div>
+              </p>
+              {item.addons && (
+                <p className="text-sm text-gray-600 ml-2">+ {item.addons}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="italic text-gray-500">(No items found)</p>
+      )}
 
-      <p className="text-gray-700 font-medium mb-1">
+      <p className="mt-3 font-semibold text-gray-700">
         Total: ${order.total?.toFixed(2)}
       </p>
-      {order.notes && <p className="text-gray-600 italic">📝 {order.notes}</p>}
+      {order.notes && <p className="italic text-gray-600">📝 {order.notes}</p>}
 
       <Link
         to="/"
