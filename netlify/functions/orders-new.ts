@@ -4,93 +4,99 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
 
-exports.handler = async (event) => {
+export const handler = async (event: any) => {
   try {
-    const body = JSON.parse(event.body);
-
-    const {
-      name,
-      phone,
-      address,
-      order_type,
-      schedule_date,
-      schedule_time,
-      total,
-      notes,
-      items,
-    } = body;
-
-    // 1️⃣ Obtener el siguiente número consecutivo
-    const existingOrders = await base(process.env.AIRTABLE_TABLE_ORDERS!)
-      .select({
-        fields: ["OrderNumber"],
-        sort: [{ field: "CreatedAt", direction: "desc" }],
-        maxRecords: 1,
-      })
-      .firstPage();
-
-    let nextNumber = 1;
-    if (existingOrders.length > 0) {
-      const lastOrderNumber = existingOrders[0].get("OrderNumber");
-      if (lastOrderNumber && typeof lastOrderNumber === "string") {
-        const num = parseInt(lastOrderNumber.replace("TNC-", ""), 10);
-        if (!isNaN(num)) nextNumber = num + 1;
-      }
+    if (event.httpMethod !== "POST") {
+      return {
+        statusCode: 405,
+        body: JSON.stringify({ success: false, message: "Method Not Allowed" }),
+      };
     }
 
-    const formattedOrderNumber = `TNC-${String(nextNumber).padStart(3, "0")}`;
+    const body = JSON.parse(event.body || "{}");
+    console.log("🧾 Received order:", JSON.stringify(body, null, 2));
+
+    // --- ✅ Validación de campos esenciales
+    if (!body.name || !body.phone || !body.items || body.items.length === 0) {
+      console.error("❌ Missing required fields");
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "Missing required fields: name, phone or items",
+        }),
+      };
+    }
+
+    // --- 🆔 Generar número de orden TNC-###
+    const timestamp = Date.now();
+    const orderNumber = body.orderNumber || `TNC-${timestamp.toString().slice(-3)}`;
+
+    // --- 🕒 Fecha ISO
     const createdAt = new Date().toISOString();
 
-    // 2️⃣ Crear la orden principal
-    const newOrder = await base(process.env.AIRTABLE_TABLE_ORDERS!).create([
+    // --- 🧾 Crear registro en Airtable
+    const orderRecord = await base(process.env.AIRTABLE_TABLE_ORDERS!).create([
       {
         fields: {
-          Name: name,
-          Phone: phone,
-          Address: address || "",
-          OrderType: order_type,
-          ScheduleDate: schedule_date,
-          ScheduleTime: schedule_time,
-          Total: total,
-          Notes: notes || "",
+          Name: body.name,
+          Phone: body.phone,
+          OrderType: body.order_type || "",
+          Address: body.address || "",
+          ScheduleDate: body.schedule_date || "",
+          ScheduleTime: body.schedule_time || "",
+          Subtotal: body.subtotal || 0,
+          Discount: body.discount || 0,
+          Total: body.total || 0,
+          Coupon: body.coupon || "",
+          Notes: body.notes || "",
           Status: "Received",
-          OrderNumber: formattedOrderNumber,
-          CreatedAt: createdAt, // 🔹 Aquí se llena explícitamente
+          OrderNumber: orderNumber,
+          CreatedAt: createdAt,
         },
       },
     ]);
 
-    const orderId = newOrder[0].id;
-    console.log(`✅ New order created: ${formattedOrderNumber} (${orderId})`);
+    console.log("✅ Order created:", orderRecord[0].id);
 
-    // 3️⃣ Crear los items relacionados
-    if (Array.isArray(items) && items.length > 0) {
-      const orderItems = items.map((item) => ({
+    // --- Crear items relacionados
+    if (body.items && Array.isArray(body.items)) {
+      const orderId = orderRecord[0].id;
+
+      const itemRecords = body.items.map((item: any) => ({
         fields: {
           Order: [orderId],
-          ProductName: item.product_name,
+          ProductName: item.product_name || item.name || "Unnamed Product",
           Option: item.option || "",
-          AddOns: item.addons || "",
-          Price: item.price || 0,
+          AddOns:
+            Array.isArray(item.addons) && item.addons.length > 0
+              ? item.addons.join(", ")
+              : "",
+          Price: Number(item.price) || 0,
         },
       }));
 
-      await base(process.env.AIRTABLE_TABLE_ORDERITEMS!).create(orderItems);
+      await base(process.env.AIRTABLE_TABLE_ORDERITEMS!).create(itemRecords);
+      console.log("🧃 Items created:", itemRecords.length);
     }
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        order_id: orderId,
-        order_number: formattedOrderNumber,
+        message: "Order created successfully",
+        orderNumber: orderNumber,
       }),
     };
-  } catch (error) {
-    console.error("❌ Error creating order:", error);
+  } catch (error: any) {
+    console.error("💥 Error creating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: error.message }),
+      body: JSON.stringify({
+        success: false,
+        message: "Order creation failed",
+        error: error.message,
+      }),
     };
   }
 };
