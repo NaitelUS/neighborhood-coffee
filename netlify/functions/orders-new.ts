@@ -51,9 +51,10 @@ export const handler = async (event: any) => {
           Order: [orderId],
           ProductName: item.product_name || item.name,
           Option: item.option || "",
-          AddOns: item.addons && item.addons.length > 0
-            ? item.addons.join(", ")
-            : "",
+          AddOns:
+            item.addons && item.addons.length > 0
+              ? item.addons.join(", ")
+              : "",
           Price: item.price,
         },
       }));
