@@ -8,7 +8,6 @@ export default function AdminOrders() {
   const [passwordInput, setPasswordInput] = useState("");
   const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "admin2025!";
 
-  // 🔐 Login
   const handleLogin = () => {
     if (passwordInput === ADMIN_PASSWORD) {
       localStorage.setItem("adminAuth", "true");
@@ -17,18 +16,15 @@ export default function AdminOrders() {
     } else alert("Incorrect password");
   };
 
-  // 🔄 Obtener órdenes
   const fetchOrders = async () => {
     try {
       const res = await fetch("/.netlify/functions/orders-get");
       const data = await res.json();
-
       const sorted = data.sort(
         (a: any, b: any) =>
           new Date(b.schedule_date + " " + b.schedule_time).getTime() -
           new Date(a.schedule_date + " " + a.schedule_time).getTime()
       );
-
       setOrders(sorted);
       applyFilter(filter, sorted);
     } catch (err) {
@@ -36,7 +32,6 @@ export default function AdminOrders() {
     }
   };
 
-  // 🕒 Auto-refresh
   useEffect(() => {
     if (authenticated) {
       fetchOrders();
@@ -45,7 +40,6 @@ export default function AdminOrders() {
     }
   }, [authenticated]);
 
-  // 📅 Formato de fecha/hora
   const formatDateTime = (date: string, time: string) => {
     if (!date || !time) return "";
     const dt = new Date(`${date}T${time}`);
@@ -59,7 +53,6 @@ export default function AdminOrders() {
     });
   };
 
-  // 🔄 Cambiar estado
   const updateStatus = async (orderId: string, status: string) => {
     try {
       const res = await fetch("/.netlify/functions/orders-update", {
@@ -68,19 +61,20 @@ export default function AdminOrders() {
         body: JSON.stringify({ id: orderId, status }),
       });
 
-      if (res.ok) {
-        const updated = orders.map((o) =>
-          o.id === orderId ? { ...o, status } : o
-        );
-        setOrders(updated);
-        applyFilter(filter, updated);
-      } else alert("Error updating status");
+      const result = await res.json();
+      if (!result.success) throw new Error("Failed");
+
+      const updated = orders.map((o) =>
+        o.id === orderId ? { ...o, status } : o
+      );
+      setOrders(updated);
+      applyFilter(filter, updated);
     } catch (err) {
-      console.error("Error updating status:", err);
+      alert("Error updating status");
+      console.error(err);
     }
   };
 
-  // 🎯 Filtro
   const applyFilter = (status: string, data = orders) => {
     if (status === "All") setFilteredOrders(data);
     else setFilteredOrders(data.filter((o) => o.status === status));
@@ -88,7 +82,6 @@ export default function AdminOrders() {
 
   useEffect(() => applyFilter(filter), [filter, orders]);
 
-  // 🔒 Login screen
   if (!authenticated)
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
@@ -111,14 +104,13 @@ export default function AdminOrders() {
       </div>
     );
 
-  // 🧾 Panel
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-center text-teal-700 mb-4">
         ☕ Barista Orders Panel
       </h1>
 
-      {/* 🔘 Filtro */}
+      {/* Filtro */}
       <div className="flex flex-wrap justify-center gap-2 mb-6">
         {["All", "Received", "In Progress", "Ready", "Out for Delivery", "Completed", "Cancelled"].map(
           (status) => (
@@ -137,14 +129,15 @@ export default function AdminOrders() {
         )}
       </div>
 
+      {/* Cards */}
       {filteredOrders.length === 0 ? (
         <p className="text-center text-gray-500">No orders found</p>
       ) : (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredOrders.map((o) => (
             <div
               key={o.id}
-              className="bg-white p-5 rounded-xl shadow-sm border border-gray-200"
+              className="bg-white p-5 rounded-xl shadow-md border border-gray-200"
             >
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 #{o.order_number || o.id}
@@ -155,14 +148,13 @@ export default function AdminOrders() {
               </p>
 
               <p className="text-gray-700 font-medium mb-1">
-                {o.order_type === "Pickup" ? "Pickup" : "Delivery"}
+                {o.order_type}
               </p>
 
               <p className="text-gray-600 mb-3 font-medium">
                 {formatDateTime(o.schedule_date, o.schedule_time)}
               </p>
 
-              {/* ☕ Orden completa */}
               {o.items && o.items.length > 0 ? (
                 <div className="border-t border-b border-gray-300 py-3 mb-3">
                   {o.items.map((item: any, idx: number) => (
@@ -191,8 +183,7 @@ export default function AdminOrders() {
                 {o.address && <p>🏠 {o.address}</p>}
               </div>
 
-              {/* 🔘 Acciones */}
-              <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => updateStatus(o.id, "Received")}
                   className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg font-semibold"
