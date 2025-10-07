@@ -54,7 +54,9 @@ export default function ThankYou() {
       <h1 className="text-2xl font-bold text-teal-700 mb-2">
         ☕ Thank You for Your Order!
       </h1>
-      <p className="text-gray-700 mb-4">Your order has been received.</p>
+      <p className="text-gray-700 mb-4">
+        Your order has been received and is being prepared.
+      </p>
 
       <h2 className="text-xl font-bold mb-2">
         Order No: {order.order_number || order.id}
