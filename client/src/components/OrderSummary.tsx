@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { Link } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import CouponField from "./CouponField";
 
@@ -31,7 +32,7 @@ export default function OrderSummary() {
       <div className="space-y-3">
         {cartItems.map((item) => (
           <div
-            key={item.id}
+            key={item.id + (item.option || "")}
             className="flex items-center justify-between border-b pb-2"
           >
             {/* 👉 Selector de cantidad a la izquierda */}
@@ -53,10 +54,12 @@ export default function OrderSummary() {
 
             {/* 🧾 Detalle del producto */}
             <div className="flex-1 px-3">
-              <p className="font-semibold">{item.name}</p>
-              {item.option && (
-                <p className="text-sm text-gray-500">{item.option}</p>
-              )}
+              <p className="font-semibold">
+                {item.name}
+                {!item.name.includes(`(${item.option})`) && item.option && (
+                  <span className="text-gray-500"> ({item.option})</span>
+                )}
+              </p>
               {item.addons && item.addons.length > 0 && (
                 <p className="text-xs text-gray-400">
                   Add-ons: {item.addons.map((a) => a.name).join(", ")}
@@ -98,6 +101,14 @@ export default function OrderSummary() {
 
       {/* 🏷️ Campo de cupón */}
       <CouponField />
+
+      {/* ☕ Want more items? → vuelve al menú sin limpiar el carrito */}
+      <Link
+        to="/"
+        className="block w-full text-center mt-2 bg-[#00454E] text-white py-2 rounded hover:bg-[#1D9099] transition"
+      >
+        Want more items?
+      </Link>
     </div>
   );
 }
