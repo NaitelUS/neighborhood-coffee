@@ -10,80 +10,81 @@ const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
 export const handler: Handler = async (event) => {
   try {
-    const id = event.queryStringParameters?.id;
+    const { id } = event.queryStringParameters || {};
 
-    if (id) {
-      // Buscar una orden específica
-      const records = await base(TABLE_ORDERS)
-        .select({ filterByFormula: `{OrderID} = '${id}'`, maxRecords: 1 })
-        .firstPage();
-
-      if (records.length === 0)
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ error: "Order not found" }),
-        };
-
-      const record = records[0];
-      const orderId = record.fields["OrderID"];
-
-      // Buscar los items relacionados
-      const items = await base(TABLE_ORDERITEMS)
-        .select({
-          filterByFormula: `{Order} = '${orderId}'`,
-        })
-        .all();
-
-      const orderItems = items.map((i) => ({
-        product_name: i.fields["ProductName"],
-        option: i.fields["Option"],
-        price: i.fields["Price"],
-        addons: i.fields["AddOns"],
-      }));
-
+    if (!id) {
       return {
-        statusCode: 200,
-        body: JSON.stringify({
-          id: orderId,
-          name: record.fields["Name"],
-          phone: record.fields["Phone"],
-          order_type: record.fields["OrderType"],
-          address: record.fields["Address"],
-          total: record.fields["Total"],
-          status: record.fields["Status"],
-          schedule_date: record.fields["ScheduleDate"],
-          schedule_time: record.fields["ScheduleTime"],
-          notes: record.fields["Notes"],
-          items: orderItems,
-        }),
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing order ID." }),
       };
     }
 
-    // Si no hay ID → devolver todas las órdenes
-    const records = await base(TABLE_ORDERS)
-      .select({ sort: [{ field: "CreatedTime", direction: "desc" }] })
+    console.log(`📦 Fetching order: ${id}`);
+
+    // 🧾 Buscar la orden principal
+    const orderRecords = await base(TABLE_ORDERS)
+      .select({
+        filterByFormula: `{OrderID} = '${id}'`,
+        maxRecords: 1,
+      })
       .all();
 
-    const orders = records.map((r) => ({
-      id: r.fields["OrderID"],
-      name: r.fields["Name"],
-      phone: r.fields["Phone"],
-      order_type: r.fields["OrderType"],
-      address: r.fields["Address"],
-      total: r.fields["Total"],
-      status: r.fields["Status"],
-      schedule_date: r.fields["ScheduleDate"],
-      schedule_time: r.fields["ScheduleTime"],
-      notes: r.fields["Notes"],
-      created_at: r.fields["CreatedTime"],
+    if (orderRecords.length === 0) {
+      console.warn("⚠️ Order not found:", id);
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "Order not found." }),
+      };
+    }
+
+    const order = orderRecords[0].fields;
+
+    // 📦 Buscar todos los OrderItems relacionados
+    const itemRecords = await base(TABLE_ORDERITEMS)
+      .select({
+        filterByFormula: `{Order} = '${id}'`,
+        maxRecords: 50,
+      })
+      .all();
+
+    const items = itemRecords.map((rec) => ({
+      ProductName: rec.fields["ProductName"] || "",
+      Option: rec.fields["Option"] || "",
+      AddOns: rec.fields["AddOns"] || "",
+      Price: rec.fields["Price"] || 0,
+      Qty: rec.fields["Qty"] || 1,
     }));
 
-    return { statusCode: 200, body: JSON.stringify(orders) };
+    // 🧩 Armar estructura completa
+    const fullOrder = {
+      OrderID: order["OrderID"],
+      Name: order["Name"],
+      Phone: order["Phone"] || "",
+      OrderType: order["OrderType"] || "",
+      Address: order["Address"] || "",
+      ScheduleDate: order["ScheduleDate"] || "",
+      ScheduleTime: order["ScheduleTime"] || "",
+      Subtotal: order["Subtotal"] || 0,
+      DiscountRate: order["DiscountRate"] || 0,
+      Total: order["Total"] || 0,
+      Coupon: order["Coupon"] || "",
+      Status: order["Status"] || "",
+      Notes: order["Notes"] || "",
+      CreatedAt: order["CreatedAt"] || "",
+      items,
+    };
+
+    console.log(`✅ Order ${id} loaded with ${items.length} items`);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify([fullOrder]),
+    };
   } catch (err) {
-    console.error("Error in orders-get:", err);
+    console.error("❌ Error fetching order:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to fetch orders" }),
+      body: JSON.stringify({ error: "Server error fetching order." }),
     };
   }
 };
