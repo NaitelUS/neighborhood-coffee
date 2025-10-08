@@ -70,7 +70,7 @@ export default function ThankYou() {
         </p>
       </div>
 
-      {/* 🧾 Items list */}
+      {/* 🧾 Lista de productos */}
       {order.items && order.items.length > 0 && (
         <div className="border-t border-b py-4 mb-4 text-sm text-gray-800 space-y-2">
           {order.items.map((item, idx) => (
@@ -90,15 +90,7 @@ export default function ThankYou() {
         </div>
       )}
 
-      {/* 👤 Customer info */}
-      <div className="text-sm text-gray-700 mb-4">
-        <p><strong>👤 Name:</strong> {order.name}</p>
-        <p><strong>📞 Phone:</strong> {order.phone}</p>
-        {order.address && <p><strong>🏠 Address:</strong> {order.address}</p>}
-        {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
-      </div>
-
-      {/* 💰 Totals */}
+      {/* 💰 Totales (movido arriba) */}
       <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4">
         {order.subtotal && (
           <p>
@@ -115,6 +107,15 @@ export default function ThankYou() {
         </p>
       </div>
 
+      {/* 👤 Información del cliente */}
+      <div className="text-sm text-gray-700 mb-4">
+        <p><strong>👤 Name:</strong> {order.name}</p>
+        <p><strong>📞 Phone:</strong> {order.phone}</p>
+        {order.address && <p><strong>🏠 Address:</strong> {order.address}</p>}
+        {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
+      </div>
+
+      {/* Botones */}
       <div className="text-center space-y-3">
         <Link
           to={`/status?id=${order.id}`}
