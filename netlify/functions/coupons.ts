@@ -1,55 +1,42 @@
 import { Handler } from "@netlify/functions";
-import { getAirtableClient } from "../lib/airtableClient";
+import Airtable from "airtable";
 
-const handler: Handler = async () => {
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
+
+const TABLE_COUPONS = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
+
+export const handler: Handler = async () => {
   try {
-    const base = getAirtableClient();
-    const table = base(process.env.AIRTABLE_TABLE_COUPONS || "Coupons");
+    const records = await base(TABLE_COUPONS)
+      .select({
+        view: "Grid view",
+        fields: ["code", "percent_off", "active", "valid_from", "valid_until"],
+      })
+      .all();
 
-    const records = await table.select().all();
-
-    const coupons = records.map((record) => {
-      const fields = record.fields;
-
-      return {
-        id: record.id,
-        code: (fields.code || "").trim().toUpperCase(),
-        percent_off:
-          typeof fields.percent_off === "number"
-            ? fields.percent_off
-            : parseFloat(fields.percent_off) / 100 || 0,
-        valid_from: fields.valid_from || null,
-        valid_until: fields.valid_until || null,
-
-        // ✅ Garantiza booleano
-        active: !!fields.active && fields.active !== "false" && fields.active !== 0,
-      };
-    });
-
-    // ✅ Filtra solo cupones activos y válidos por fecha
-    const now = new Date();
-    const validCoupons = coupons.filter((coupon) => {
-      const from = coupon.valid_from ? new Date(coupon.valid_from) : null;
-      const until = coupon.valid_until ? new Date(coupon.valid_until) : null;
-      const isWithinDate =
-        (!from || now >= from) && (!until || now <= until);
-      return coupon.active && isWithinDate && coupon.code.length > 0;
-    });
+    const coupons = records.map((r) => ({
+      code: r.fields.code,
+      percent_off: r.fields.percent_off,
+      active: r.fields.active,
+      valid_from: r.fields.valid_from,
+      valid_until: r.fields.valid_until,
+    }));
 
     return {
       statusCode: 200,
-      body: JSON.stringify(validCoupons),
+      body: JSON.stringify(coupons),
     };
-  } catch (error: any) {
-    console.error("❌ Error loading coupons:", error);
+  } catch (err) {
+    console.error("Error fetching coupons:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: "Failed to fetch coupons",
-        details: error.message,
+        success: false,
+        message:
+          "⚠️ Unable to verify coupon right now. Please try again later.",
       }),
     };
   }
 };
-
-export { handler };
