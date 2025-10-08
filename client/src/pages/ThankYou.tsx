@@ -73,28 +73,39 @@ export default function ThankYou() {
       {/* 🧾 Lista de productos */}
       {order.items && order.items.length > 0 && (
         <div className="border-t border-b py-4 mb-4 text-sm text-gray-800 space-y-2">
-          {order.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between">
-              <div>
-                <strong>{item.product_name}</strong>{" "}
-                {item.option && <span className="text-gray-500">({item.option})</span>}
-                {item.addons && (
-                  <p className="text-gray-500 text-xs">+ {item.addons}</p>
+          {order.items.map((item, idx) => {
+            const hasOptionInName =
+              item.option && item.product_name?.includes(`(${item.option})`);
+            return (
+              <div key={idx} className="flex justify-between">
+                <div>
+                  <strong>{item.product_name}</strong>{" "}
+                  {!hasOptionInName && item.option && (
+                    <span className="text-gray-500">({item.option})</span>
+                  )}
+                  {item.addons && item.addons.trim() !== "" && (
+                    <p className="text-gray-500 text-xs">+ {item.addons}</p>
+                  )}
+                </div>
+                {item.price && (
+                  <p className="font-medium">
+                    ${Number(item.price).toFixed(2)}
+                  </p>
                 )}
               </div>
-              {item.price && (
-                <p className="font-medium">${Number(item.price).toFixed(2)}</p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* 💰 Totales (movido arriba) */}
+      {/* 💰 Totales */}
       <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4">
         {order.subtotal && (
           <p>
-            Subtotal: <span className="font-semibold">${order.subtotal.toFixed(2)}</span>
+            Subtotal:{" "}
+            <span className="font-semibold">
+              ${order.subtotal.toFixed(2)}
+            </span>
           </p>
         )}
         {order.coupon && (
@@ -109,10 +120,22 @@ export default function ThankYou() {
 
       {/* 👤 Información del cliente */}
       <div className="text-sm text-gray-700 mb-4">
-        <p><strong>👤 Name:</strong> {order.name}</p>
-        <p><strong>📞 Phone:</strong> {order.phone}</p>
-        {order.address && <p><strong>🏠 Address:</strong> {order.address}</p>}
-        {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
+        <p>
+          <strong>👤 Name:</strong> {order.name}
+        </p>
+        <p>
+          <strong>📞 Phone:</strong> {order.phone}
+        </p>
+        {order.address && (
+          <p>
+            <strong>🏠 Address:</strong> {order.address}
+          </p>
+        )}
+        {order.notes && (
+          <p>
+            <strong>📝 Notes:</strong> {order.notes}
+          </p>
+        )}
       </div>
 
       {/* Botones */}
