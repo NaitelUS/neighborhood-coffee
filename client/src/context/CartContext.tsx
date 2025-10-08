@@ -1,114 +1,108 @@
-import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import React, { createContext, useState, useEffect } from "react";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+export const CartContext = createContext<any>(null);
 
-const TABLE_COUPONS = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
+export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [discountRate, setDiscountRate] = useState<number>(0); // percent_off (e.g. 0.15)
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [total, setTotal] = useState<number>(0);
 
-export const handler: Handler = async (event) => {
-  try {
-    const { code } = event.queryStringParameters || {};
+  // 🧮 Calcular subtotal y total cada vez que cambie el carrito o el cupón
+  useEffect(() => {
+    const computedSubtotal = cartItems.reduce((sum, item) => {
+      const base = Number(item.price) || 0;
+      const addonsTotal = (item.addons || []).reduce(
+        (a, b) => a + (Number(b.price) || 0),
+        0
+      );
+      const qty = Number(item.qty) > 0 ? Number(item.qty) : 1;
+      return sum + (base + addonsTotal) * qty;
+    }, 0);
 
-    if (!code) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          success: false,
-          message: "⚠️ No coupon code provided.",
-        }),
-      };
-    }
+    const discountAmount = computedSubtotal * discountRate;
+    const computedTotal = computedSubtotal - discountAmount;
 
-    // 🔎 Buscar por código (case-insensitive)
-    const records = await base(TABLE_COUPONS)
-      .select({
-        filterByFormula: `LOWER({code}) = '${code.toLowerCase()}'`,
-        maxRecords: 1,
-      })
-      .firstPage();
+    setSubtotal(Number.isFinite(computedSubtotal) ? computedSubtotal : 0);
+    setTotal(Number.isFinite(computedTotal) ? computedTotal : 0);
+  }, [cartItems, discountRate]);
 
-    if (records.length === 0) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({
-          success: false,
-          message: "❌ Invalid or expired coupon.",
-        }),
-      };
-    }
+  // 🧩 Agregar producto
+  const addToCart = (product: any) => {
+    setCartItems((prev) => {
+      // Verificar si ya existe el mismo producto + opción
+      const existing = prev.find(
+        (item) => item.id === product.id && item.option === product.option
+      );
 
-    const record = records[0].fields;
+      if (existing) {
+        // Incrementar cantidad
+        return prev.map((item) =>
+          item.id === product.id && item.option === product.option
+            ? { ...item, qty: item.qty + (product.qty || 1) }
+            : item
+        );
+      }
+      // Agregar nuevo producto
+      return [...prev, { ...product, qty: product.qty || 1 }];
+    });
+  };
 
-    // 🧩 Validar campo Active (puede venir como true/false o 1/0)
-    const isActive =
-      record.active === true ||
-      record.active === 1 ||
-      record.Active === true ||
-      record.Active === 1;
+  // ➕ / ➖ actualizar cantidad
+  const updateQty = (id: string, delta: number, option?: string) => {
+    setCartItems((prev) =>
+      prev
+        .map((item) =>
+          item.id === id && item.option === option
+            ? { ...item, qty: Math.max(1, item.qty + delta) }
+            : item
+        )
+        .filter((item) => item.qty > 0)
+    );
+  };
 
-    if (!isActive) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({
-          success: false,
-          message: "❌ This coupon is not active.",
-        }),
-      };
-    }
+  // 🗑️ Eliminar producto
+  const removeFromCart = (id: string, option?: string) => {
+    setCartItems((prev) =>
+      prev.filter(
+        (item) => !(item.id === id && item.option === option)
+      )
+    );
+  };
 
-    // ✅ Leer porcentaje
-    const discount = Number(record.percent_off) || 0;
-    if (discount <= 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          success: false,
-          message: "❌ Invalid discount value.",
-        }),
-      };
-    }
+  // 🎟️ Aplicar cupón
+  const applyDiscount = (code: string, rate: number) => {
+    setAppliedCoupon(code);
+    setDiscountRate(rate);
+  };
 
-    // 📅 Validar fechas si existen
-    const now = new Date();
-    if (record.valid_from && new Date(record.valid_from) > now) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          success: false,
-          message: "⚠️ This coupon is not active yet.",
-        }),
-      };
-    }
-    if (record.valid_until && new Date(record.valid_until) < now) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          success: false,
-          message: "⚠️ This coupon has expired.",
-        }),
-      };
-    }
+  // ♻️ Limpiar carrito (por ejemplo, al completar una orden)
+  const clearCart = () => {
+    setCartItems([]);
+    setAppliedCoupon(null);
+    setDiscountRate(0);
+    setSubtotal(0);
+    setTotal(0);
+  };
 
-    // ✅ Cupón válido
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        code: record.code,
-        discount, // percent_off
-      }),
-    };
-  } catch (error) {
-    console.error("⚠️ Error verifying coupon:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        success: false,
-        message:
-          "⚠️ Unable to verify coupon right now. Please try again later.",
-      }),
-    };
-  }
+  return (
+    <CartContext.Provider
+      value={{
+        cartItems,
+        addToCart,
+        updateQty,
+        removeFromCart,
+        clearCart,
+        subtotal,
+        total,
+        discount: subtotal * discountRate,
+        discountRate,
+        appliedCoupon,
+        applyDiscount,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 };
