@@ -8,10 +8,13 @@ interface Order {
   order_type: string;
   address?: string;
   total: number;
+  subtotal?: number;
+  discount?: number;
+  coupon?: string;
   schedule_date?: string;
   schedule_time?: string;
   notes?: string;
-  items?: { product_name: string; option?: string; addons?: string }[];
+  items?: { product_name: string; option?: string; addons?: string; price?: number }[];
 }
 
 export default function ThankYou() {
@@ -50,6 +53,8 @@ export default function ThankYou() {
       </div>
     );
 
+  const discountPct = order.discount ? order.discount * 100 : 0;
+
   return (
     <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 mt-10">
       <h1 className="text-3xl font-bold text-center text-teal-700 mb-4">
@@ -65,17 +70,27 @@ export default function ThankYou() {
         </p>
       </div>
 
+      {/* 🧾 Items list */}
       {order.items && order.items.length > 0 && (
-        <div className="border-t border-b py-3 mb-4 text-sm text-gray-800">
+        <div className="border-t border-b py-4 mb-4 text-sm text-gray-800 space-y-2">
           {order.items.map((item, idx) => (
-            <div key={idx} className="mb-2">
-              <strong>{item.product_name}</strong> {item.option && `(${item.option})`}
-              {item.addons && <p className="text-gray-600 text-xs">+ {item.addons}</p>}
+            <div key={idx} className="flex justify-between">
+              <div>
+                <strong>{item.product_name}</strong>{" "}
+                {item.option && <span className="text-gray-500">({item.option})</span>}
+                {item.addons && (
+                  <p className="text-gray-500 text-xs">+ {item.addons}</p>
+                )}
+              </div>
+              {item.price && (
+                <p className="font-medium">${Number(item.price).toFixed(2)}</p>
+              )}
             </div>
           ))}
         </div>
       )}
 
+      {/* 👤 Customer info */}
       <div className="text-sm text-gray-700 mb-4">
         <p><strong>👤 Name:</strong> {order.name}</p>
         <p><strong>📞 Phone:</strong> {order.phone}</p>
@@ -83,8 +98,19 @@ export default function ThankYou() {
         {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
       </div>
 
-      <div className="bg-teal-50 p-4 rounded-lg text-center mb-4">
-        <p className="text-xl font-semibold text-teal-800">
+      {/* 💰 Totals */}
+      <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4">
+        {order.subtotal && (
+          <p>
+            Subtotal: <span className="font-semibold">${order.subtotal.toFixed(2)}</span>
+          </p>
+        )}
+        {order.coupon && (
+          <p className="text-green-700">
+            Discount ({order.coupon}): -{discountPct.toFixed(0)}%
+          </p>
+        )}
+        <p className="text-lg font-bold text-teal-800 mt-2">
           Total: ${Number(order.total).toFixed(2)}
         </p>
       </div>
