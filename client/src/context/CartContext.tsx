@@ -1,155 +1,114 @@
-import React, { createContext, useState, useEffect } from "react";
+import { Handler } from "@netlify/functions";
+import Airtable from "airtable";
 
-interface AddOn {
-  name: string;
-  price: number;
-}
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
 
-interface CartItem {
-  id: string;
-  name: string;
-  option?: string;
-  addons: AddOn[];
-  price: number;
-  qty: number;
-}
+const TABLE_COUPONS = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
 
-interface CartContextType {
-  cartItems: CartItem[];
-  addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string, option?: string) => void;
-  updateQty: (id: string, change: number, option?: string) => void;
-  clearCart: () => void;
-  subtotal: number;
-  discount: number;
-  total: number;
-  appliedCoupon: string | null;
-  applyCoupon: (code: string, discount: number) => void;
-}
+export const handler: Handler = async (event) => {
+  try {
+    const { code } = event.queryStringParameters || {};
 
-export const CartContext = createContext<CartContextType>({
-  cartItems: [],
-  addToCart: () => {},
-  removeFromCart: () => {},
-  updateQty: () => {},
-  clearCart: () => {},
-  subtotal: 0,
-  discount: 0,
-  total: 0,
-  appliedCoupon: null,
-  applyCoupon: () => {},
-});
+    if (!code) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "⚠️ No coupon code provided.",
+        }),
+      };
+    }
 
-export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  const [discountRate, setDiscountRate] = useState(0);
+    // 🔎 Buscar por código (case-insensitive)
+    const records = await base(TABLE_COUPONS)
+      .select({
+        filterByFormula: `LOWER({code}) = '${code.toLowerCase()}'`,
+        maxRecords: 1,
+      })
+      .firstPage();
 
-  // ✅ Agregar producto al carrito (maneja repetidos Hot/Iced sin NaN)
-  const addToCart = (item: CartItem) => {
-    const safePrice = Number(item.price) || 0;
-    const safeQty = Number(item.qty) > 0 ? Number(item.qty) : 1;
+    if (records.length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({
+          success: false,
+          message: "❌ Invalid or expired coupon.",
+        }),
+      };
+    }
 
-    setCartItems((prev) => {
-      const existing = prev.find(
-        (i) => i.id === item.id && i.option === item.option
-      );
+    const record = records[0].fields;
 
-      if (existing) {
-        // ✅ Sumar cantidad sin riesgo de NaN
-        const newQty = Math.max(1, (Number(existing.qty) || 1) + safeQty);
-        return prev.map((i) =>
-          i.id === item.id && i.option === item.option
-            ? { ...i, qty: newQty }
-            : i
-        );
-      } else {
-        // ✅ Normalizar todos los valores nuevos
-        return [
-          ...prev,
-          {
-            ...item,
-            qty: safeQty,
-            price: safePrice,
-            addons:
-              item.addons?.map((a) => ({
-                name: a.name,
-                price: Number(a.price) || 0,
-              })) || [],
-          },
-        ];
-      }
-    });
-  };
+    // 🧩 Validar campo Active (puede venir como true/false o 1/0)
+    const isActive =
+      record.active === true ||
+      record.active === 1 ||
+      record.Active === true ||
+      record.Active === 1;
 
-  // ✅ Eliminar producto
-  const removeFromCart = (id: string, option?: string) => {
-    setCartItems((prev) =>
-      prev.filter(
-        (i) => !(i.id === id && (!option || i.option === option))
-      )
-    );
-  };
+    if (!isActive) {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({
+          success: false,
+          message: "❌ This coupon is not active.",
+        }),
+      };
+    }
 
-  // ✅ Actualizar cantidad con control de NaN y mínimo 1
-  const updateQty = (id: string, change: number, option?: string) => {
-    setCartItems((prev) =>
-      prev
-        .map((i) => {
-          if (i.id === id && (!option || i.option === option)) {
-            const newQty = Math.max(1, (Number(i.qty) || 1) + change);
-            return { ...i, qty: newQty };
-          }
-          return i;
-        })
-        .filter((i) => (Number(i.qty) || 1) > 0)
-    );
-  };
+    // ✅ Leer porcentaje
+    const discount = Number(record.percent_off) || 0;
+    if (discount <= 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "❌ Invalid discount value.",
+        }),
+      };
+    }
 
-  // ✅ Limpiar carrito
-  const clearCart = () => setCartItems([]);
+    // 📅 Validar fechas si existen
+    const now = new Date();
+    if (record.valid_from && new Date(record.valid_from) > now) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "⚠️ This coupon is not active yet.",
+        }),
+      };
+    }
+    if (record.valid_until && new Date(record.valid_until) < now) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "⚠️ This coupon has expired.",
+        }),
+      };
+    }
 
-  // ✅ Calcular totales sin riesgo de NaN
-  const subtotal = cartItems.reduce((sum, item) => {
-    const base = Number(item.price) || 0;
-    const addonsTotal = (item.addons || []).reduce(
-      (a, b) => a + (Number(b.price) || 0),
-      0
-    );
-    const qty = Number(item.qty) > 0 ? Number(item.qty) : 1;
-    return sum + (base + addonsTotal) * qty;
-  }, 0);
-
-  const discount = subtotal * discountRate;
-  const total = subtotal - discount;
-
-  // ✅ Aplicar cupón
-  const applyCoupon = (code: string, rate: number) => {
-    setAppliedCoupon(code);
-    setDiscountRate(rate);
-  };
-
-  // 🧠 Guardar carrito en localStorage
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-  }, [cartItems]);
-
-  return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeFromCart,
-        updateQty,
-        clearCart,
-        subtotal,
-        discount,
-        total,
-        appliedCoupon,
-        applyCoupon,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+    // ✅ Cupón válido
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        success: true,
+        code: record.code,
+        discount, // percent_off
+      }),
+    };
+  } catch (error) {
+    console.error("⚠️ Error verifying coupon:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        message:
+          "⚠️ Unable to verify coupon right now. Please try again later.",
+      }),
+    };
+  }
 };
