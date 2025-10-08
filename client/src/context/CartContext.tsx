@@ -1,6 +1,5 @@
-import React, { createContext, useState, useMemo } from "react";
+import React, { createContext, useState, useEffect } from "react";
 
-// 🧩 Tipos
 interface AddOn {
   name: string;
   price: number;
@@ -9,100 +8,110 @@ interface AddOn {
 interface CartItem {
   id: string;
   name: string;
-  price: number;
-  qty: number; // 💡 NUEVO
   option?: string;
-  addons?: AddOn[];
+  addons: AddOn[];
+  price: number;
+  qty: number;
 }
 
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string) => void;
-  updateQty: (id: string, delta: number) => void; // 💡 NUEVO
+  removeFromCart: (id: string, option?: string) => void;
+  updateQty: (id: string, change: number, option?: string) => void;
   clearCart: () => void;
-  discount: number;
-  appliedCoupon?: string;
-  applyDiscount: (couponCode: string, discountValue: number) => void;
   subtotal: number;
+  discount: number;
   total: number;
+  appliedCoupon: string | null;
+  applyCoupon: (code: string, discount: number) => void;
 }
 
 export const CartContext = createContext<CartContextType>({
   cartItems: [],
   addToCart: () => {},
   removeFromCart: () => {},
-  updateQty: () => {}, // 💡 NUEVO
+  updateQty: () => {},
   clearCart: () => {},
-  discount: 0,
-  applyDiscount: () => {},
   subtotal: 0,
+  discount: 0,
   total: 0,
+  appliedCoupon: null,
+  applyCoupon: () => {},
 });
 
-// 💡 Provider global
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [discount, setDiscount] = useState<number>(0);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | undefined>();
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [discountRate, setDiscountRate] = useState(0);
 
-  // ➕ Agregar al carrito
+  // ✅ Add to cart — maneja qty y variantes (Hot/Iced)
   const addToCart = (item: CartItem) => {
     setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
+      const existing = prev.find(
+        (i) => i.id === item.id && i.option === item.option
+      );
+
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id ? { ...i, qty: i.qty + 1 } : i
+          i.id === item.id && i.option === item.option
+            ? { ...i, qty: i.qty + item.qty }
+            : i
         );
+      } else {
+        return [...prev, { ...item, qty: item.qty || 1 }];
       }
-      return [...prev, { ...item, qty: 1 }]; // 💡 inicia con qty: 1
     });
   };
 
-  // 💡 Actualizar cantidad
-  const updateQty = (id: string, delta: number) => {
+  // ✅ Remove specific item (Hot/Iced independiente)
+  const removeFromCart = (id: string, option?: string) => {
+    setCartItems((prev) =>
+      prev.filter(
+        (i) => !(i.id === id && (!option || i.option === option))
+      )
+    );
+  };
+
+  // ✅ Update quantity
+  const updateQty = (id: string, change: number, option?: string) => {
     setCartItems((prev) =>
       prev
         .map((i) =>
-          i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i
+          i.id === id && (!option || i.option === option)
+            ? { ...i, qty: Math.max(1, i.qty + change) }
+            : i
         )
         .filter((i) => i.qty > 0)
     );
   };
 
-  // ❌ Remover del carrito
-  const removeFromCart = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  // ✅ Limpiar carrito
+  const clearCart = () => setCartItems([]);
+
+  // ✅ Cálculos de totales
+  const subtotal = cartItems.reduce(
+    (sum, item) =>
+      sum +
+      (item.price +
+        item.addons.reduce((a, b) => a + (b.price || 0), 0)) *
+        item.qty,
+    0
+  );
+
+  const discount = subtotal * discountRate;
+  const total = subtotal - discount;
+
+  // ✅ Aplicar cupón
+  const applyCoupon = (code: string, rate: number) => {
+    setAppliedCoupon(code);
+    setDiscountRate(rate);
   };
 
-  // 🧹 Vaciar carrito
-  const clearCart = () => {
-    setCartItems([]);
-    setDiscount(0);
-    setAppliedCoupon(undefined);
-  };
-
-  // 🏷️ Aplicar descuento
-  const applyDiscount = (couponCode: string, discountValue: number) => {
-    setDiscount(discountValue);
-    setAppliedCoupon(couponCode);
-  };
-
-  // 💰 Subtotal con Add-ons y qty
-  const subtotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => {
-      const basePrice = item.price || 0;
-      const addonsTotal =
-        item.addons?.reduce((addonSum, a) => addonSum + a.price, 0) || 0;
-      return sum + (basePrice + addonsTotal) * (item.qty || 1);
-    }, 0);
+  // 🧠 Persistencia (opcional)
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
-
-  // 💸 Total con descuento aplicado
-  const total = useMemo(() => {
-    const discountAmount = subtotal * discount;
-    return subtotal - discountAmount;
-  }, [subtotal, discount]);
 
   return (
     <CartContext.Provider
@@ -110,13 +119,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         cartItems,
         addToCart,
         removeFromCart,
-        updateQty, // 💡 NUEVO
+        updateQty,
         clearCart,
-        discount,
-        appliedCoupon,
-        applyDiscount,
         subtotal,
+        discount,
         total,
+        appliedCoupon,
+        applyCoupon,
       }}
     >
       {children}
