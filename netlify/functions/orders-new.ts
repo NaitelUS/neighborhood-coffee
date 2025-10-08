@@ -1,7 +1,7 @@
 import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
-// Inicializar conexión
+// 🔧 Inicializar conexión
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
@@ -35,11 +35,10 @@ export const handler: Handler = async (event) => {
     const orderData = JSON.parse(event.body || "{}");
     console.log("🧾 Incoming order:", orderData);
 
-    // Generar número consecutivo
     const nextNumber = await getNextOrderNumber();
     const shortId = `TNC-${String(nextNumber).padStart(3, "0")}`;
 
-    // Crear orden principal
+    // 🟩 Crear orden principal
     const createdOrder = await base(TABLE_ORDERS).create([
       {
         fields: {
@@ -51,9 +50,9 @@ export const handler: Handler = async (event) => {
           Address: orderData.address || "",
           ScheduleDate: orderData.schedule_date || "",
           ScheduleTime: orderData.schedule_time || "",
-          Subtotal: orderData.subtotal,
-          Discount: orderData.discount,
-          Total: orderData.total,
+          Subtotal: Number(orderData.subtotal) || 0,
+          Discount: Number(orderData.discount) || 0,
+          Total: Number(orderData.total) || 0,
           Coupon: orderData.coupon_code || "",
           Notes: orderData.notes || "",
           Status: "Received",
@@ -63,12 +62,13 @@ export const handler: Handler = async (event) => {
 
     console.log(`✅ Order created: ${shortId}`);
 
-    // Crear los ítems relacionados (duplicando según qty)
+    // 🟨 Desglosar los productos
     if (Array.isArray(orderData.items) && orderData.items.length > 0) {
       const orderItems: any[] = [];
 
       for (const item of orderData.items) {
-        const qty = item.qty || 1;
+        const qty = Number(item.qty) > 0 ? Number(item.qty) : 1;
+        const safePrice = Number(item.price) || 0;
 
         for (let i = 0; i < qty; i++) {
           orderItems.push({
@@ -76,12 +76,12 @@ export const handler: Handler = async (event) => {
               Order: shortId,
               ProductName: item.name,
               Option: item.option || "",
-              Price: item.price || 0,
+              Price: safePrice,
               AddOns: Array.isArray(item.addons)
                 ? item.addons
                     .map(
                       (a: any) =>
-                        `${a?.name || "Unnamed"} ($${(a?.price || 0).toFixed(2)})`
+                        `${a?.name || "Unnamed"} ($${(Number(a?.price) || 0).toFixed(2)})`
                     )
                     .join(", ")
                 : "",
@@ -90,17 +90,18 @@ export const handler: Handler = async (event) => {
         }
       }
 
+      // 🔁 Airtable permite máximo 10 registros por lote
       while (orderItems.length > 0) {
         const batch = orderItems.splice(0, 10);
         await base(TABLE_ORDERITEMS).create(batch);
       }
 
-      console.log("✅ OrderItems saved successfully");
+      console.log("✅ All OrderItems saved successfully");
     } else {
-      console.warn("⚠️ No order items found in request");
+      console.warn("⚠️ No items found in request");
     }
 
-    // Respuesta exitosa
+    // 🟢 Respuesta final
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, orderId: shortId }),
