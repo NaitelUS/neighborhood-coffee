@@ -45,26 +45,44 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discountRate, setDiscountRate] = useState(0);
 
-  // ✅ Add to cart — maneja qty y variantes (Hot/Iced)
+  // ✅ Agregar producto al carrito (maneja repetidos Hot/Iced sin NaN)
   const addToCart = (item: CartItem) => {
+    const safePrice = Number(item.price) || 0;
+    const safeQty = Number(item.qty) > 0 ? Number(item.qty) : 1;
+
     setCartItems((prev) => {
       const existing = prev.find(
         (i) => i.id === item.id && i.option === item.option
       );
 
       if (existing) {
+        // ✅ Sumar cantidad sin riesgo de NaN
+        const newQty = Math.max(1, (Number(existing.qty) || 1) + safeQty);
         return prev.map((i) =>
           i.id === item.id && i.option === item.option
-            ? { ...i, qty: i.qty + item.qty }
+            ? { ...i, qty: newQty }
             : i
         );
       } else {
-        return [...prev, { ...item, qty: item.qty || 1 }];
+        // ✅ Normalizar todos los valores nuevos
+        return [
+          ...prev,
+          {
+            ...item,
+            qty: safeQty,
+            price: safePrice,
+            addons:
+              item.addons?.map((a) => ({
+                name: a.name,
+                price: Number(a.price) || 0,
+              })) || [],
+          },
+        ];
       }
     });
   };
 
-  // ✅ Remove specific item (Hot/Iced independiente)
+  // ✅ Eliminar producto
   const removeFromCart = (id: string, option?: string) => {
     setCartItems((prev) =>
       prev.filter(
@@ -73,31 +91,34 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
-  // ✅ Update quantity
+  // ✅ Actualizar cantidad con control de NaN y mínimo 1
   const updateQty = (id: string, change: number, option?: string) => {
     setCartItems((prev) =>
       prev
-        .map((i) =>
-          i.id === id && (!option || i.option === option)
-            ? { ...i, qty: Math.max(1, i.qty + change) }
-            : i
-        )
-        .filter((i) => i.qty > 0)
+        .map((i) => {
+          if (i.id === id && (!option || i.option === option)) {
+            const newQty = Math.max(1, (Number(i.qty) || 1) + change);
+            return { ...i, qty: newQty };
+          }
+          return i;
+        })
+        .filter((i) => (Number(i.qty) || 1) > 0)
     );
   };
 
   // ✅ Limpiar carrito
   const clearCart = () => setCartItems([]);
 
-  // ✅ Cálculos de totales
-  const subtotal = cartItems.reduce(
-    (sum, item) =>
-      sum +
-      (item.price +
-        item.addons.reduce((a, b) => a + (b.price || 0), 0)) *
-        item.qty,
-    0
-  );
+  // ✅ Calcular totales sin riesgo de NaN
+  const subtotal = cartItems.reduce((sum, item) => {
+    const base = Number(item.price) || 0;
+    const addonsTotal = (item.addons || []).reduce(
+      (a, b) => a + (Number(b.price) || 0),
+      0
+    );
+    const qty = Number(item.qty) > 0 ? Number(item.qty) : 1;
+    return sum + (base + addonsTotal) * qty;
+  }, 0);
 
   const discount = subtotal * discountRate;
   const total = subtotal - discount;
@@ -108,7 +129,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setDiscountRate(rate);
   };
 
-  // 🧠 Persistencia (opcional)
+  // 🧠 Guardar carrito en localStorage
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
