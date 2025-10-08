@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { CartContext } from "../context/CartContext";
+import CouponField from "./CouponField";
 
 export default function OrderSummary() {
   const {
@@ -33,19 +34,7 @@ export default function OrderSummary() {
             key={item.id}
             className="flex items-center justify-between border-b pb-2"
           >
-            <div>
-              <p className="font-semibold">{item.name}</p>
-              {item.option && (
-                <p className="text-sm text-gray-500">{item.option}</p>
-              )}
-              {item.addons && item.addons.length > 0 && (
-                <p className="text-xs text-gray-400">
-                  Add-ons: {item.addons.map((a) => a.name).join(", ")}
-                </p>
-              )}
-            </div>
-
-            {/* Selector de cantidad */}
+            {/* 👉 Selector de cantidad a la izquierda */}
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => updateQty(item.id, -1)}
@@ -62,7 +51,21 @@ export default function OrderSummary() {
               </button>
             </div>
 
-            <div className="flex flex-col items-end">
+            {/* 🧾 Detalle del producto */}
+            <div className="flex-1 px-3">
+              <p className="font-semibold">{item.name}</p>
+              {item.option && (
+                <p className="text-sm text-gray-500">{item.option}</p>
+              )}
+              {item.addons && item.addons.length > 0 && (
+                <p className="text-xs text-gray-400">
+                  Add-ons: {item.addons.map((a) => a.name).join(", ")}
+                </p>
+              )}
+            </div>
+
+            {/* 💰 Precio */}
+            <div className="text-right">
               <p className="font-semibold">
                 ${(item.price * item.qty).toFixed(2)}
               </p>
@@ -81,9 +84,7 @@ export default function OrderSummary() {
       <div className="border-t pt-3 text-right space-y-1">
         <p>
           Subtotal:{" "}
-          <span className="font-semibold">
-            ${subtotal.toFixed(2)}
-          </span>
+          <span className="font-semibold">${subtotal.toFixed(2)}</span>
         </p>
         {appliedCoupon && (
           <p className="text-sm text-green-600">
@@ -94,6 +95,9 @@ export default function OrderSummary() {
           Total: ${total.toFixed(2)}
         </p>
       </div>
+
+      {/* 🏷️ Campo de cupón */}
+      <CouponField />
     </div>
   );
 }
