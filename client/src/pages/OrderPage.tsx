@@ -28,9 +28,10 @@ export default function OrderPage() {
   const [error, setError] = useState("");
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,11 +50,17 @@ export default function OrderPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
-          subtotal,
-          total,
-          discountRate,
-          appliedCoupon,
+          customer_name: form.customer_name,
+          customer_phone: form.customer_phone,
+          order_type: form.order_type,
+          address: form.address,
+          schedule_date: form.schedule_date,
+          schedule_time: form.schedule_time,
+          notes: form.notes,
+          subtotal: Number(subtotal) || 0,
+          total: Number(total) || 0,
+          discountRate: Number(discountRate) || 0,
+          appliedCoupon: appliedCoupon || "",
           items: cartItems,
         }),
       });
@@ -67,7 +74,6 @@ export default function OrderPage() {
         return;
       }
 
-      // ✅ Limpiar carrito y redirigir al ThankYou
       clearCart();
       navigate(`/thank-you?id=${data.orderId}`);
     } catch (err) {
@@ -81,11 +87,28 @@ export default function OrderPage() {
   return (
     <div className="max-w-3xl mx-auto mt-20 p-4 bg-white shadow rounded-lg">
       <h2 className="text-2xl font-bold text-[#00454E] mb-6 text-center">
-        Complete your order
+        Review your order
       </h2>
 
+      {/* 🧾 Order Summary arriba */}
+      {cartItems.length > 0 ? (
+        <div className="mb-8 border-b pb-4">
+          <OrderSummary />
+          <div className="text-center mt-4">
+            <Link to="/" className="text-[#1D9099] font-medium hover:underline">
+              Want more items?
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <p className="text-center text-gray-500">Your cart is empty.</p>
+      )}
+
+      {/* 👤 Customer Info */}
+      <h3 className="text-lg font-semibold text-[#00454E] mb-2">
+        Customer Information
+      </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* 👤 Customer Info */}
         <input
           type="text"
           name="customer_name"
@@ -105,16 +128,29 @@ export default function OrderPage() {
           className="w-full border rounded p-2"
         />
 
-        {/* ☕ Order Type */}
-        <select
-          name="order_type"
-          value={form.order_type}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-        >
-          <option value="Pickup">Pickup</option>
-          <option value="Delivery">Delivery</option>
-        </select>
+        {/* ☕ Order Type (Radio buttons) */}
+        <div className="flex items-center gap-6">
+          <label className="flex items-center space-x-2">
+            <input
+              type="radio"
+              name="order_type"
+              value="Pickup"
+              checked={form.order_type === "Pickup"}
+              onChange={handleChange}
+            />
+            <span>Pickup</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="radio"
+              name="order_type"
+              value="Delivery"
+              checked={form.order_type === "Delivery"}
+              onChange={handleChange}
+            />
+            <span>Delivery</span>
+          </label>
+        </div>
 
         {form.order_type === "Delivery" && (
           <input
@@ -160,22 +196,6 @@ export default function OrderPage() {
           {loading ? "Submitting..." : "Place Order"}
         </button>
       </form>
-
-      {/* 🧾 Order Summary */}
-      {cartItems.length > 0 && (
-        <div className="mt-8 border-t pt-4">
-          <OrderSummary />
-
-          <div className="text-center mt-4">
-            <Link
-              to="/"
-              className="text-[#1D9099] font-medium hover:underline"
-            >
-              Want more items?
-            </Link>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
