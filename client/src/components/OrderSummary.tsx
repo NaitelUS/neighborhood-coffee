@@ -1,5 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { CartContext } from "../context/CartContext";
+import { Link } from "react-router-dom";
+import CouponField from "./CouponField";
 
 export default function OrderSummary() {
   const {
@@ -15,7 +17,7 @@ export default function OrderSummary() {
   const [safeSubtotal, setSafeSubtotal] = useState(0);
   const [safeTotal, setSafeTotal] = useState(0);
 
-  // ✅ recalcular totales seguros
+  // ✅ Recalcular totales seguros
   useEffect(() => {
     const computedSubtotal = cartItems.reduce((sum, item) => {
       const base = Number(item.price) || 0;
@@ -42,9 +44,12 @@ export default function OrderSummary() {
   }
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-4">
-      <h3 className="text-xl font-bold text-[#00454E] mb-4">Your Order</h3>
+    <div className="bg-white shadow-md rounded-lg p-4 space-y-4">
+      <h3 className="text-xl font-bold text-[#00454E] border-b pb-2">
+        Your Order
+      </h3>
 
+      {/* 🧾 Lista de productos */}
       <div className="space-y-3">
         {cartItems.map((item, idx) => {
           const hasOptionInName =
@@ -54,7 +59,7 @@ export default function OrderSummary() {
               key={`${item.id}-${item.option}-${idx}`}
               className="flex justify-between items-start border-b pb-2"
             >
-              {/* ✅ selector de cantidad alineado a la izquierda */}
+              {/* Selector de cantidad */}
               <div className="flex items-start space-x-2">
                 <div className="flex items-center border rounded">
                   <button
@@ -98,12 +103,23 @@ export default function OrderSummary() {
                 </div>
               </div>
 
+              {/* Precio individual */}
               <div className="text-right font-semibold">
                 ${((Number(item.price) || 0) * (Number(item.qty) || 1)).toFixed(2)}
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* 🏷️ Campo de cupón */}
+      <div className="pt-2 border-t">
+        <CouponField />
+        {appliedCoupon && (
+          <p className="text-sm text-green-700 mt-1">
+            Applied coupon: <strong>{appliedCoupon}</strong>
+          </p>
+        )}
       </div>
 
       {/* Totales */}
@@ -113,13 +129,21 @@ export default function OrderSummary() {
         </p>
         {appliedCoupon && discount > 0 && (
           <p className="text-sm text-green-700">
-            Discount ({appliedCoupon}): -${discount.toFixed(2)}
+            Discount: -${discount.toFixed(2)}
           </p>
         )}
         <p className="text-lg font-bold text-[#00454E]">
           Total: ${safeTotal.toFixed(2)}
         </p>
       </div>
+
+      {/* ☕ Botón Want more items */}
+      <Link
+        to="/"
+        className="block w-full text-center mt-2 bg-[#00454E] text-white py-2 rounded hover:bg-[#1D9099] transition"
+      >
+        Want more items?
+      </Link>
     </div>
   );
 }
