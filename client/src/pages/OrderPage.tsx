@@ -1,50 +1,59 @@
-import React, { useState } from "react";
-import { useCart } from "../context/CartContext";
+import React, { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { CartContext } from "../context/CartContext";
 import OrderSummary from "../components/OrderSummary";
 
 export default function OrderPage() {
-  const { items, clearCart, getTotal } = useCart();
+  const cart = useContext(CartContext);
+  const navigate = useNavigate();
+  if (!cart) return null;
+
+  const { cartItems, subtotal, discount, total, discountRate, appliedCoupon, clearCart } = cart;
+
   const [customer, setCustomer] = useState({
     name: "",
     phone: "",
     address: "",
     orderType: "Pickup",
+    notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleSubmit = async () => {
-    if (items.length === 0) {
+    if (cartItems.length === 0) {
       setMessage("Your cart is empty.");
       return;
     }
-
     setSubmitting(true);
     setMessage("");
 
-    const orderData = {
+    const payload = {
       customer_name: customer.name,
       customer_phone: customer.phone,
-      address: customer.address,
+      address: customer.orderType === "Delivery" ? customer.address : "",
       order_type: customer.orderType,
-      items,
-      total: getTotal(),
+      notes: customer.notes,
+      items: cartItems,
+      subtotal,
+      discount,
+      total,
+      coupon_code: appliedCoupon || "",
+      discount_rate: discountRate, // para referencia si lo quieres usar en back
     };
 
     try {
       const res = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(payload),
       });
-
       const data = await res.json();
-
       if (data.success) {
         clearCart();
         window.location.href = `/thank-you?id=${data.orderId}`;
       } else {
-        throw new Error("Failed to submit order");
+        throw new Error("Order not saved");
       }
     } catch (err) {
       console.error("Order error:", err);
@@ -56,11 +65,19 @@ export default function OrderPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-center text-[#00454E]">
-        Your Order
-      </h1>
+      {/* Botón para volver al menú SIN perder el carrito */}
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => navigate("/")}
+          className="text-[#00454E] underline font-medium"
+        >
+          Want more items?
+        </button>
+      </div>
 
+      {/* Datos del cliente */}
       <div className="bg-white shadow-md rounded-xl p-4 space-y-3">
+        <h2 className="text-lg font-semibold text-[#00454E]">Customer</h2>
         <input
           type="text"
           placeholder="Name"
@@ -75,32 +92,38 @@ export default function OrderPage() {
           onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
           className="w-full border rounded-lg p-2"
         />
-        <select
-          value={customer.orderType}
-          onChange={(e) => setCustomer({ ...customer, orderType: e.target.value })}
-          className="w-full border rounded-lg p-2"
-        >
-          <option value="Pickup">Pickup</option>
-          <option value="Delivery">Delivery</option>
-        </select>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-sm font-medium">Order Type</label>
+          <select
+            value={customer.orderType}
+            onChange={(e) => setCustomer({ ...customer, orderType: e.target.value })}
+            className="w-full border rounded-lg p-2"
+          >
+            <option value="Pickup">Pickup</option>
+            <option value="Delivery">Delivery</option>
+          </select>
+        </div>
         {customer.orderType === "Delivery" && (
           <input
             type="text"
             placeholder="Delivery Address"
             value={customer.address}
-            onChange={(e) =>
-              setCustomer({ ...customer, address: e.target.value })
-            }
+            onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
             className="w-full border rounded-lg p-2"
           />
         )}
+        <textarea
+          placeholder="Notes / special instructions"
+          value={customer.notes}
+          onChange={(e) => setCustomer({ ...customer, notes: e.target.value })}
+          className="w-full border rounded-lg p-2"
+          rows={3}
+        />
       </div>
 
       <OrderSummary />
 
-      {message && (
-        <div className="text-center text-red-600 text-sm">{message}</div>
-      )}
+      {message && <div className="text-center text-red-600 text-sm">{message}</div>}
 
       <button
         onClick={handleSubmit}
