@@ -3,59 +3,44 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { ShoppingCart } from "lucide-react";
 
-export default function Header() {
-  const cart = useContext(CartContext);
-  const navigate = useNavigate();
+const Header: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { cart } = useContext(CartContext);
 
-  if (!cart) return null;
+  // 🧮 Contador total de artículos en carrito
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // ✅ Sumar correctamente las cantidades
-  const totalItems = cart.cartItems.reduce(
-    (sum, item) => sum + (item.quantity || 1),
-    0
-  );
-
-  // ✅ Ocultar carrito en ThankYou o Status
+  // Ocultar el carrito en algunas páginas
   const hideCart =
-    location.pathname.includes("/thank-you") ||
-    location.pathname.includes("/status");
+    location.pathname === "/thank-you" || location.pathname === "/status";
 
   return (
-    <header className="bg-white shadow-sm fixed top-0 left-0 w-full z-50 border-b border-gray-200">
-      <div className="max-w-6xl mx-auto flex justify-between items-center px-4 sm:px-6 py-3">
-        {/* 🏠 Logo que redirige al menú */}
+    <header className="flex items-center justify-between px-4 py-3 bg-[#00454E] text-white shadow-md">
+      {/* Logo o Nombre del Negocio */}
+      <h1
+        className="text-xl font-semibold cursor-pointer"
+        onClick={() => navigate("/")}
+      >
+        The Neighborhood Coffee
+      </h1>
+
+      {/* Ícono del carrito (solo si no estamos en thank-you o status) */}
+      {!hideCart && (
         <div
-          onClick={() => navigate("/")}
-          className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition"
+          className="relative cursor-pointer"
+          onClick={() => navigate("/order")}
         >
-          <img
-            src="/attached_assets/tnclogo.png"
-            alt="The Neighborhood Coffee Logo"
-            className="h-10 w-auto object-contain"
-          />
+          <ShoppingCart className="w-6 h-6" />
+          {totalItems > 0 && (
+            <span className="absolute -top-2 -right-2 bg-amber-400 text-black rounded-full text-xs w-5 h-5 flex items-center justify-center font-bold">
+              {totalItems}
+            </span>
+          )}
         </div>
-
-        {/* 🛒 Carrito visible solo si no estamos en ThankYou/Status */}
-        {!hideCart && (
-          <div
-            className="relative cursor-pointer"
-            onClick={() => navigate("/order")}
-          >
-            <ShoppingCart
-              size={28}
-              className="text-[#1D9099] hover:text-[#00454E]"
-            />
-
-            {/* 🔢 Burbuja con número de ítems */}
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#1D9099] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {totalItems}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      )}
     </header>
   );
-}
+};
+
+export default Header;
