@@ -1,82 +1,122 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useState, useEffect } from "react";
 
-export interface AddOn { name: string; price: number }
-export interface CartItem {
-  id: string;
+interface AddOn {
   name: string;
   price: number;
+}
+
+interface CartItem {
+  id: string;
+  name: string;
   option?: string;
+  price: number;
   addons?: AddOn[];
   quantity: number;
 }
 
-interface CartContextShape {
-  cartItems: CartItem[];
-  addItem: (item: CartItem) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, qty: number) => void;
+interface CartContextType {
+  cart: CartItem[];
+  addToCart: (item: CartItem) => void;
+  removeFromCart: (id: string, option?: string) => void;
   clearCart: () => void;
-
-  // Totales y cupón
+  updateQuantity: (id: string, option: string | undefined, qty: number) => void;
   subtotal: number;
-  discountRate: number;      // ej. 0.15
-  discount: number;          // dinero
+  discount: number;
   total: number;
   appliedCoupon: string | null;
-  setDiscountRate: (r: number) => void;
-  setAppliedCoupon: (c: string | null) => void;
+  setDiscount: React.Dispatch<React.SetStateAction<number>>;
+  setAppliedCoupon: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export const CartContext = createContext<CartContextShape | undefined>(undefined);
+export const CartContext = createContext<CartContextType>({
+  cart: [],
+  addToCart: () => {},
+  removeFromCart: () => {},
+  clearCart: () => {},
+  updateQuantity: () => {},
+  subtotal: 0,
+  discount: 0,
+  total: 0,
+  appliedCoupon: null,
+  setDiscount: () => {},
+  setAppliedCoupon: () => {},
+});
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [discountRate, setDiscountRate] = useState(0);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [discount, setDiscount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-  const addItem = (item: CartItem) => {
-    setCartItems(prev => {
-      const match = prev.find(
-        p => p.name === item.name &&
-             p.option === item.option &&
-             JSON.stringify(p.addons||[]) === JSON.stringify(item.addons||[])
+  // 🧮 Subtotal
+  const subtotal = cart.reduce((sum, item) => {
+    const addonsTotal = item.addons?.reduce((a, b) => a + b.price, 0) || 0;
+    return sum + (item.price + addonsTotal) * item.quantity;
+  }, 0);
+
+  // 🧾 Total
+  const total = subtotal - subtotal * discount;
+
+  // ➕ Agregar al carrito
+  const addToCart = (item: CartItem) => {
+    setCart((prev) => {
+      const existing = prev.find(
+        (i) => i.id === item.id && i.option === item.option
       );
-      if (match) {
-        return prev.map(p => p === match ? { ...p, quantity: p.quantity + item.quantity } : p);
+      if (existing) {
+        return prev.map((i) =>
+          i.id === item.id && i.option === item.option
+            ? { ...i, quantity: i.quantity + item.quantity }
+            : i
+        );
       }
-      return [...prev, item];
+      return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
   };
 
-  const removeItem = (id: string) => setCartItems(prev => prev.filter(i => i.id !== id));
-  const updateQuantity = (id: string, qty: number) =>
-    setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, qty) } : i));
-  const clearCart = () => { setCartItems([]); setDiscountRate(0); setAppliedCoupon(null); };
+  // 🔄 Actualizar cantidad
+  const updateQuantity = (id: string, option: string | undefined, qty: number) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === id && item.option === option
+          ? { ...item, quantity: Math.max(qty, 1) }
+          : item
+      )
+    );
+  };
 
-  const subtotal = useMemo(() => {
-    return (cartItems || []).reduce((sum, i) => {
-      const addons = (i.addons || []).reduce((a, b) => a + b.price, 0);
-      return sum + (i.price + addons) * i.quantity;
-    }, 0);
-  }, [cartItems]);
+  // ❌ Quitar del carrito
+  const removeFromCart = (id: string, option?: string) => {
+    setCart((prev) =>
+      prev.filter((item) => !(item.id === id && item.option === option))
+    );
+  };
 
-  const discount = useMemo(() => subtotal * discountRate, [subtotal, discountRate]);
-  const total = useMemo(() => subtotal - discount, [subtotal, discount]);
+  // 🧹 Limpiar carrito
+  const clearCart = () => setCart([]);
+
+  // 💾 Persistencia en localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("cart");
+    if (saved) setCart(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
   return (
     <CartContext.Provider
       value={{
-        cartItems,
-        addItem,
-        removeItem,
-        updateQuantity,
+        cart,
+        addToCart,
+        removeFromCart,
         clearCart,
+        updateQuantity,
         subtotal,
-        discountRate,
         discount,
         total,
         appliedCoupon,
-        setDiscountRate,
+        setDiscount,
         setAppliedCoupon,
       }}
     >
@@ -84,5 +124,3 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </CartContext.Provider>
   );
 };
-
-export const useCartUnsafe = () => useContext(CartContext);
