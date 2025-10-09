@@ -1,52 +1,121 @@
 import React, { useState, useContext } from "react";
 import { CartContext } from "../context/CartContext";
-import AddOnSelector from "@/components/AddOnSelector";
+import AddOnSelector from "./AddOnSelector";
 
-export default function MenuItem({ product }) {
-  const cart = useContext(CartContext);
-  const [selectedAddOns, setSelectedAddOns] = useState([]);
+interface AddOn {
+  name: string;
+  price: number;
+}
+
+interface MenuItemProps {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  options?: string[];
+  addons?: AddOn[];
+}
+
+const MenuItem: React.FC<MenuItemProps> = ({
+  id,
+  name,
+  description,
+  price,
+  options = [],
+  addons = [],
+}) => {
+  const { addToCart } = useContext(CartContext);
+
+  const [selectedOption, setSelectedOption] = useState(options[0] || "");
+  const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
   const [quantity, setQuantity] = useState(1);
 
-  if (!cart) return null;
+  const handleAddOnChange = (addon: AddOn, isChecked: boolean) => {
+    setSelectedAddOns((prev) =>
+      isChecked
+        ? [...prev, addon]
+        : prev.filter((a) => a.name !== addon.name)
+    );
+  };
 
   const handleAddToCart = () => {
-    cart.addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      addOns: selectedAddOns,
+    addToCart({
+      id,
+      name,
+      option: selectedOption,
+      price,
+      addons: selectedAddOns,
       quantity,
     });
+    setSelectedAddOns([]);
+    setQuantity(1);
   };
 
   return (
-    <div className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition">
-      <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-      <p className="text-gray-600 mb-3">${product.price.toFixed(2)}</p>
+    <div className="bg-white shadow-md rounded-2xl p-4 mb-4 border border-gray-100 hover:shadow-lg transition">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-[#00454E]">{name}</h2>
+          {description && <p className="text-sm text-gray-600">{description}</p>}
+          <p className="text-md font-bold mt-1">${price.toFixed(2)}</p>
+        </div>
+      </div>
 
-      {product.addOns?.length > 0 && (
-        <AddOnSelector
-          addOns={product.addOns}
-          selectedAddOns={selectedAddOns}
-          onChange={setSelectedAddOns}
-        />
+      {/* Opciones (Hot / Iced, etc.) */}
+      {options.length > 0 && (
+        <div className="mt-3">
+          <label className="text-sm font-medium text-gray-700 mr-2">Option:</label>
+          <select
+            value={selectedOption}
+            onChange={(e) => setSelectedOption(e.target.value)}
+            className="border rounded-lg px-2 py-1 text-sm"
+          >
+            {options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
-      <div className="flex items-center gap-2 mt-3">
-        <input
-          type="number"
-          min="1"
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          className="border rounded px-2 py-1 w-16 text-center"
-        />
+      {/* AddOns */}
+      {addons.length > 0 && (
+        <div className="mt-3">
+          <AddOnSelector
+            addons={addons}
+            selectedAddOns={selectedAddOns}
+            onChange={handleAddOnChange}
+          />
+        </div>
+      )}
+
+      {/* Quantity Selector */}
+      <div className="mt-3 flex items-center space-x-2">
         <button
-          onClick={handleAddToCart}
-          className="bg-[#00454E] text-white px-4 py-2 rounded hover:bg-[#006067] transition"
+          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+          className="px-2 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
         >
-          Add to Cart
+          −
+        </button>
+        <span className="w-6 text-center">{quantity}</span>
+        <button
+          onClick={() => setQuantity((q) => q + 1)}
+          className="px-2 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
+        >
+          +
         </button>
       </div>
+
+      {/* Botón Agregar */}
+      <button
+        onClick={handleAddToCart}
+        className="w-full mt-4 bg-[#00454E] text-white rounded-xl py-2 font-semibold hover:bg-[#1D9099] transition"
+      >
+        Add to Order
+      </button>
     </div>
   );
-}
+};
+
+export default MenuItem;
