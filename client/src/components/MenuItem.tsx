@@ -43,7 +43,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
       id,
       name,
       option: selectedOption,
-      price,
+      price: Number(price ?? 0),
       addons: selectedAddOns,
       quantity,
     });
@@ -56,15 +56,21 @@ const MenuItem: React.FC<MenuItemProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-[#00454E]">{name}</h2>
-          {description && <p className="text-sm text-gray-600">{description}</p>}
-          <p className="text-md font-bold mt-1">${price.toFixed(2)}</p>
+          {description && (
+            <p className="text-sm text-gray-600">{description}</p>
+          )}
+          <p className="text-md font-bold mt-1">
+            ${Number(price ?? 0).toFixed(2)}
+          </p>
         </div>
       </div>
 
       {/* Opciones (Hot / Iced, etc.) */}
       {options.length > 0 && (
         <div className="mt-3">
-          <label className="text-sm font-medium text-gray-700 mr-2">Option:</label>
+          <label className="text-sm font-medium text-gray-700 mr-2">
+            Option:
+          </label>
           <select
             value={selectedOption}
             onChange={(e) => setSelectedOption(e.target.value)}
