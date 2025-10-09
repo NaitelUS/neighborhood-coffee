@@ -42,19 +42,23 @@ export const CartContext = createContext<CartContextType>({
   setAppliedCoupon: () => {},
 });
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-  // 🧮 Subtotal
+  // 🧮 Subtotal seguro
   const subtotal = cart.reduce((sum, item) => {
-    const addonsTotal = item.addons?.reduce((a, b) => a + b.price, 0) || 0;
-    return sum + (item.price + addonsTotal) * item.quantity;
+    const basePrice = Number(item?.price ?? 0);
+    const addonsTotal =
+      item.addons?.reduce((a, b) => a + Number(b.price ?? 0), 0) || 0;
+    return sum + (basePrice + addonsTotal) * (item?.quantity ?? 1);
   }, 0);
 
   // 🧾 Total
-  const total = subtotal - subtotal * discount;
+  const total = subtotal - subtotal * (discount ?? 0);
 
   // ➕ Agregar al carrito
   const addToCart = (item: CartItem) => {
@@ -74,7 +78,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 🔄 Actualizar cantidad
-  const updateQuantity = (id: string, option: string | undefined, qty: number) => {
+  const updateQuantity = (
+    id: string,
+    option: string | undefined,
+    qty: number
+  ) => {
     setCart((prev) =>
       prev.map((item) =>
         item.id === id && item.option === option
@@ -94,7 +102,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 🧹 Limpiar carrito
   const clearCart = () => setCart([]);
 
-  // 💾 Persistencia en localStorage
+  // 💾 Persistencia local
   useEffect(() => {
     const saved = localStorage.getItem("cart");
     if (saved) setCart(JSON.parse(saved));
