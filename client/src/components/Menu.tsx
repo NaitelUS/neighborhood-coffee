@@ -1,75 +1,78 @@
 import React, { useEffect, useState, useContext } from "react";
 import { CartContext } from "../context/CartContext";
-import { Plus, Minus } from "lucide-react";
+import MenuItem from "./MenuItem";
 
 interface Product {
   id: string;
   name: string;
-  price: number;
-  option?: string;
   description?: string;
-  image?: string;
+  price: number;
+  options?: string[];
+  addons?: { name: string; price: number }[];
 }
 
-export default function Menu() {
-  const cart = useContext(CartContext);
-  const addItem = cart?.addItem || (() => {});
+const Menu: React.FC = () => {
+  const { cart } = useContext(CartContext);
   const [products, setProducts] = useState<Product[]>([]);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/.netlify/functions/products")
-      .then(r => r.json())
-      .then(data => setProducts(Array.isArray(data) ? data : []))
-      .catch(err => console.error("Products error:", err));
+    const fetchMenu = async () => {
+      try {
+        const response = await fetch("/.netlify/functions/products");
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          setProducts(data);
+        } else if (Array.isArray(data.records)) {
+          setProducts(
+            data.records.map((r: any) => ({
+              id: r.id,
+              name: r.fields.Name,
+              description: r.fields.Description || "",
+              price: r.fields.Price || 0,
+              options: r.fields.Options || [],
+              addons: r.fields.AddOns || [],
+            }))
+          );
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error("⚠️ Error loading menu:", err);
+        setLoading(false);
+      }
+    };
+
+    fetchMenu();
   }, []);
 
-  const changeQty = (id: string, d: number) =>
-    setQuantities(prev => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + d) }));
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen text-gray-500">
+        Loading menu…
+      </div>
+    );
+  }
 
-  const handleAdd = (p: Product) => {
-    const qty = quantities[p.id] || 1;
-    addItem({
-      id: `${p.id}-${Date.now()}`,
-      name: p.name,
-      price: p.price,
-      option: p.option || "",
-      quantity: qty,
-      addons: [],
-    });
-  };
-
-  if (!Array.isArray(products)) return null;
+  if (products.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-screen text-gray-500">
+        No products available.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-center text-[#00454E]">The Neighborhood Coffee ☕</h1>
-      {products.length === 0 ? (
-        <p className="text-center text-gray-400">Loading menu...</p>
-      ) : (
-        <div className="grid gap-4">
-          {products.map(p => (
-            <div key={p.id} className="bg-white shadow rounded-xl p-4 flex justify-between items-center">
-              <div>
-                <p className="font-semibold">{p.name}</p>
-                <p className="text-sm text-gray-500">${p.price.toFixed(2)}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => changeQty(p.id, -1)} className="border rounded-full w-7 h-7 flex items-center justify-center">
-                  <Minus size={14} />
-                </button>
-                <span className="w-6 text-center">{quantities[p.id] || 1}</span>
-                <button onClick={() => changeQty(p.id, 1)} className="border rounded-full w-7 h-7 flex items-center justify-center">
-                  <Plus size={14} />
-                </button>
-                <button onClick={() => handleAdd(p)} className="ml-3 bg-[#00454E] text-white px-3 py-1 rounded-lg text-sm">
-                  Add
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="max-w-3xl mx-auto p-4">
+      <h2 className="text-2xl font-semibold text-[#00454E] mb-4">
+        Menu
+      </h2>
+      {products.map((product) => (
+        <MenuItem key={product.id} {...product} />
+      ))}
     </div>
   );
-}
+};
+
+export default Menu;
