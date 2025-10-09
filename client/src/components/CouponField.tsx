@@ -1,106 +1,82 @@
-import React, { useState, useContext } from "react";
-import { CartContext } from "@/context/CartContext";
+import React, { useContext, useMemo, useState } from "react";
+import { CartContext } from "../context/CartContext";
 
 export default function CouponField() {
-  const { applyDiscount, appliedCoupon } = useContext(CartContext);
-  const [coupon, setCoupon] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const cart = useContext(CartContext);
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "valid" | "invalid" | "error">("idle");
+  const [busy, setBusy] = useState(false);
 
-  const handleApplyCoupon = async () => {
-    if (!coupon.trim()) {
-      setMessage("Please enter a coupon code.");
-      return;
+  const message = useMemo(() => {
+    switch (status) {
+      case "valid": return "✅ Coupon applied!";
+      case "invalid": return "❌ Invalid or expired coupon.";
+      case "error": return "⚠️ Unable to verify coupon right now.";
+      default: return "";
     }
+  }, [status]);
 
-    setLoading(true);
-    setMessage(null);
-
+  const apply = async () => {
+    if (!code.trim() || !cart) return;
+    setBusy(true);
     try {
-      const response = await fetch("/.netlify/functions/coupons");
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
-      const coupons = await response.json();
-
-      const normalizedCode = coupon.trim().toUpperCase();
-      const found = coupons.find(
-        (c: any) =>
-          c.code?.trim().toUpperCase() === normalizedCode &&
-          c.active === true
-      );
-
-      if (!found) {
-        setMessage("❌ Invalid or expired coupon.");
-        return;
+      const res = await fetch(`/.netlify/functions/coupons?code=${encodeURIComponent(code.trim().toUpperCase())}`);
+      const data = await res.json();
+      // Se espera { success: true, percent_off: number, code: string, active: 1|0 }
+      if (data && data.success && data.percent_off > 0 && data.active) {
+        cart.setDiscountRate(data.percent_off / 100);
+        cart.setAppliedCoupon(code.trim().toUpperCase());
+        setStatus("valid");
+      } else {
+        cart.setDiscountRate(0);
+        cart.setAppliedCoupon(null);
+        setStatus("invalid");
       }
-
-      // ✅ Verificación adicional por fechas
-      const now = new Date();
-      const from = found.valid_from ? new Date(found.valid_from) : null;
-      const until = found.valid_until ? new Date(found.valid_until) : null;
-      const isValidDate =
-        (!from || now >= from) && (!until || now <= until);
-
-      if (!isValidDate) {
-        setMessage("❌ This coupon is not valid today.");
-        return;
-      }
-
-      // ✅ Aplica el descuento al carrito
-      applyDiscount(found.code, found.percent_off);
-
-      setMessage(
-        `✅ Coupon "${found.code}" applied! You got a ${(found.percent_off * 100).toFixed(0)}% discount.`
-      );
-    } catch (err) {
-      console.error("Error verifying coupon:", err);
-      setMessage("⚠️ Unable to verify coupon right now. Please try again later.");
+    } catch (e) {
+      console.error("Coupon error:", e);
+      setStatus("error");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
-  return (
-    <div className="border border-gray-200 rounded-lg p-4 mt-4 bg-gray-50">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Have a coupon?
-      </label>
+  const applied = cart?.appliedCoupon && cart.discountRate > 0;
 
-      <div className="flex flex-col sm:flex-row gap-2">
+  return (
+    <div className="bg-gray-50 border rounded-lg p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">Discount Code</label>
+      <div className="flex gap-2">
         <input
           type="text"
+          value={applied ? cart?.appliedCoupon || "" : code}
+          onChange={(e) => setCode(e.target.value)}
           placeholder="Enter coupon code"
-          value={coupon}
-          onChange={(e) => setCoupon(e.target.value)}
-          disabled={!!appliedCoupon}
-          className="flex-1 border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-primary focus:border-primary"
+          className="flex-1 border rounded-lg px-3 py-2 text-sm"
+          disabled={busy || applied}
         />
         <button
           type="button"
-          onClick={handleApplyCoupon}
-          disabled={loading || !!appliedCoupon}
-          className={`px-4 py-2 rounded-md font-semibold transition-colors
-            ${
-              appliedCoupon
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#1D9099] hover:bg-[#00454E] text-white"
-            }`}
+          onClick={apply}
+          disabled={busy || applied}
+          className={`px-4 py-2 rounded-lg font-medium text-white ${
+            applied ? "bg-green-500 cursor-not-allowed" : "bg-[#00454E] hover:bg-[#1D9099]"
+          }`}
         >
-          {appliedCoupon ? "Applied" : loading ? "Checking..." : "Apply"}
+          {applied ? "Applied" : busy ? "Applying..." : "Apply"}
         </button>
       </div>
-
       {message && (
         <p
           className={`mt-2 text-sm ${
-            message.startsWith("✅")
-              ? "text-green-600"
-              : message.startsWith("⚠️")
-              ? "text-yellow-600"
-              : "text-red-600"
+            status === "valid" ? "text-green-600" : status === "invalid" ? "text-red-500" : "text-yellow-600"
           }`}
         >
           {message}
+        </p>
+      )}
+      {applied && (
+        <p className="text-xs text-gray-500 mt-1">
+          Coupon: <strong>{cart?.appliedCoupon}</strong> – {(cart?.discountRate * 100).toFixed(0)}%
         </p>
       )}
     </div>

@@ -1,47 +1,30 @@
-// client/src/pages/AdminOrders.tsx
 import React, { useEffect, useState } from "react";
 
 interface Order {
   id: string;
-  name: string;
-  phone: string;
-  order_type: string;
-  total: number;
-  status: string;
-  schedule_date: string;
-  schedule_time: string;
-  notes?: string;
-  created_at: string;
+  fields: any;
 }
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchOrders = async () => {
+    setLoading(true);
+    setError("");
     try {
-      const res = await fetch("/.netlify/functions/orders-get");
-      const data = await res.json();
-      setOrders(data);
+      const response = await fetch("/.netlify/functions/orders-get");
+      const data = await response.json();
+
+      if (!response.ok) throw new Error("Failed to fetch orders");
+
+      setOrders(data.records || []);
     } catch (err) {
-      console.error("Error fetching orders:", err);
+      console.error(err);
+      setError("⚠️ Unable to load orders right now.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const updateStatus = async (id: string, newStatus: string) => {
-    try {
-      await fetch("/.netlify/functions/orders-update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: newStatus }),
-      });
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
-      );
-    } catch (err) {
-      console.error("Error updating status:", err);
     }
   };
 
@@ -49,58 +32,123 @@ export default function AdminOrders() {
     fetchOrders();
   }, []);
 
-  if (loading) return <p className="text-center mt-10">Loading orders...</p>;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Received":
+        return "#00454E";
+      case "In Progress":
+        return "#1D9099";
+      case "Completed":
+        return "#9CA3AF"; // gray
+      default:
+        return "#00454E";
+    }
+  };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-gray-700 text-center">
-        ☕ Active Orders
-      </h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            className="p-4 bg-white shadow-sm rounded-lg border border-gray-200"
-          >
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">
-              {order.id}
-            </h2>
-            <p className="text-lg text-gray-700 font-semibold mb-2">
-              {order.name} — ${order.total.toFixed(2)}
-            </p>
-            <p className="text-sm text-gray-600">
-              {order.order_type} | {order.schedule_date} {order.schedule_time}
-            </p>
-            {order.notes && (
-              <p className="text-sm mt-2 text-gray-800">
-                📝 <strong>Notes:</strong> {order.notes}
-              </p>
-            )}
-            <p className="text-sm mt-2 text-gray-600">
-              📞 {order.phone}
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {["Received", "In Process", "Ready", "Out for Delivery", "Completed"].map(
-                (s) => (
-                  <button
-                    key={s}
-                    onClick={() => updateStatus(order.id, s)}
-                    className={`px-2 py-1 rounded text-xs font-semibold border ${
-                      order.status === s
-                        ? "bg-amber-600 text-white"
-                        : "hover:bg-amber-100 border-gray-300"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        ))}
+    <div className="max-w-5xl mx-auto mt-20 p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-[#00454E]">Admin Orders</h2>
+        <button
+          onClick={fetchOrders}
+          disabled={loading}
+          className="bg-[#00454E] text-white px-4 py-2 rounded hover:bg-[#1D9099] transition"
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
+
+      {error && <p className="text-red-600 mb-3">{error}</p>}
+
+      {orders.length === 0 && !loading ? (
+        <p className="text-gray-500 text-center mt-8">No orders found.</p>
+      ) : (
+        <div className="space-y-6">
+          {orders.map((order) => {
+            const f = order.fields;
+            const statusColor = getStatusColor(f.Status);
+
+            return (
+              <div
+                key={order.id}
+                className="bg-white shadow rounded-lg p-4 border border-gray-100"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-center mb-2">
+                  <h3
+                    className="text-xl font-bold"
+                    style={{ color: statusColor }}
+                  >
+                    {f.OrderID || f.id}
+                  </h3>
+                  <span className="text-sm font-medium bg-gray-100 px-3 py-1 rounded">
+                    {f.Status || "Received"}
+                  </span>
+                </div>
+
+                {/* Customer Info */}
+                <div className="text-sm text-gray-700 mb-2">
+                  <p>
+                    <strong>{f.Name}</strong> — {f.Phone}
+                  </p>
+                  <p>
+                    {f.OrderType}{" "}
+                    {f.OrderType === "Delivery" && f.Address
+                      ? `• ${f.Address}`
+                      : ""}
+                  </p>
+                  {(f.ScheduleDate || f.ScheduleTime) && (
+                    <p>
+                      {f.ScheduleDate || ""} {f.ScheduleTime || ""}
+                    </p>
+                  )}
+                  {f.Notes && <p className="italic text-gray-500">{f.Notes}</p>}
+                </div>
+
+                {/* Products */}
+                {f.Items && (
+                  <div className="border-t border-gray-200 mt-2 pt-2">
+                    {f.Items.split(";").map((item: string, idx: number) => (
+                      <p key={idx} className="text-sm text-gray-800">
+                        {item}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Totals */}
+                <div className="border-t border-gray-200 mt-3 pt-3 text-sm">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>${(f.Subtotal || 0).toFixed(2)}</span>
+                  </div>
+                  {f.Discount && f.Discount > 0 && (
+                    <div className="flex justify-between text-green-700">
+                      <span>
+                        Discount{" "}
+                        {f.Coupon ? (
+                          <>
+                            ({f.Coupon} – {(f.Discount * 100).toFixed(0)}%)
+                          </>
+                        ) : (
+                          ""
+                        )}
+                      </span>
+                      <span>
+                        – ${(f.Subtotal * (f.Discount || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold text-[#00454E] text-base mt-1">
+                    <span>Total:</span>
+                    <span>${(f.Total || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

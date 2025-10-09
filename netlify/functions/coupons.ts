@@ -1,55 +1,114 @@
 import { Handler } from "@netlify/functions";
-import { getAirtableClient } from "../lib/airtableClient";
+import Airtable from "airtable";
 
-const handler: Handler = async () => {
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
+
+const TABLE_COUPONS = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
+
+export const handler: Handler = async (event) => {
   try {
-    const base = getAirtableClient();
-    const table = base(process.env.AIRTABLE_TABLE_COUPONS || "Coupons");
+    const { code } = event.queryStringParameters || {};
 
-    const records = await table.select().all();
-
-    const coupons = records.map((record) => {
-      const fields = record.fields;
-
+    if (!code) {
       return {
-        id: record.id,
-        code: (fields.code || "").trim().toUpperCase(),
-        percent_off:
-          typeof fields.percent_off === "number"
-            ? fields.percent_off
-            : parseFloat(fields.percent_off) / 100 || 0,
-        valid_from: fields.valid_from || null,
-        valid_until: fields.valid_until || null,
-
-        // ✅ Garantiza booleano
-        active: !!fields.active && fields.active !== "false" && fields.active !== 0,
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "⚠️ No coupon code provided.",
+        }),
       };
-    });
+    }
 
-    // ✅ Filtra solo cupones activos y válidos por fecha
+    // 🔎 Buscar por código (case-insensitive)
+    const records = await base(TABLE_COUPONS)
+      .select({
+        filterByFormula: `LOWER({code}) = '${code.toLowerCase()}'`,
+        maxRecords: 1,
+      })
+      .firstPage();
+
+    if (records.length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({
+          success: false,
+          message: "❌ Invalid or expired coupon.",
+        }),
+      };
+    }
+
+    const record = records[0].fields;
+
+    // 🧩 Validar campo Active (puede venir como true/false o 1/0)
+    const isActive =
+      record.active === true ||
+      record.active === 1 ||
+      record.Active === true ||
+      record.Active === 1;
+
+    if (!isActive) {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({
+          success: false,
+          message: "❌ This coupon is not active.",
+        }),
+      };
+    }
+
+    // ✅ Leer porcentaje
+    const discount = Number(record.percent_off) || 0;
+    if (discount <= 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "❌ Invalid discount value.",
+        }),
+      };
+    }
+
+    // 📅 Validar fechas si existen
     const now = new Date();
-    const validCoupons = coupons.filter((coupon) => {
-      const from = coupon.valid_from ? new Date(coupon.valid_from) : null;
-      const until = coupon.valid_until ? new Date(coupon.valid_until) : null;
-      const isWithinDate =
-        (!from || now >= from) && (!until || now <= until);
-      return coupon.active && isWithinDate && coupon.code.length > 0;
-    });
+    if (record.valid_from && new Date(record.valid_from) > now) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "⚠️ This coupon is not active yet.",
+        }),
+      };
+    }
+    if (record.valid_until && new Date(record.valid_until) < now) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "⚠️ This coupon has expired.",
+        }),
+      };
+    }
 
+    // ✅ Cupón válido
     return {
       statusCode: 200,
-      body: JSON.stringify(validCoupons),
+      body: JSON.stringify({
+        success: true,
+        code: record.code,
+        discount, // percent_off
+      }),
     };
-  } catch (error: any) {
-    console.error("❌ Error loading coupons:", error);
+  } catch (error) {
+    console.error("⚠️ Error verifying coupon:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: "Failed to fetch coupons",
-        details: error.message,
+        success: false,
+        message:
+          "⚠️ Unable to verify coupon right now. Please try again later.",
       }),
     };
   }
 };
-
-export { handler };

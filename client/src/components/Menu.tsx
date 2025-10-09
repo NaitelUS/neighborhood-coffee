@@ -1,66 +1,78 @@
-import React, { useEffect, useState } from "react";
-import MenuItem from "@/components/MenuItem";
+import React, { useEffect, useState, useContext } from "react";
+import { CartContext } from "../context/CartContext";
+import MenuItem from "./MenuItem";
 
 interface Product {
   id: string;
   name: string;
   description?: string;
-  category?: string;
   price: number;
-  is_hot?: boolean;
-  is_iced?: boolean;
-  available?: boolean;
-  image_url?: string;
+  options?: string[];
+  addons?: { name: string; price: number }[];
 }
 
-export default function Menu() {
+const Menu: React.FC = () => {
+  const { cart } = useContext(CartContext);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchMenu = async () => {
       try {
         const response = await fetch("/.netlify/functions/products");
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
         const data = await response.json();
 
-        // ✅ Filtrar productos disponibles
-        const validProducts = Array.isArray(data)
-          ? data.filter((p) => p.available !== false)
-          : [];
+        if (Array.isArray(data)) {
+          setProducts(data);
+        } else if (Array.isArray(data.records)) {
+          setProducts(
+            data.records.map((r: any) => ({
+              id: r.id,
+              name: r.fields.Name,
+              description: r.fields.Description || "",
+              price: r.fields.Price || 0,
+              options: r.fields.Options || [],
+              addons: r.fields.AddOns || [],
+            }))
+          );
+        }
 
-        setProducts(validProducts);
-      } catch (err: any) {
-        console.error("Error fetching products:", err);
-        setError("Unable to load products right now.");
-      } finally {
+        setLoading(false);
+      } catch (err) {
+        console.error("⚠️ Error loading menu:", err);
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchMenu();
   }, []);
 
-  if (loading) return <p className="text-center text-gray-600 mt-10">Loading menu...</p>;
-  if (error) return <p className="text-center text-red-500 mt-10">{error}</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen text-gray-500">
+        Loading menu…
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-screen text-gray-500">
+        No products available.
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">Our Menu</h1>
-
-      {products.length === 0 ? (
-        <p className="text-center text-gray-500">No products available.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <div key={product.id} className="flex justify-center">
-              <MenuItem product={product} />
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="max-w-3xl mx-auto p-4">
+      <h2 className="text-2xl font-semibold text-[#00454E] mb-4">
+        Menu
+      </h2>
+      {products.map((product) => (
+        <MenuItem key={product.id} {...product} />
+      ))}
     </div>
   );
-}
+};
+
+export default Menu;

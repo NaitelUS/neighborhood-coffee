@@ -10,24 +10,33 @@ const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
 export const handler: Handler = async (event) => {
   try {
-    const id = event.queryStringParameters?.id;
+    // 🧩 Si viene ?id=TNC-###, buscamos solo esa orden
+    const params = event.queryStringParameters || {};
+    const orderId = params.id;
 
-    if (id) {
-      // Buscar una orden específica
-      const records = await base(TABLE_ORDERS)
-        .select({ filterByFormula: `{OrderID} = '${id}'`, maxRecords: 1 })
+    if (orderId) {
+      console.log(`🔍 Fetching order by ID: ${orderId}`);
+
+      // Buscar la orden por OrderID
+      const orderRecords = await base(TABLE_ORDERS)
+        .select({
+          filterByFormula: `{OrderID} = '${orderId}'`,
+          maxRecords: 1,
+        })
         .firstPage();
 
-      if (records.length === 0)
+      if (orderRecords.length === 0) {
+        console.warn("⚠️ Order not found:", orderId);
         return {
           statusCode: 404,
-          body: JSON.stringify({ error: "Order not found" }),
+          body: JSON.stringify({ success: false, message: "Order not found" }),
         };
+      }
 
-      const record = records[0];
-      const orderId = record.fields["OrderID"];
+      const order = orderRecords[0];
+      const orderFields = order.fields;
 
-      // Buscar los items relacionados
+      // Buscar los productos de la orden en OrderItems
       const items = await base(TABLE_ORDERITEMS)
         .select({
           filterByFormula: `{Order} = '${orderId}'`,
@@ -35,55 +44,78 @@ export const handler: Handler = async (event) => {
         .all();
 
       const orderItems = items.map((i) => ({
-        product_name: i.fields["ProductName"],
-        option: i.fields["Option"],
-        price: i.fields["Price"],
-        addons: i.fields["AddOns"],
+        ProductName: i.get("ProductName") || "",
+        Option: i.get("Option") || "",
+        AddOns: i.get("AddOns") || "",
+        Price: i.get("Price") || 0,
+        Qty: i.get("Qty") || 1,
       }));
+
+      const fullOrder = {
+        id: order.id,
+        OrderID: orderFields["OrderID"],
+        OrderNumber: orderFields["OrderNumber"],
+        Name: orderFields["Name"],
+        Phone: orderFields["Phone"],
+        OrderType: orderFields["OrderType"],
+        Address: orderFields["Address"],
+        ScheduleDate: orderFields["ScheduleDate"],
+        ScheduleTime: orderFields["ScheduleTime"],
+        Subtotal: orderFields["Subtotal"],
+        Discount: orderFields["Discount"],
+        Total: orderFields["Total"],
+        Coupon: orderFields["Coupon"],
+        Notes: orderFields["Notes"],
+        Status: orderFields["Status"],
+        CreatedAt: orderFields["CreatedAt"],
+        Items: orderItems,
+      };
 
       return {
         statusCode: 200,
-        body: JSON.stringify({
-          id: orderId,
-          name: record.fields["Name"],
-          phone: record.fields["Phone"],
-          order_type: record.fields["OrderType"],
-          address: record.fields["Address"],
-          total: record.fields["Total"],
-          status: record.fields["Status"],
-          schedule_date: record.fields["ScheduleDate"],
-          schedule_time: record.fields["ScheduleTime"],
-          notes: record.fields["Notes"],
-          items: orderItems,
-        }),
+        body: JSON.stringify(fullOrder), // ✅ devolvemos objeto, no array
       };
     }
 
-    // Si no hay ID → devolver todas las órdenes
+    // 🧾 Si no hay ?id=, devolvemos todas las órdenes
     const records = await base(TABLE_ORDERS)
-      .select({ sort: [{ field: "CreatedTime", direction: "desc" }] })
+      .select({
+        sort: [{ field: "OrderNumber", direction: "desc" }],
+        view: "Grid view",
+      })
       .all();
 
-    const orders = records.map((r) => ({
-      id: r.fields["OrderID"],
-      name: r.fields["Name"],
-      phone: r.fields["Phone"],
-      order_type: r.fields["OrderType"],
-      address: r.fields["Address"],
-      total: r.fields["Total"],
-      status: r.fields["Status"],
-      schedule_date: r.fields["ScheduleDate"],
-      schedule_time: r.fields["ScheduleTime"],
-      notes: r.fields["Notes"],
-      created_at: r.fields["CreatedTime"],
+    const allOrders = records.map((r) => ({
+      id: r.id,
+      OrderID: r.get("OrderID"),
+      OrderNumber: r.get("OrderNumber"),
+      Name: r.get("Name"),
+      Phone: r.get("Phone"),
+      OrderType: r.get("OrderType"),
+      Address: r.get("Address"),
+      ScheduleDate: r.get("ScheduleDate"),
+      ScheduleTime: r.get("ScheduleTime"),
+      Subtotal: r.get("Subtotal"),
+      Discount: r.get("Discount"),
+      Total: r.get("Total"),
+      Coupon: r.get("Coupon"),
+      Notes: r.get("Notes"),
+      Status: r.get("Status"),
+      CreatedAt: r.get("CreatedAt"),
     }));
 
-    return { statusCode: 200, body: JSON.stringify(orders) };
-  } catch (err) {
-    console.error("Error in orders-get:", err);
+    return {
+      statusCode: 200,
+      body: JSON.stringify(allOrders),
+    };
+  } catch (err: any) {
+    console.error("❌ Error fetching orders:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to fetch orders" }),
+      body: JSON.stringify({
+        success: false,
+        error: err.message || "Failed to fetch orders",
+      }),
     };
   }
 };

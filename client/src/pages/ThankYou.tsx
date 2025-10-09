@@ -1,157 +1,76 @@
 import React, { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-
-interface Order {
-  id: string;
-  name: string;
-  phone: string;
-  order_type: string;
-  address?: string;
-  total: number;
-  subtotal?: number;
-  discount?: number;
-  coupon?: string;
-  schedule_date?: string;
-  schedule_time?: string;
-  notes?: string;
-  items?: { product_name: string; option?: string; addons?: string; price?: number }[];
-}
 
 export default function ThankYou() {
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const orderId = searchParams.get("id");
+  const [order, setOrder] = useState<any>(null);
+  const [items, setItems] = useState<any[]>([]);
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id") || "";
 
   useEffect(() => {
-    if (!orderId) return;
-    fetch(`/.netlify/functions/orders-get?id=${orderId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.id) setOrder(data);
-      })
-      .catch((err) => console.error("Error fetching order:", err))
-      .finally(() => setLoading(false));
-  }, [orderId]);
+    async function load() {
+      try {
+        const res = await fetch(`/.netlify/functions/orders-get?id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (data && data.success) {
+          setOrder(data.order);
+          setItems(data.items || []);
+        }
+      } catch (e) {
+        console.error("ThankYou fetch error:", e);
+      }
+    }
+    if (id) load();
+  }, [id]);
 
-  if (loading)
-    return (
-      <div className="text-center py-20 text-gray-600">
-        Loading your order...
-      </div>
-    );
+  if (!id) return <div className="mt-10 text-center text-gray-500">Order not found</div>;
+  if (!order) return <div className="mt-10 text-center text-gray-400">Loading order...</div>;
 
-  if (!order)
-    return (
-      <div className="text-center py-20">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Order not found. Please check your link.
-        </h1>
-        <Link to="/" className="text-teal-600 underline font-medium">
-          Return to Menu
-        </Link>
-      </div>
-    );
-
-  const discountPct = order.discount ? order.discount * 100 : 0;
+  const hasDiscount = Number(order.Discount) > 0;
+  const coupon = order.Coupon || "";
+  const discountRate = order.DiscountRate ? Number(order.DiscountRate) : null; // si lo guardas
 
   return (
-    <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 mt-10">
-      <h1 className="text-3xl font-bold text-center text-teal-700 mb-4">
-        🎉 Your order has been received!
-      </h1>
+    <div className="bg-white shadow-md rounded-xl p-4 space-y-3">
+      <h1 className="text-2xl font-semibold text-[#00454E]">Thank you!</h1>
+      <p className="text-sm text-gray-600">Order ID: <strong>{order.OrderID}</strong></p>
 
-      <div className="text-center mb-6">
-        <p className="text-gray-700 font-mono text-lg mb-1">
-          Order #: {order.id}
-        </p>
-        <p className="text-gray-500 text-sm">
-          {order.order_type} — {order.schedule_date} {order.schedule_time}
-        </p>
-      </div>
+      <h2 className="text-lg font-semibold mt-3">Your Order</h2>
+      <ul className="divide-y divide-gray-200">
+        {items.map((it, idx) => (
+          <li key={idx} className="flex justify-between py-2">
+            <div>
+              <p className="font-medium">
+                {it.ProductName}
+                {it.Option ? ` (${it.Option})` : ""}
+              </p>
+              {it.AddOns && <p className="text-xs text-gray-500">Add-ons: {it.AddOns}</p>}
+            </div>
+            <div className="font-semibold">${Number(it.Price || 0).toFixed(2)}</div>
+          </li>
+        ))}
+      </ul>
 
-      {/* 🧾 Lista de productos */}
-      {order.items && order.items.length > 0 && (
-        <div className="border-t border-b py-4 mb-4 text-sm text-gray-800 space-y-2">
-          {order.items.map((item, idx) => {
-            const hasOptionInName =
-              item.option && item.product_name?.includes(`(${item.option})`);
-            return (
-              <div key={idx} className="flex justify-between">
-                <div>
-                  <strong>{item.product_name}</strong>{" "}
-                  {!hasOptionInName && item.option && (
-                    <span className="text-gray-500">({item.option})</span>
-                  )}
-                  {item.addons && item.addons.trim() !== "" && (
-                    <p className="text-gray-500 text-xs">+ {item.addons}</p>
-                  )}
-                </div>
-                {item.price && (
-                  <p className="font-medium">
-                    ${Number(item.price).toFixed(2)}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+      <div className="border-t pt-3 text-sm space-y-1">
+        <div className="flex justify-between">
+          <span>Subtotal</span>
+          <span>${Number(order.Subtotal || 0).toFixed(2)}</span>
         </div>
-      )}
 
-      {/* 💰 Totales */}
-      <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4">
-        {order.subtotal && (
-          <p>
-            Subtotal:{" "}
-            <span className="font-semibold">
-              ${order.subtotal.toFixed(2)}
-            </span>
-          </p>
+        {hasDiscount && (
+          <div className="flex justify-between text-green-700">
+            <span>Discount {coupon ? `(${coupon}${discountRate ? ` – ${(discountRate*100).toFixed(0)}%` : ""})` : ""}</span>
+            <span>- ${Number(order.Discount || 0).toFixed(2)}</span>
+          </div>
         )}
-        {order.coupon && (
-          <p className="text-green-700">
-            Discount ({order.coupon}): -{discountPct.toFixed(0)}%
-          </p>
-        )}
-        <p className="text-lg font-bold text-teal-800 mt-2">
-          Total: ${Number(order.total).toFixed(2)}
-        </p>
+
+        <div className="flex justify-between font-semibold text-[#00454E] text-base">
+          <span>Total</span>
+          <span>${Number(order.Total || 0).toFixed(2)}</span>
+        </div>
       </div>
 
-      {/* 👤 Información del cliente */}
-      <div className="text-sm text-gray-700 mb-4">
-        <p>
-          <strong>👤 Name:</strong> {order.name}
-        </p>
-        <p>
-          <strong>📞 Phone:</strong> {order.phone}
-        </p>
-        {order.address && (
-          <p>
-            <strong>🏠 Address:</strong> {order.address}
-          </p>
-        )}
-        {order.notes && (
-          <p>
-            <strong>📝 Notes:</strong> {order.notes}
-          </p>
-        )}
-      </div>
-
-      {/* Botones */}
-      <div className="text-center space-y-3">
-        <Link
-          to={`/status?id=${order.id}`}
-          className="block w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-700"
-        >
-          Check Order Status
-        </Link>
-        <Link
-          to="/"
-          className="block w-full border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-100"
-        >
-          Back to Menu
-        </Link>
+      <div className="text-center mt-4">
+        <a href="/" className="underline text-[#00454E]">Back to Menu</a>
       </div>
     </div>
   );

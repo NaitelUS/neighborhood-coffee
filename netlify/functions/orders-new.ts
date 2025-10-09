@@ -1,7 +1,7 @@
 import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
-// Inicializar conexión
+// 🔗 Inicializar conexión con Airtable
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
@@ -9,7 +9,7 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
 const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
-// 🧠 Obtener siguiente número consecutivo
+// 🧮 Obtener siguiente número consecutivo
 async function getNextOrderNumber() {
   try {
     const records = await base(TABLE_ORDERS)
@@ -35,11 +35,10 @@ export const handler: Handler = async (event) => {
     const orderData = JSON.parse(event.body || "{}");
     console.log("🧾 Incoming order:", orderData);
 
-    // Generar número consecutivo
     const nextNumber = await getNextOrderNumber();
     const shortId = `TNC-${String(nextNumber).padStart(3, "0")}`;
 
-    // Crear orden principal
+    // ✅ Crear registro en tabla Orders
     const createdOrder = await base(TABLE_ORDERS).create([
       {
         fields: {
@@ -51,45 +50,40 @@ export const handler: Handler = async (event) => {
           Address: orderData.address || "",
           ScheduleDate: orderData.schedule_date || "",
           ScheduleTime: orderData.schedule_time || "",
-          Subtotal: orderData.subtotal,
-          Discount: orderData.discount,
-          Total: orderData.total,
+          Subtotal: orderData.subtotal || 0,
+          Discount: orderData.discount || 0,
+          Total: orderData.total || 0,
           Coupon: orderData.coupon_code || "",
           Notes: orderData.notes || "",
           Status: "Received",
+          CreatedAt: new Date().toISOString(),
         },
       },
     ]);
 
     console.log(`✅ Order created: ${shortId}`);
 
-    // Crear los ítems relacionados (duplicando según qty)
+    // 🧾 Crear registros en tabla OrderItems
     if (Array.isArray(orderData.items) && orderData.items.length > 0) {
-      const orderItems: any[] = [];
+      const orderItems = orderData.items.map((item: any) => ({
+        fields: {
+          Order: shortId, // 👈 campo existente en tu tabla
+          ProductName: item.name || "",
+          Option: item.option || "",
+          Price: Number(item.price) || 0,
+          Qty: Number(item.qty) || 1,
+          AddOns: Array.isArray(item.addons)
+            ? item.addons
+                .map(
+                  (a: any) =>
+                    `${a?.name || "Unnamed"} ($${(a?.price || 0).toFixed(2)})`
+                )
+                .join(", ")
+            : "",
+        },
+      }));
 
-      for (const item of orderData.items) {
-        const qty = item.qty || 1;
-
-        for (let i = 0; i < qty; i++) {
-          orderItems.push({
-            fields: {
-              Order: shortId,
-              ProductName: item.name,
-              Option: item.option || "",
-              Price: item.price || 0,
-              AddOns: Array.isArray(item.addons)
-                ? item.addons
-                    .map(
-                      (a: any) =>
-                        `${a?.name || "Unnamed"} ($${(a?.price || 0).toFixed(2)})`
-                    )
-                    .join(", ")
-                : "",
-            },
-          });
-        }
-      }
-
+      // Airtable solo permite 10 registros por batch
       while (orderItems.length > 0) {
         const batch = orderItems.splice(0, 10);
         await base(TABLE_ORDERITEMS).create(batch);
@@ -100,16 +94,21 @@ export const handler: Handler = async (event) => {
       console.warn("⚠️ No order items found in request");
     }
 
-    // Respuesta exitosa
+    // 🟢 Respuesta al frontend
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, orderId: shortId }),
     };
-  } catch (err) {
-    console.error("❌ Error creating order:", err);
+  } catch (err: any) {
+    console.error("❌ Error creating order (details):", err);
+
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: "Failed to create order" }),
+      body: JSON.stringify({
+        success: false,
+        error: err.message || "Failed to create order",
+        details: err, // 👈 esto mostrará más información en los logs de Netlify
+      }),
     };
   }
 };

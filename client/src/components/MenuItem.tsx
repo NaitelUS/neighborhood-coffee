@@ -1,161 +1,121 @@
 import React, { useState, useContext } from "react";
-import { CartContext } from "@/context/CartContext";
-import AddOnSelector from "@/components/AddOnSelector";
+import { CartContext } from "../context/CartContext";
+import AddOnSelector from "./AddOnSelector";
 
 interface AddOn {
-  id: string;
   name: string;
   price: number;
-  description?: string;
 }
 
 interface MenuItemProps {
-  product: {
-    id: string;
-    name: string;
-    description?: string;
-    price: number;
-    image_url?: string;
-    is_hot?: boolean;
-    is_iced?: boolean;
-    category?: string;
-  };
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  options?: string[];
+  addons?: AddOn[];
 }
 
-export default function MenuItem({ product }: MenuItemProps) {
+const MenuItem: React.FC<MenuItemProps> = ({
+  id,
+  name,
+  description,
+  price,
+  options = [],
+  addons = [],
+}) => {
   const { addToCart } = useContext(CartContext);
 
-  const [selectedOption, setSelectedOption] = useState<string>(
-    product.is_hot ? "Hot" : product.is_iced ? "Iced" : ""
-  );
-  const [customize, setCustomize] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(options[0] || "");
   const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
+  const [quantity, setQuantity] = useState(1);
 
-  const totalPrice =
-    product.price + selectedAddOns.reduce((sum, a) => sum + a.price, 0);
-
-  const isPastry = product.category?.toLowerCase() === "pastry";
+  const handleAddOnChange = (addon: AddOn, isChecked: boolean) => {
+    setSelectedAddOns((prev) =>
+      isChecked
+        ? [...prev, addon]
+        : prev.filter((a) => a.name !== addon.name)
+    );
+  };
 
   const handleAddToCart = () => {
-    if (isPastry) return;
-
-    if (!selectedOption && !isPastry) {
-      alert("Please select Hot or Iced before adding to your order.");
-      return;
-    }
-
-    const itemName = isPastry
-      ? product.name
-      : `${product.name} (${selectedOption})`;
-
     addToCart({
-      id: product.id,
-      name: itemName,
-      price: totalPrice,
+      id,
+      name,
       option: selectedOption,
-      addons: !isPastry
-        ? selectedAddOns.map((a) => ({
-            name: a.name,
-            price: a.price,
-          }))
-        : [],
+      price,
+      addons: selectedAddOns,
+      quantity,
     });
-
-    alert(`${itemName} added to your order!`);
+    setSelectedAddOns([]);
+    setQuantity(1);
   };
 
   return (
-    <div className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-all">
-      {/* Imagen */}
-      <img
-        src={product.image_url || "/attached_assets/tnclogo.png"}
-        alt={product.name}
-        className="w-full h-48 object-cover rounded-md mb-3"
-      />
+    <div className="bg-white shadow-md rounded-2xl p-4 mb-4 border border-gray-100 hover:shadow-lg transition">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-[#00454E]">{name}</h2>
+          {description && <p className="text-sm text-gray-600">{description}</p>}
+          <p className="text-md font-bold mt-1">${price.toFixed(2)}</p>
+        </div>
+      </div>
 
-      {/* Nombre y descripción */}
-      <h2 className="text-lg font-semibold mb-1">{product.name}</h2>
-      <p className="text-sm text-gray-600 mb-2">
-        {product.description || "Delicious item from our menu"}
-      </p>
-
-      {/* 🥐 Coming Soon */}
-      {isPastry && (
-        <p className="text-sm text-[#1D9099] font-medium mb-3">
-          🥐 Coming Soon
-        </p>
-      )}
-
-      {/* Hot/Iced solo si no es empanada */}
-      {!isPastry && (
-        <div className="flex gap-2 mb-3">
-          {product.is_hot && (
-            <button
-              onClick={() => setSelectedOption("Hot")}
-              className={`px-3 py-1 rounded-md border ${
-                selectedOption === "Hot"
-                  ? "bg-[#1D9099] text-white border-[#00454E]"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-[#e0f7f8]"
-              }`}
-            >
-              Hot
-            </button>
-          )}
-          {product.is_iced && (
-            <button
-              onClick={() => setSelectedOption("Iced")}
-              className={`px-3 py-1 rounded-md border ${
-                selectedOption === "Iced"
-                  ? "bg-[#1D9099] text-white border-[#00454E]"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-[#e0f7f8]"
-              }`}
-            >
-              Iced
-            </button>
-          )}
+      {/* Opciones (Hot / Iced, etc.) */}
+      {options.length > 0 && (
+        <div className="mt-3">
+          <label className="text-sm font-medium text-gray-700 mr-2">Option:</label>
+          <select
+            value={selectedOption}
+            onChange={(e) => setSelectedOption(e.target.value)}
+            className="border rounded-lg px-2 py-1 text-sm"
+          >
+            {options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
-      {/* Customize solo bebidas */}
-      {!isPastry && (
-        <>
-          <label className="flex items-center gap-2 mb-3">
-            <input
-              type="checkbox"
-              checked={customize}
-              onChange={(e) => setCustomize(e.target.checked)}
-            />
-            <span className="font-medium">Customize your drink</span>
-          </label>
-
-          {customize && (
-            <AddOnSelector
-              onSelect={(addons) => {
-                setSelectedAddOns(addons);
-              }}
-            />
-          )}
-        </>
+      {/* AddOns */}
+      {addons.length > 0 && (
+        <div className="mt-3">
+          <AddOnSelector
+            addons={addons}
+            selectedAddOns={selectedAddOns}
+            onChange={handleAddOnChange}
+          />
+        </div>
       )}
 
-      {/* Total + botón */}
-      <div className="mt-3 flex justify-between items-center">
-        <span className="text-lg font-semibold text-gray-800">
-          ${totalPrice.toFixed(2)}
-        </span>
-
+      {/* Quantity Selector */}
+      <div className="mt-3 flex items-center space-x-2">
         <button
-          onClick={handleAddToCart}
-          disabled={isPastry}
-          className={`px-4 py-2 rounded-md font-medium ${
-            isPastry
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-[#1D9099] text-white hover:bg-[#00454E]"
-          }`}
+          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+          className="px-2 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
         >
-          {isPastry ? "Coming Soon" : "Add to Order"}
+          −
+        </button>
+        <span className="w-6 text-center">{quantity}</span>
+        <button
+          onClick={() => setQuantity((q) => q + 1)}
+          className="px-2 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
+        >
+          +
         </button>
       </div>
+
+      {/* Botón Agregar */}
+      <button
+        onClick={handleAddToCart}
+        className="w-full mt-4 bg-[#00454E] text-white rounded-xl py-2 font-semibold hover:bg-[#1D9099] transition"
+      >
+        Add to Order
+      </button>
     </div>
   );
-}
+};
+
+export default MenuItem;
