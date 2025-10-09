@@ -25,7 +25,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
   addons = [],
 }) => {
   const { addToCart } = useContext(CartContext);
-
   const [selectedOption, setSelectedOption] = useState(options[0] || "");
   const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
   const [quantity, setQuantity] = useState(1);
@@ -52,20 +51,15 @@ const MenuItem: React.FC<MenuItemProps> = ({
   };
 
   return (
-    <div className="bg-white shadow-md rounded-2xl p-4 mb-4 border border-gray-100 hover:shadow-lg transition">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-[#00454E]">{name}</h2>
-          {description && (
-            <p className="text-sm text-gray-600">{description}</p>
-          )}
-          <p className="text-md font-bold mt-1">
-            ${Number(price ?? 0).toFixed(2)}
-          </p>
-        </div>
-      </div>
+    <div>
+      <h2 className="text-lg font-semibold text-[#00454E]">{name}</h2>
+      {description && (
+        <p className="text-sm text-gray-600">{description}</p>
+      )}
+      <p className="text-md font-bold mt-1">
+        ${Number(price ?? 0).toFixed(2)}
+      </p>
 
-      {/* Opciones (Hot / Iced, etc.) */}
       {options.length > 0 && (
         <div className="mt-3">
           <label className="text-sm font-medium text-gray-700 mr-2">
@@ -85,7 +79,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
         </div>
       )}
 
-      {/* AddOns */}
       {addons.length > 0 && (
         <div className="mt-3">
           <AddOnSelector
@@ -96,7 +89,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
         </div>
       )}
 
-      {/* Quantity Selector */}
       <div className="mt-3 flex items-center space-x-2">
         <button
           onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -113,7 +105,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
         </button>
       </div>
 
-      {/* Botón Agregar */}
       <button
         onClick={handleAddToCart}
         className="w-full mt-4 bg-[#00454E] text-white rounded-xl py-2 font-semibold hover:bg-[#1D9099] transition"
