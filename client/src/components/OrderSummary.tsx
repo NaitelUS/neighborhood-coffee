@@ -2,82 +2,69 @@ import React, { useContext } from "react";
 import { CartContext } from "../context/CartContext";
 import CouponField from "./CouponField";
 
-export default function OrderSummary() {
-  const cart = useContext(CartContext);
-  if (!cart) return null;
+const OrderSummary: React.FC = () => {
+  const { cart, subtotal, discount, total } = useContext(CartContext);
 
-  const { cartItems, removeItem, subtotal, discountRate, discount, total, appliedCoupon, updateQuantity } = cart;
-
-  if (!Array.isArray(cartItems) || cartItems.length === 0) {
-    return <div className="text-center text-gray-500 mt-6">Your cart is empty ☕</div>;
+  if (cart.length === 0) {
+    return (
+      <div className="p-4 bg-white rounded-2xl shadow-md text-center">
+        <p className="text-gray-600">Your cart is empty.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-4 space-y-3">
+    <div className="p-4 bg-white rounded-2xl shadow-md border border-gray-100">
       <h2 className="text-lg font-semibold text-[#00454E] mb-3">Your Order</h2>
 
-      <ul className="divide-y divide-gray-200">
-        {cartItems.map((item) => (
-          <li key={item.id} className="flex justify-between items-start py-2">
-            <div>
-              <p className="font-medium">
-                {item.name}{item.option ? ` (${item.option})` : ""}
-              </p>
-              {Array.isArray(item.addons) && item.addons.length > 0 && (
-                <p className="text-xs text-gray-500">
-                  Add-ons: {item.addons.map(a => `${a.name} ($${a.price.toFixed(2)})`).join(", ")}
-                </p>
+      {/* 🧾 Lista de productos */}
+      <ul className="divide-y divide-gray-200 mb-4">
+        {cart.map((item, index) => (
+          <li key={index} className="py-2 flex justify-between items-center">
+            <div className="flex flex-col text-sm">
+              <span className="font-medium">
+                {item.name} {item.option ? `(${item.option})` : ""}
+              </span>
+              {item.addons && item.addons.length > 0 && (
+                <span className="text-gray-500 text-xs">
+                  {item.addons.map((a) => a.name).join(", ")}
+                </span>
               )}
-              <div className="flex items-center gap-2 mt-1">
-                <button
-                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                  className="px-2 py-0.5 border rounded"
-                >
-                  −
-                </button>
-                <span className="text-sm">Qty: {item.quantity}</span>
-                <button
-                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  className="px-2 py-0.5 border rounded"
-                >
-                  +
-                </button>
-              </div>
+              <span className="text-xs text-gray-400">
+                Qty: {item.quantity}
+              </span>
             </div>
-            <div className="text-right">
-              <p className="font-semibold">
-                ${(item.price * item.quantity + (item.addons?.reduce((a,b)=>a+b.price,0)||0) * item.quantity).toFixed(2)}
-              </p>
-              <button onClick={() => removeItem(item.id)} className="text-xs text-red-500 hover:underline">
-                Remove
-              </button>
-            </div>
+            <span className="font-medium text-sm">
+              ${(item.price * item.quantity).toFixed(2)}
+            </span>
           </li>
         ))}
       </ul>
 
-      <CouponField />
-
-      <div className="border-t pt-3 text-sm space-y-1">
+      {/* 💲Resumen de totales */}
+      <div className="border-t border-gray-200 pt-3 text-sm">
         <div className="flex justify-between">
           <span>Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
 
-        {discountRate > 0 && (
-          <div className="flex justify-between text-green-700">
-            <span>
-              Discount {appliedCoupon ? `(${appliedCoupon} – ${(discountRate*100).toFixed(0)}%)` : ""}
-            </span>
-            <span>- ${discount.toFixed(2)}</span>
-          </div>
-        )}
+        <div className="flex justify-between text-gray-600">
+          <span>Discount</span>
+          <span>− ${(subtotal * discount).toFixed(2)}</span>
+        </div>
 
-        <div className="flex justify-between font-semibold text-[#00454E] text-base">
+        <div className="flex justify-between font-semibold text-[#00454E] mt-2">
           <span>Total</span>
           <span>${total.toFixed(2)}</span>
         </div>
       </div>
+
+      {/* 🏷️ Campo de cupón */}
+      <div className="mt-4">
+        <CouponField />
+      </div>
     </div>
   );
-}
+};
+
+export default OrderSummary;
