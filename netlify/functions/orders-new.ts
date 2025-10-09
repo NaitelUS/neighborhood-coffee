@@ -99,11 +99,17 @@ export const handler: Handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({ success: true, orderId: shortId }),
     };
-  } catch (err) {
-    console.error("❌ Error creating order:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ success: false, error: "Failed to create order" }),
-    };
-  }
-};
+    
+ } catch (err: any) {
+  console.error("❌ Error creating order (details):", err);
+
+  return {
+    statusCode: 500,
+    body: JSON.stringify({
+      success: false,
+      error: err.message || "Failed to create order",
+      details: err, // 👈 esto mostrará más información en los logs de Netlify
+    }),
+  };
+}
+
