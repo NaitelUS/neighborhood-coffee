@@ -8,24 +8,29 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { cart } = useContext(CartContext);
 
-  // 🧮 Contador total de artículos en carrito
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Ocultar el carrito en algunas páginas
   const hideCart =
     location.pathname === "/thank-you" || location.pathname === "/status";
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 bg-[#00454E] text-white shadow-md">
-      {/* Logo o Nombre del Negocio */}
-      <h1
-        className="text-xl font-semibold cursor-pointer"
+    <header className="flex items-center justify-between px-4 py-3 bg-white text-[#00454E] shadow-md">
+      {/* Logo + Nombre */}
+      <div
+        className="flex items-center gap-3 cursor-pointer"
         onClick={() => navigate("/")}
       >
-        The Neighborhood Coffee
-      </h1>
+        <img
+          src="/attached_assets/tnclogo.png"
+          alt="The Neighborhood Coffee logo"
+          className="h-10 w-auto"
+        />
+        <h1 className="text-xl font-semibold tracking-tight">
+          The Neighborhood Coffee
+        </h1>
+      </div>
 
-      {/* Ícono del carrito (solo si no estamos en thank-you o status) */}
+      {/* Ícono del carrito */}
       {!hideCart && (
         <div
           className="relative cursor-pointer"
