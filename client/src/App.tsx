@@ -1,34 +1,38 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import { CartProvider } from "./context/CartContext";
-
-// 🧩 Pages
-import Menu from "./pages/Menu";
+import Header from "./components/Header";
+import Menu from "./components/Menu"; // ✅ restaurado
 import OrderPage from "./pages/OrderPage";
 import ThankYou from "./pages/ThankYou";
+import OrderStatus from "./pages/OrderStatus";
 import AdminOrders from "./pages/AdminOrders";
 import DeliveryPage from "./pages/DeliveryPage";
-import OrderStatus from "./pages/OrderStatus";
 
-// 🧭 Global UI
-import Header from "./components/Header";
+import { CartProvider } from "./context/CartContext";
 
-function App() {
+export default function App() {
   return (
     <CartProvider>
       <Router>
-        <div className="min-h-screen bg-gray-50 text-gray-900">
+        <div className="min-h-screen bg-gray-50">
           <Header />
-          <main className="p-4 max-w-3xl mx-auto">
+          <main className="max-w-3xl mx-auto p-4">
             <Routes>
               <Route path="/" element={<Menu />} />
               <Route path="/order" element={<OrderPage />} />
               <Route path="/thank-you" element={<ThankYou />} />
+              <Route path="/status" element={<OrderStatus />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/delivery" element={<DeliveryPage />} />
-              <Route path="/status" element={<OrderStatus />} />
-              <Route path="*" element={<Menu />} />
+              <Route
+                path="*"
+                element={
+                  <div className="text-center mt-20 text-gray-600 text-lg">
+                    Page not found
+                  </div>
+                }
+              />
             </Routes>
           </main>
         </div>
@@ -36,5 +40,3 @@ function App() {
     </CartProvider>
   );
 }
-
-export default App;
