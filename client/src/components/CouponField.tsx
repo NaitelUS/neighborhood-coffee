@@ -1,105 +1,62 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useCart } from "../context/CartContext";
 
 export default function CouponField() {
-  const { setDiscountRate, setAppliedCoupon, appliedCoupon } = useCart();
+  const { applyCoupon } = useCart();
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [loading, setLoading] = useState(false);
 
-  const [coupon, setCoupon] = useState("");
-  const [status, setStatus] = useState<"idle" | "valid" | "invalid" | "error">(
-    "idle"
-  );
-  const [isApplying, setIsApplying] = useState(false);
-
-  const message = useMemo(() => {
-    switch (status) {
-      case "valid":
-        return "✅ Coupon applied!";
-      case "invalid":
-        return "❌ Invalid or expired coupon.";
-      case "error":
-        return "⚠️ Unable to verify coupon right now. Please try again later.";
-      default:
-        return "";
-    }
-  }, [status]);
-
-  const handleApplyCoupon = async () => {
-    if (!coupon.trim()) return;
-    setIsApplying(true);
+  const handleApply = async () => {
+    if (!code) return;
+    setLoading(true);
 
     try {
-      const response = await fetch(
-        `/.netlify/functions/coupons?code=${coupon.trim().toUpperCase()}`
-      );
-      const data = await response.json();
+      const res = await fetch("/.netlify/functions/coupons?code=" + code);
+      const data = await res.json();
 
-      if (data.success && data.percent_off > 0) {
-        const rate = data.percent_off / 100;
-        setDiscountRate(rate);
-        setAppliedCoupon(coupon.trim().toUpperCase());
+      if (data.valid && data.percent_off) {
+        applyCoupon(code, data.percent_off);
         setStatus("valid");
       } else {
-        setDiscountRate(0);
-        setAppliedCoupon(null);
         setStatus("invalid");
       }
-    } catch (error) {
-      console.error("❌ Coupon validation error:", error);
-      setStatus("error");
+    } catch (err) {
+      console.error("Coupon error:", err);
+      setStatus("invalid");
     } finally {
-      setIsApplying(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="bg-gray-50 border rounded-lg p-4 mb-6">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Discount Code
-      </label>
-      <div className="flex gap-2">
+    <div className="mt-3">
+      <label className="text-sm font-medium text-gray-700">Coupon</label>
+      <div className="flex mt-1 gap-2">
         <input
           type="text"
-          value={coupon}
-          onChange={(e) => setCoupon(e.target.value)}
-          placeholder="Enter coupon code"
-          className="flex-1 border rounded-lg px-3 py-2 text-sm"
-          disabled={isApplying || status === "valid"}
+          placeholder="Enter code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          className="flex-1 border rounded-lg p-2"
         />
         <button
-          type="button"
-          onClick={handleApplyCoupon}
-          disabled={isApplying || status === "valid"}
-          className={`px-4 py-2 rounded-lg font-medium text-white ${
-            status === "valid"
-              ? "bg-green-500 cursor-not-allowed"
-              : "bg-[#00454E] hover:bg-[#1D9099]"
-          }`}
+          onClick={handleApply}
+          disabled={loading}
+          className="bg-[#00454E] text-white px-3 py-2 rounded-lg text-sm"
         >
-          {isApplying
-            ? "Applying..."
-            : status === "valid"
-            ? "Applied"
-            : "Apply"}
+          {loading ? "..." : "Apply"}
         </button>
       </div>
 
-      {message && (
-        <p
-          className={`mt-2 text-sm ${
-            status === "valid"
-              ? "text-green-600"
-              : status === "invalid"
-              ? "text-red-500"
-              : "text-yellow-600"
-          }`}
-        >
-          {message}
+      {status === "valid" && (
+        <p className="text-green-700 text-xs mt-1">
+          ✅ Coupon applied successfully
         </p>
       )}
-
-      {appliedCoupon && status === "valid" && (
-        <p className="text-xs text-gray-500 mt-1">
-          Coupon: <strong>{appliedCoupon}</strong>
+      {status === "invalid" && (
+        <p className="text-red-600 text-xs mt-1">
+          ❌ Invalid or expired coupon
         </p>
       )}
     </div>
