@@ -67,7 +67,7 @@ export const handler: Handler = async (event) => {
     if (Array.isArray(orderData.items) && orderData.items.length > 0) {
       const orderItems = orderData.items.map((item: any) => ({
         fields: {
-          Order: shortId, // 👈 este campo debe existir en tu tabla OrderItems
+          Order: shortId, // 👈 campo existente en tu tabla
           ProductName: item.name || "",
           Option: item.option || "",
           Price: Number(item.price) || 0,
@@ -99,17 +99,16 @@ export const handler: Handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({ success: true, orderId: shortId }),
     };
-    
- } catch (err: any) {
-  console.error("❌ Error creating order (details):", err);
+  } catch (err: any) {
+    console.error("❌ Error creating order (details):", err);
 
-  return {
-    statusCode: 500,
-    body: JSON.stringify({
-      success: false,
-      error: err.message || "Failed to create order",
-      details: err, // 👈 esto mostrará más información en los logs de Netlify
-    }),
-  };
-}
-
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        error: err.message || "Failed to create order",
+        details: err, // 👈 esto mostrará más información en los logs de Netlify
+      }),
+    };
+  }
+};
