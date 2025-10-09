@@ -12,14 +12,15 @@ export const handler = async () => {
       id: r.id,
       name: r.get("Name"),
       description: r.get("Description") || "",
+      category: r.get("Category") || "Other",
       price: r.get("Price") || 0,
-      image:
+      image:                               // 👈 renombramos image_url → image
         r.get("Image")?.[0]?.url ||
         r.get("image_url") ||
-        "", // Airtable o ruta local
-      category: r.get("Category") || "Other",
-      options: r.get("Options") || [],
-      addons: r.get("AddOns") || [],
+        "",
+      is_hot: r.get("is_hot") || false,
+      is_iced: r.get("is_iced") || false,
+      available: r.get("available") || true,
     }));
 
     return {
