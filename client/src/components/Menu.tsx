@@ -6,10 +6,9 @@ interface Product {
   name: string;
   description?: string;
   price: number;
-  options?: string[];
-  addons?: { name: string; price: number }[];
-  image?: string;
   category?: string;
+  image?: string;
+  image_url?: string;
 }
 
 const Menu: React.FC = () => {
@@ -21,39 +20,20 @@ const Menu: React.FC = () => {
       try {
         const response = await fetch("/.netlify/functions/products");
         const data = await response.json();
-
         if (Array.isArray(data)) setProducts(data);
-        else if (Array.isArray(data.records)) {
-          setProducts(
-            data.records.map((r: any) => ({
-              id: r.id,
-              name: r.fields.Name,
-              description: r.fields.Description || "",
-              price: r.fields.Price || 0,
-              image:
-                r.fields.Image?.[0]?.url ||
-                r.fields.image_url ||
-                "",
-              category: r.fields.Category || "Other",
-              options: r.fields.Options || [],
-              addons: r.fields.AddOns || [],
-            }))
-          );
-        }
         setLoading(false);
       } catch (err) {
         console.error("⚠️ Error loading menu:", err);
         setLoading(false);
       }
     };
-
     fetchMenu();
   }, []);
 
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen text-gray-500">
-        Loading menu…
+        Brewing your menu…
       </div>
     );
 
@@ -72,42 +52,55 @@ const Menu: React.FC = () => {
     return acc;
   }, {});
 
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h2 className="text-3xl font-bold text-[#00454E] mb-6 text-center">
-        Our Menu
-      </h2>
+  const categoryIcons: Record<string, string> = {
+    Coffee: "☕",
+    Pastry: "🥐",
+    Special: "✨",
+    Other: "🍽️",
+  };
 
-      {Object.keys(grouped).map((category) => (
-        <section key={category} className="mb-10">
-          <h3 className="text-2xl font-semibold text-[#00454E] mb-4 border-b pb-2">
-            {category}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {grouped[category].map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition overflow-hidden"
-              >
-                {product.image && (
-                  <img
-                    src={
-                      product.image.startsWith("/attached_assets/")
-                        ? product.image
-                        : `/attached_assets/${product.image}`
-                    }
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <div className="p-4">
-                  <MenuItem {...product} />
+  return (
+    <div className="min-h-screen bg-[#f7f3ef] py-10">
+      <div className="max-w-6xl mx-auto px-6">
+        <h2 className="text-4xl font-serif text-[#4a2e2b] mb-8 text-center">
+          Our Menu
+        </h2>
+
+        {Object.keys(grouped).map((category) => (
+          <section key={category} className="mb-12">
+            <div className="flex items-center justify-center mb-6">
+              <span className="text-3xl mr-2">{categoryIcons[category] || "☕"}</span>
+              <h3 className="text-2xl font-semibold text-[#4a2e2b] border-b-2 border-[#d4b996] pb-1">
+                {category}
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {grouped[category].map((product) => (
+                <div
+                  key={product.id}
+                  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-200 overflow-hidden border border-[#e6dfd8]"
+                >
+                  {(product.image || product.image_url) && (
+                    <img
+                      src={
+                        (product.image || product.image_url).startsWith("/attached_assets/")
+                          ? product.image || product.image_url
+                          : `/attached_assets/${product.image || product.image_url}`
+                      }
+                      alt={product.name}
+                      className="w-full h-48 object-cover rounded-t-2xl"
+                    />
+                  )}
+                  <div className="p-5">
+                    <MenuItem {...product} />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 };
