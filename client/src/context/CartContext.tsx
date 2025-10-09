@@ -12,14 +12,15 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   couponCode?: string;
-  discount?: number;
+  discountRate?: number;
 }
 
 interface CartContextType extends CartState {
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
-  applyCoupon: (code: string, discount: number) => void;
+  applyCoupon: (code: string, discountRate: number) => void;
+  getSubtotal: () => number;
   getTotal: () => number;
 }
 
@@ -51,7 +52,7 @@ function cartReducer(state: CartState, action: any): CartState {
       return {
         ...state,
         couponCode: action.payload.code,
-        discount: action.payload.discount,
+        discountRate: action.payload.discountRate,
       };
 
     default:
@@ -63,7 +64,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, {
     items: [],
     couponCode: undefined,
-    discount: 0,
+    discountRate: 0,
   });
 
   const addItem = (item: CartItem) => {
@@ -73,13 +74,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const removeItem = (id: string) => dispatch({ type: "REMOVE_ITEM", payload: id });
   const clearCart = () => dispatch({ type: "CLEAR_CART" });
-  const applyCoupon = (code: string, discount: number) =>
-    dispatch({ type: "APPLY_COUPON", payload: { code, discount } });
+
+  const applyCoupon = (code: string, discountRate: number) =>
+    dispatch({ type: "APPLY_COUPON", payload: { code, discountRate } });
+
+  const getSubtotal = () =>
+    state.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const getTotal = () => {
-    const list = Array.isArray(state.items) ? state.items : [];
-    const subtotal = list.reduce((acc, i) => acc + i.price * i.quantity, 0);
-    const discountAmount = subtotal * (state.discount || 0);
+    const subtotal = getSubtotal();
+    const discountAmount = subtotal * (state.discountRate || 0);
     return subtotal - discountAmount;
   };
 
@@ -91,6 +95,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeItem,
         clearCart,
         applyCoupon,
+        getSubtotal,
         getTotal,
       }}
     >
@@ -109,6 +114,7 @@ export function useCart() {
       removeItem: () => {},
       clearCart: () => {},
       applyCoupon: () => {},
+      getSubtotal: () => 0,
       getTotal: () => 0,
     };
   }
