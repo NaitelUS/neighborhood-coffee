@@ -1,15 +1,18 @@
-import React, { useContext } from "react";
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CartContext } from "@/context/CartContext";
+import { useCart } from "@/context/CartContext";
 import { ShoppingCart } from "lucide-react";
 
 export default function Header() {
-  const { cartItems } = useContext(CartContext);
+  const { cartItems } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Contador que suma cantidades (qty)
-  const totalItems = cartItems.reduce((sum, item) => sum + (item.qty || 1), 0);
+  // ✅ Contador que suma las cantidades (quantity)
+  const totalItems = cartItems.reduce(
+    (sum, item) => sum + (item.quantity || 1),
+    0
+  );
 
   // ✅ Ocultar el carrito en páginas específicas
   const hideCart =
