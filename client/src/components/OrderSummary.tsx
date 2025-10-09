@@ -4,54 +4,63 @@ import CouponField from "./CouponField";
 
 export default function OrderSummary() {
   const {
-    cart,
-    subtotal,
-    discountRate,
-    total,
-    appliedCoupon,
+    items,
     removeItem,
+    getSubtotal,
+    getTotal,
+    discountRate,
+    couponCode,
   } = useCart();
 
-  if (cart.length === 0) {
+  if (!Array.isArray(items) || items.length === 0) {
     return (
-      <div className="bg-gray-50 border rounded-lg p-6 text-center text-gray-600">
-        Your order is empty.
+      <div className="text-center text-gray-500 mt-6">
+        Your cart is empty ☕
       </div>
     );
   }
 
+  const subtotal = getSubtotal();
+  const total = getTotal();
+  const discountAmount = subtotal * (discountRate || 0);
+
   return (
-    <div className="bg-gray-50 border rounded-lg p-6 space-y-4">
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">
-        🧾 Your Order
+    <div className="bg-white shadow-md rounded-xl p-4 space-y-3">
+      <h2 className="text-lg font-semibold text-[#00454E] mb-3">
+        Your Order
       </h2>
 
-      {/* Lista de productos */}
       <ul className="divide-y divide-gray-200">
-        {cart.map((item) => (
+        {items.map((item) => (
           <li
-            key={item.id}
-            className="py-3 flex justify-between items-start text-sm"
+            key={`${item.id}-${item.option}`}
+            className="flex justify-between items-center py-2"
           >
             <div>
-              <p className="font-medium text-gray-800">{item.name}</p>
-              {item.addons && item.addons.length > 0 && (
-                <ul className="ml-4 list-disc text-gray-500">
-                  {item.addons.map((addon, index) => (
-                    <li key={index}>
-                      {addon.name} (+${addon.price.toFixed(2)})
-                    </li>
-                  ))}
-                </ul>
+              <p className="font-medium">
+                {item.name}
+                {item.option ? ` (${item.option})` : ""}
+              </p>
+              {Array.isArray(item.addons) && item.addons.length > 0 && (
+                <p className="text-xs text-gray-500">
+                  Add-ons:{" "}
+                  {item.addons
+                    .map((a) => `${a.name} ($${a.price.toFixed(2)})`)
+                    .join(", ")}
+                </p>
               )}
+              <p className="text-xs text-gray-500">
+                Qty: {item.quantity} × ${item.price.toFixed(2)}
+              </p>
             </div>
+
             <div className="text-right">
-              <p className="font-medium text-gray-800">
-                ${item.price.toFixed(2)}
+              <p className="font-semibold">
+                ${(item.price * item.quantity).toFixed(2)}
               </p>
               <button
                 onClick={() => removeItem(item.id)}
-                className="text-xs text-red-500 hover:text-red-700"
+                className="text-xs text-red-500 hover:underline"
               >
                 Remove
               </button>
@@ -60,26 +69,24 @@ export default function OrderSummary() {
         ))}
       </ul>
 
-      {/* Área del cupón */}
       <CouponField />
 
-      {/* Totales */}
-      <div className="border-t pt-3 space-y-1 text-sm">
+      <div className="border-t pt-3 text-sm space-y-1">
         <div className="flex justify-between">
           <span>Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
 
-        {appliedCoupon && (
-          <div className="flex justify-between text-green-600">
+        {discountRate ? (
+          <div className="flex justify-between text-green-700">
             <span>
-              Discount ({(discountRate * 100).toFixed(0)}% - {appliedCoupon})
+              Discount {couponCode ? `(${couponCode.toUpperCase()})` : ""}
             </span>
-            <span>- ${(subtotal * discountRate).toFixed(2)}</span>
+            <span>- ${discountAmount.toFixed(2)}</span>
           </div>
-        )}
+        ) : null}
 
-        <div className="flex justify-between font-semibold text-gray-900 border-t pt-2">
+        <div className="flex justify-between font-semibold text-[#00454E] text-base">
           <span>Total</span>
           <span>${total.toFixed(2)}</span>
         </div>
