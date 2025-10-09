@@ -6,85 +6,46 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
 );
 
 const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
-const TABLE_ORDERITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = async () => {
   try {
-    const { id } = event.queryStringParameters || {};
-
-    if (!id) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing order ID." }),
-      };
-    }
-
-    console.log(`📦 Fetching order: ${id}`);
-
-    // 🧾 Buscar la orden principal
-    const orderRecords = await base(TABLE_ORDERS)
+    const records = await base(TABLE_ORDERS)
       .select({
-        filterByFormula: `{OrderID} = '${id}'`,
-        maxRecords: 1,
+        sort: [{ field: "OrderNumber", direction: "desc" }],
+        view: "Grid view",
       })
       .all();
 
-    if (orderRecords.length === 0) {
-      console.warn("⚠️ Order not found:", id);
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Order not found." }),
-      };
-    }
-
-    const order = orderRecords[0].fields;
-
-    // 📦 Buscar todos los OrderItems relacionados
-    const itemRecords = await base(TABLE_ORDERITEMS)
-      .select({
-        filterByFormula: `{Order} = '${id}'`,
-        maxRecords: 50,
-      })
-      .all();
-
-    const items = itemRecords.map((rec) => ({
-      ProductName: rec.fields["ProductName"] || "",
-      Option: rec.fields["Option"] || "",
-      AddOns: rec.fields["AddOns"] || "",
-      Price: rec.fields["Price"] || 0,
-      Qty: rec.fields["Qty"] || 1,
+    const data = records.map((r) => ({
+      id: r.id,
+      fields: {
+        OrderID: r.get("OrderID") || "",
+        OrderNumber: r.get("OrderNumber") || "",
+        Name: r.get("Name") || "",
+        Phone: r.get("Phone") || "",
+        OrderType: r.get("OrderType") || "",
+        Address: r.get("Address") || "",
+        ScheduleDate: r.get("ScheduleDate") || "",
+        ScheduleTime: r.get("ScheduleTime") || "",
+        Subtotal: Number(r.get("Subtotal")) || 0,
+        Discount: Number(r.get("Discount")) || 0,
+        Total: Number(r.get("Total")) || 0,
+        Coupon: r.get("Coupon") || "",
+        Notes: r.get("Notes") || "",
+        Status: r.get("Status") || "",
+        CreatedAt: r.get("CreatedAt") || "",
+      },
     }));
-
-    // 🧩 Armar estructura completa
-    const fullOrder = {
-      OrderID: order["OrderID"],
-      Name: order["Name"],
-      Phone: order["Phone"] || "",
-      OrderType: order["OrderType"] || "",
-      Address: order["Address"] || "",
-      ScheduleDate: order["ScheduleDate"] || "",
-      ScheduleTime: order["ScheduleTime"] || "",
-      Subtotal: order["Subtotal"] || 0,
-      DiscountRate: order["DiscountRate"] || 0,
-      Total: order["Total"] || 0,
-      Coupon: order["Coupon"] || "",
-      Status: order["Status"] || "",
-      Notes: order["Notes"] || "",
-      CreatedAt: order["CreatedAt"] || "",
-      items,
-    };
-
-    console.log(`✅ Order ${id} loaded with ${items.length} items`);
 
     return {
       statusCode: 200,
-      body: JSON.stringify([fullOrder]),
+      body: JSON.stringify({ success: true, records: data }),
     };
   } catch (err) {
-    console.error("❌ Error fetching order:", err);
+    console.error("❌ Error fetching orders:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Server error fetching order." }),
+      body: JSON.stringify({ success: false, error: "Failed to fetch orders" }),
     };
   }
 };
