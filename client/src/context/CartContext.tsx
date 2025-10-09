@@ -1,125 +1,88 @@
-import React, { createContext, useContext, useReducer } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 
+export interface AddOn { name: string; price: number }
 export interface CartItem {
   id: string;
   name: string;
   price: number;
-  quantity: number;
   option?: string;
-  addons?: { name: string; price: number }[];
+  addons?: AddOn[];
+  quantity: number;
 }
 
-interface CartState {
-  items: CartItem[];
-  couponCode?: string;
-  discountRate?: number;
-}
-
-interface CartContextType extends CartState {
+interface CartContextShape {
+  cartItems: CartItem[];
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
+  updateQuantity: (id: string, qty: number) => void;
   clearCart: () => void;
-  applyCoupon: (code: string, rate: number) => void;
-  getSubtotal: () => number;
-  getTotal: () => number;
+
+  // Totales y cupón
+  subtotal: number;
+  discountRate: number;      // ej. 0.15
+  discount: number;          // dinero
+  total: number;
+  appliedCoupon: string | null;
+  setDiscountRate: (r: number) => void;
+  setAppliedCoupon: (c: string | null) => void;
 }
 
-const CartContext = createContext<CartContextType | null>(null);
+export const CartContext = createContext<CartContextShape | undefined>(undefined);
 
-function cartReducer(state: CartState, action: any): CartState {
-  switch (action.type) {
-    case "ADD_ITEM":
-      const existing = state.items.find((i) => i.id === action.payload.id);
-      if (existing) {
-        return {
-          ...state,
-          items: state.items.map((i) =>
-            i.id === action.payload.id
-              ? { ...i, quantity: i.quantity + action.payload.quantity }
-              : i
-          ),
-        };
-      }
-      return { ...state, items: [...state.items, action.payload] };
-
-    case "REMOVE_ITEM":
-      return { ...state, items: state.items.filter((i) => i.id !== action.payload) };
-
-    case "CLEAR_CART":
-      return { ...state, items: [] };
-
-    case "APPLY_COUPON":
-      return {
-        ...state,
-        couponCode: action.payload.code,
-        discountRate: action.payload.rate,
-      };
-
-    default:
-      return state;
-  }
-}
-
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const initialState: CartState = {
-    items: [],
-    couponCode: undefined,
-    discountRate: 0,
-  };
-
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [discountRate, setDiscountRate] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
   const addItem = (item: CartItem) => {
-    if (!item || !item.id) return;
-    dispatch({ type: "ADD_ITEM", payload: item });
+    setCartItems(prev => {
+      const match = prev.find(
+        p => p.name === item.name &&
+             p.option === item.option &&
+             JSON.stringify(p.addons||[]) === JSON.stringify(item.addons||[])
+      );
+      if (match) {
+        return prev.map(p => p === match ? { ...p, quantity: p.quantity + item.quantity } : p);
+      }
+      return [...prev, item];
+    });
   };
 
-  const removeItem = (id: string) => dispatch({ type: "REMOVE_ITEM", payload: id });
-  const clearCart = () => dispatch({ type: "CLEAR_CART" });
-  const applyCoupon = (code: string, rate: number) =>
-    dispatch({ type: "APPLY_COUPON", payload: { code, rate } });
+  const removeItem = (id: string) => setCartItems(prev => prev.filter(i => i.id !== id));
+  const updateQuantity = (id: string, qty: number) =>
+    setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, qty) } : i));
+  const clearCart = () => { setCartItems([]); setDiscountRate(0); setAppliedCoupon(null); };
 
-  const getSubtotal = () => {
-    if (!Array.isArray(state.items)) return 0;
-    return state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  };
+  const subtotal = useMemo(() => {
+    return (cartItems || []).reduce((sum, i) => {
+      const addons = (i.addons || []).reduce((a, b) => a + b.price, 0);
+      return sum + (i.price + addons) * i.quantity;
+    }, 0);
+  }, [cartItems]);
 
-  const getTotal = () => {
-    const subtotal = getSubtotal();
-    const discount = subtotal * (state.discountRate || 0);
-    return subtotal - discount;
-  };
+  const discount = useMemo(() => subtotal * discountRate, [subtotal, discountRate]);
+  const total = useMemo(() => subtotal - discount, [subtotal, discount]);
 
   return (
     <CartContext.Provider
       value={{
-        ...state,
+        cartItems,
         addItem,
         removeItem,
+        updateQuantity,
         clearCart,
-        applyCoupon,
-        getSubtotal,
-        getTotal,
+        subtotal,
+        discountRate,
+        discount,
+        total,
+        appliedCoupon,
+        setDiscountRate,
+        setAppliedCoupon,
       }}
     >
       {children}
     </CartContext.Provider>
   );
-}
+};
 
-export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) {
-    console.error("❌ useCart() used outside of <CartProvider>");
-    return {
-      items: [],
-      addItem: () => {},
-      removeItem: () => {},
-      clearCart: () => {},
-      applyCoupon: () => {},
-      getSubtotal: () => 0,
-      getTotal: () => 0,
-    } as CartContextType;
-  }
-  return ctx;
-}
+export const useCartUnsafe = () => useContext(CartContext);
