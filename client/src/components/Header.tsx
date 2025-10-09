@@ -1,20 +1,22 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useCart } from "@/context/CartContext";
+import { CartContext } from "../context/CartContext";
 import { ShoppingCart } from "lucide-react";
 
 export default function Header() {
-  const { cartItems } = useCart();
+  const cart = useContext(CartContext);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Contador que suma las cantidades (quantity)
-  const totalItems = cartItems.reduce(
+  if (!cart) return null;
+
+  // ✅ Sumar correctamente las cantidades
+  const totalItems = cart.cartItems.reduce(
     (sum, item) => sum + (item.quantity || 1),
     0
   );
 
-  // ✅ Ocultar el carrito en páginas específicas
+  // ✅ Ocultar carrito en ThankYou o Status
   const hideCart =
     location.pathname.includes("/thank-you") ||
     location.pathname.includes("/status");
@@ -22,7 +24,7 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm fixed top-0 left-0 w-full z-50 border-b border-gray-200">
       <div className="max-w-6xl mx-auto flex justify-between items-center px-4 sm:px-6 py-3">
-        {/* 🏠 Logo: redirige al menú */}
+        {/* 🏠 Logo que redirige al menú */}
         <div
           onClick={() => navigate("/")}
           className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition"
@@ -34,7 +36,7 @@ export default function Header() {
           />
         </div>
 
-        {/* 🛒 Icono del carrito (solo si no estamos en ThankYou/Status) */}
+        {/* 🛒 Carrito visible solo si no estamos en ThankYou/Status */}
         {!hideCart && (
           <div
             className="relative cursor-pointer"
