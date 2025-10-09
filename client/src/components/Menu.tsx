@@ -1,62 +1,98 @@
 import React, { useEffect, useState } from "react";
-import MenuItem from "@/components/MenuItem";
+import { useCart } from "../context/CartContext";
+import { Plus, Minus } from "lucide-react";
 
 interface Product {
   id: string;
   name: string;
-  description?: string;
-  category?: string;
   price: number;
-  is_hot?: boolean;
-  is_iced?: boolean;
-  available?: boolean;
-  image_url?: string;
+  category?: string;
+  description?: string;
+  image?: string;
+  option?: string;
 }
 
 export default function Menu() {
+  const { addItem } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch("/.netlify/functions/products");
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-        const data = await response.json();
-
-        // ✅ Filtrar productos disponibles
-        const validProducts = Array.isArray(data)
-          ? data.filter((p) => p.available !== false)
-          : [];
-
-        setProducts(validProducts);
-      } catch (err: any) {
-        console.error("Error fetching products:", err);
-        setError("Unable to load products right now.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
+    // 🔹 Cargar productos desde tu función serverless /products
+    fetch("/.netlify/functions/products")
+      .then((res) => res.json())
+      .then((data) => setProducts(data))
+      .catch((err) => console.error("⚠️ Error loading products:", err));
   }, []);
 
-  if (loading) return <p className="text-center text-gray-600 mt-10">Loading menu...</p>;
-  if (error) return <p className="text-center text-red-500 mt-10">{error}</p>;
+  const handleQuantityChange = (id: string, delta: number) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [id]: Math.max(1, (prev[id] || 1) + delta),
+    }));
+  };
+
+  const handleAddToCart = (product: Product) => {
+    const quantity = quantities[product.id] || 1;
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      option: product.option || "",
+      quantity,
+      addons: [],
+    });
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">Our Menu</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold text-center text-[#00454E]">
+        The Neighborhood Coffee ☕
+      </h1>
+      <p className="text-center text-gray-600 mb-6">
+        Select your favorite drink and add it to your order.
+      </p>
 
       {products.length === 0 ? (
-        <p className="text-center text-gray-500">No products available.</p>
+        <p className="text-center text-gray-400">Loading menu...</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <div key={product.id} className="flex justify-center">
-              <MenuItem product={product} />
+        <div className="grid gap-4">
+          {products.map((p) => (
+            <div
+              key={p.id}
+              className="bg-white shadow-md rounded-xl p-4 flex justify-between items-center"
+            >
+              <div>
+                <h2 className="text-lg font-semibold">{p.name}</h2>
+                <p className="text-sm text-gray-500">${p.price.toFixed(2)}</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleQuantityChange(p.id, -1)}
+                  className="p-1 border rounded-full w-7 h-7 flex items-center justify-center"
+                >
+                  <Minus size={14} />
+                </button>
+
+                <span className="w-6 text-center text-sm font-medium">
+                  {quantities[p.id] || 1}
+                </span>
+
+                <button
+                  onClick={() => handleQuantityChange(p.id, 1)}
+                  className="p-1 border rounded-full w-7 h-7 flex items-center justify-center"
+                >
+                  <Plus size={14} />
+                </button>
+
+                <button
+                  onClick={() => handleAddToCart(p)}
+                  className="ml-3 bg-[#00454E] text-white px-3 py-1 rounded-lg text-sm"
+                >
+                  Add
+                </button>
+              </div>
             </div>
           ))}
         </div>
