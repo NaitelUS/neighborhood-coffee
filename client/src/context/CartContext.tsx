@@ -25,7 +25,6 @@ interface CartContextType extends CartState {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Reducer con protección
 function cartReducer(state: CartState, action: any): CartState {
   switch (action.type) {
     case "ADD_ITEM":
@@ -39,15 +38,11 @@ function cartReducer(state: CartState, action: any): CartState {
               : i
           ),
         };
-      } else {
-        return { ...state, items: [...state.items, action.payload] };
       }
+      return { ...state, items: [...state.items, action.payload] };
 
     case "REMOVE_ITEM":
-      return {
-        ...state,
-        items: state.items.filter((i) => i.id !== action.payload),
-      };
+      return { ...state, items: state.items.filter((i) => i.id !== action.payload) };
 
     case "CLEAR_CART":
       return { ...state, items: [] };
@@ -76,22 +71,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "ADD_ITEM", payload: item });
   };
 
-  const removeItem = (id: string) => {
-    dispatch({ type: "REMOVE_ITEM", payload: id });
-  };
-
-  const clearCart = () => {
-    dispatch({ type: "CLEAR_CART" });
-  };
-
-  const applyCoupon = (code: string, discount: number) => {
+  const removeItem = (id: string) => dispatch({ type: "REMOVE_ITEM", payload: id });
+  const clearCart = () => dispatch({ type: "CLEAR_CART" });
+  const applyCoupon = (code: string, discount: number) =>
     dispatch({ type: "APPLY_COUPON", payload: { code, discount } });
-  };
 
   const getTotal = () => {
-    const subtotal = Array.isArray(state.items)
-      ? state.items.reduce((acc, item) => acc + item.price * item.quantity, 0)
-      : 0;
+    const list = Array.isArray(state.items) ? state.items : [];
+    const subtotal = list.reduce((acc, i) => acc + i.price * i.quantity, 0);
     const discountAmount = subtotal * (state.discount || 0);
     return subtotal - discountAmount;
   };
@@ -113,9 +100,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useCart() {
-  const context = useContext(CartContext);
-  if (!context) {
-    console.warn("⚠️ useCart() must be used within a CartProvider");
+  const ctx = useContext(CartContext);
+  if (!ctx) {
+    console.warn("⚠️ useCart() used outside of <CartProvider>");
     return {
       items: [],
       addItem: () => {},
@@ -125,5 +112,5 @@ export function useCart() {
       getTotal: () => 0,
     };
   }
-  return context;
+  return ctx;
 }
