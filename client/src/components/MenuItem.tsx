@@ -1,5 +1,5 @@
-import React, { useState, useContext } from "react";
-import { CartContext } from "@/context/CartContext";
+import React, { useState } from "react";
+import { useCart } from "@/context/CartContext";
 import AddOnSelector from "@/components/AddOnSelector";
 
 interface AddOn {
@@ -23,7 +23,7 @@ interface MenuItemProps {
 }
 
 export default function MenuItem({ product }: MenuItemProps) {
-  const { addToCart } = useContext(CartContext);
+  const { addItem } = useCart(); // ✅ usa el hook en lugar de useContext(CartContext)
 
   const [selectedOption, setSelectedOption] = useState<string>(
     product.is_hot ? "Hot" : product.is_iced ? "Iced" : ""
@@ -48,11 +48,12 @@ export default function MenuItem({ product }: MenuItemProps) {
       ? product.name
       : `${product.name} (${selectedOption})`;
 
-    addToCart({
-      id: product.id,
+    addItem({
+      id: `${product.id}-${selectedOption}-${Date.now()}`,
       name: itemName,
-      price: totalPrice,
       option: selectedOption,
+      price: totalPrice,
+      quantity: 1,
       addons: !isPastry
         ? selectedAddOns.map((a) => ({
             name: a.name,
