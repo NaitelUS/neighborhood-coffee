@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import React, { createContext, useContext, useState, useMemo } from "react";
 
 interface AddOn {
   name: string;
@@ -14,111 +8,101 @@ interface AddOn {
 interface CartItem {
   id: string;
   name: string;
-  option?: string;
   price: number;
-  quantity: number;
+  option?: string;
   addons?: AddOn[];
+  quantity: number;
 }
 
 interface CartContextType {
-  cartItems: CartItem[];
+  cart: CartItem[];
+  addItem: (item: CartItem) => void;
+  removeItem: (id: string) => void;
+  clearCart: () => void;
   subtotal: number;
   discountRate: number;
   total: number;
   appliedCoupon: string | null;
-  addItem: (item: CartItem) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
   setDiscountRate: (rate: number) => void;
   setAppliedCoupon: (coupon: string | null) => void;
+  cartCount: number;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// ✅ Hook personalizado para acceder al contexto
-export function useCart() {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
-  return context;
-}
-
-export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [discountRate, setDiscountRate] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-  const subtotal = cartItems.reduce(
-    (sum, item) =>
-      sum +
-      (item.price +
-        (item.addons?.reduce((a, b) => a + b.price, 0) || 0)) *
-        item.quantity,
-    0
-  );
-
-  const discount = subtotal * discountRate;
-  const total = subtotal - discount;
-
-  const addItem = (newItem: CartItem) => {
-    setCartItems((prev) => {
+  const addItem = (item: CartItem) => {
+    setCart((prev) => {
       const existing = prev.find(
-        (item) =>
-          item.name === newItem.name &&
-          item.option === newItem.option &&
-          JSON.stringify(item.addons) === JSON.stringify(newItem.addons)
+        (p) => p.name === item.name && p.option === item.option
       );
       if (existing) {
-        return prev.map((item) =>
-          item === existing
-            ? { ...item, quantity: item.quantity + newItem.quantity }
-            : item
+        // Si ya existe, aumentar cantidad
+        return prev.map((p) =>
+          p.id === existing.id
+            ? { ...p, quantity: p.quantity + item.quantity }
+            : p
         );
-      } else {
-        return [...prev, newItem];
       }
+      return [...prev, item];
     });
   };
 
   const removeItem = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const updateQuantity = (id: string, quantity: number) => {
-    setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-    );
+    setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
   const clearCart = () => {
-    setCartItems([]);
+    setCart([]);
     setDiscountRate(0);
     setAppliedCoupon(null);
   };
 
-  useEffect(() => {
-    console.log("🛒 Cart updated:", cartItems);
-  }, [cartItems]);
+  const subtotal = useMemo(
+    () =>
+      cart.reduce(
+        (sum, item) =>
+          sum +
+          item.price * item.quantity +
+          (item.addons?.reduce((a, b) => a + b.price, 0) || 0) * item.quantity,
+        0
+      ),
+    [cart]
+  );
+
+  const total = useMemo(() => subtotal * (1 - discountRate), [subtotal, discountRate]);
+  const cartCount = useMemo(() => cart.reduce((sum, i) => sum + i.quantity, 0), [cart]);
 
   return (
     <CartContext.Provider
       value={{
-        cartItems,
+        cart,
+        addItem,
+        removeItem,
+        clearCart,
         subtotal,
         discountRate,
         total,
         appliedCoupon,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
         setDiscountRate,
         setAppliedCoupon,
+        cartCount,
       }}
     >
       {children}
     </CartContext.Provider>
   );
+};
+
+// ✅ Hook personalizado para acceder al carrito
+export const useCart = (): CartContextType => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
+  return context;
 };
