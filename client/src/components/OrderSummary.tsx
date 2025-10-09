@@ -35,7 +35,7 @@ const OrderSummary: React.FC = () => {
               </span>
             </div>
             <span className="font-medium text-sm">
-              ${(item.price * item.quantity).toFixed(2)}
+              ${Number(item?.price ?? 0 * item?.quantity ?? 1).toFixed(2)}
             </span>
           </li>
         ))}
@@ -45,17 +45,17 @@ const OrderSummary: React.FC = () => {
       <div className="border-t border-gray-200 pt-3 text-sm">
         <div className="flex justify-between">
           <span>Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <span>${Number(subtotal ?? 0).toFixed(2)}</span>
         </div>
 
         <div className="flex justify-between text-gray-600">
           <span>Discount</span>
-          <span>− ${(subtotal * discount).toFixed(2)}</span>
+          <span>− ${Number(subtotal * (discount ?? 0)).toFixed(2)}</span>
         </div>
 
         <div className="flex justify-between font-semibold text-[#00454E] mt-2">
           <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+          <span>${Number(total ?? 0).toFixed(2)}</span>
         </div>
       </div>
 
