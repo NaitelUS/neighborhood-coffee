@@ -6,8 +6,8 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="flex items-center justify-between bg-[#4a2e2b] px-5 py-3 shadow-md">
-      {/* Logo */}
+    <header className="flex items-center justify-between bg-white px-5 py-3 shadow-md">
+      {/* Logo con fondo blanco/transparente */}
       <img
         src="/attached_assets/tnclogo.png"
         alt="The Neighborhood Coffee Logo"
@@ -18,7 +18,7 @@ const Header: React.FC = () => {
       {/* Cart icon */}
       <button
         onClick={() => navigate("/order")}
-        className="relative text-white hover:text-[#d4b996] transition"
+        className="relative text-[#00454E] hover:text-[#1D9099] transition"
       >
         <ShoppingCart size={24} />
       </button>
