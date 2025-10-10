@@ -19,7 +19,6 @@ const SplashScreen: React.FC = () => {
         if (data.showSplash && !sessionStorage.getItem("fallSplashSeen")) {
           setMessage(data.splashMessage || "Use coupon NEIGHBOR15 — Valid until October 31st");
           setVisible(true);
-
           const timer = setTimeout(() => handleClose(), 10000);
           return () => clearTimeout(timer);
         }
@@ -44,7 +43,7 @@ const SplashScreen: React.FC = () => {
   return (
     <div
       className={`fixed inset-0 flex flex-col items-center justify-center z-[9999]
-        bg-white bg-opacity-95 transition-opacity duration-500
+        bg-white bg-opacity-95 transition-opacity duration-500 overflow-hidden
         ${fadeOut ? "opacity-0" : "opacity-100"}`}
     >
       <button
@@ -54,13 +53,22 @@ const SplashScreen: React.FC = () => {
         ✕
       </button>
 
+      {/* 🍂 Hojas cayendo */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <span key={i} className="leaf"></span>
+        ))}
+      </div>
+
+      {/* 🖼 Imagen de la promo */}
       <img
         src="/attached_assets/Splash.png"
         alt="Seasonal Promotion"
-        className="w-72 sm:w-80 md:w-96 max-w-[90%] rounded-2xl shadow-lg animate-fadeIn"
+        className="w-72 sm:w-80 md:w-96 max-w-[90%] rounded-2xl shadow-lg animate-fadeIn relative z-10"
       />
 
-      <p className="mt-4 text-sm text-gray-600 sm:text-base md:text-lg text-center px-4">
+      {/* 💬 Mensaje dinámico desde Airtable */}
+      <p className="mt-4 text-sm text-gray-600 sm:text-base md:text-lg text-center px-4 relative z-10">
         {message}
       </p>
     </div>
