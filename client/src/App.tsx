@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SplashScreen from "./components/SplashScreen";
-import Header from "./components/Header"; // si lo tienes
-import Menu from "./components/Menu"; // ejemplo
+import Header from "./components/Header";
+import Menu from "./components/Menu";
 
 function App() {
   const [showSplash, setShowSplash] = useState(false);
@@ -13,7 +13,7 @@ function App() {
         const res = await fetch("/.netlify/functions/settings");
         const data = await res.json();
         if (data.showSplash) {
-          setSplashMessage(data.splashMessage);
+          setSplashMessage(data.splashMessage || "");
           setShowSplash(true);
         }
       } catch (error) {
@@ -36,7 +36,7 @@ function App() {
       <div className="min-h-screen bg-[#fffaf3]">
         <Header />
         <Menu />
-        {/* ... demás contenido */}
+        {/* Resto de tu contenido */}
       </div>
     </>
   );
