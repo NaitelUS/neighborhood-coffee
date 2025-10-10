@@ -13,7 +13,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) 
     const timer = setTimeout(() => {
       setVisible(false);
       onClose();
-    }, 10000); // ⏱️ 10 segundos
+    }, 10000); // 10 segundos
 
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -21,7 +21,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) 
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-95 z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-95 z-[9999]">
       {image && (
         <img
           src={image}
