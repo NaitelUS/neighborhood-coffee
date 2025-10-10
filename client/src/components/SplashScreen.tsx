@@ -13,7 +13,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) 
     const timer = setTimeout(() => {
       setVisible(false);
       onClose();
-    }, 10000); // 10 segundos
+    }, 10000); // ⏱️ 10 segundos
 
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -21,17 +21,29 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) 
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-95 z-[9999]">
-      {image && (
+    <div
+      className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[9999]"
+      style={{
+        backgroundColor: "#fffaf3",
+      }}
+    >
+      {image ? (
         <img
           src={image}
           alt="Promotion"
           className="w-80 h-auto mb-4 rounded-lg shadow-lg"
+          onError={(e) => {
+            console.error("Error loading splash image:", e);
+          }}
         />
+      ) : (
+        <p className="text-gray-600 mb-4">Loading promotion...</p>
       )}
+
       <p className="text-lg text-gray-800 font-semibold text-center max-w-md mb-6 px-4">
-        {message}
+        {message || "Welcome to The Neighborhood Coffee ☕"}
       </p>
+
       <button
         onClick={() => {
           setVisible(false);
