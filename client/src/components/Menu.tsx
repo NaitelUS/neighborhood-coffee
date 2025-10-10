@@ -9,12 +9,14 @@ interface Product {
   category?: string;
   image?: string;
   image_url?: string;
+  available?: boolean;
 }
 
 const Menu: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [customizingId, setCustomizingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -31,7 +33,7 @@ const Menu: React.FC = () => {
     fetchMenu();
   }, []);
 
-  // escuchar evento desde MenuItem cuando se agrega al carrito
+  // escuchar eventos de agregado al carrito
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       if (e.detail?.name) {
@@ -75,7 +77,7 @@ const Menu: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-[#f7f3ef] py-10 px-4">
-      {/* Toast */}
+      {/* toast */}
       {toast && (
         <div className="fixed top-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg transition-all duration-300">
           {toast}
@@ -96,24 +98,23 @@ const Menu: React.FC = () => {
               </h3>
             </div>
 
-            {/* 💎 grid corregido */}
+            {/* ✅ layout fijo: 1–2–3 columnas */}
             <div
               className="
                 grid
-                gap-10
+                gap-8
                 grid-cols-1
                 sm:grid-cols-2
                 md:grid-cols-2
                 lg:grid-cols-3
                 xl:grid-cols-3
-                2xl:grid-cols-4
                 justify-items-center
               "
             >
               {grouped[category].map((product) => (
                 <div
                   key={product.id}
-                  className="w-full max-w-sm bg-white rounded-2xl shadow-md hover:shadow-xl border border-[#e6dfd8] overflow-hidden"
+                  className="w-full max-w-sm bg-white rounded-2xl shadow-md hover:shadow-xl border border-[#e6dfd8] overflow-hidden flex flex-col justify-between"
                 >
                   {(product.image || product.image_url) && (
                     <img
@@ -128,9 +129,58 @@ const Menu: React.FC = () => {
                       className="w-full h-48 object-cover rounded-t-2xl"
                     />
                   )}
-                  <div className="p-5">
+
+                  <div className="p-5 flex-grow flex flex-col justify-between">
                     <MenuItem {...product} />
                   </div>
+
+                  {/* 🔹 Customize toggle */}
+                  {product.available !== false && (
+                    <div className="px-5 pb-4">
+                      <button
+                        onClick={() =>
+                          setCustomizingId(
+                            customizingId === product.id ? null : product.id
+                          )
+                        }
+                        className="text-sm font-medium text-[#5a4036] hover:text-[#2f1f1b] mt-2"
+                      >
+                        {customizingId === product.id
+                          ? "Close customization ✖️"
+                          : "☕ Customize your drink"}
+                      </button>
+
+                      {customizingId === product.id && (
+                        <div className="mt-3 bg-[#f5eee8] rounded-xl p-3 text-sm text-[#4a2e2b] space-y-2 border border-[#e6dfd8]">
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" />{" "}
+                            <span>Extra shot of espresso (+$1.00)</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" />{" "}
+                            <span>Oat milk (+$0.75)</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" />{" "}
+                            <span>Whipped cream (+$0.50)</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" />{" "}
+                            <span>Caramel drizzle (+$0.50)</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 🔸 Coming soon para no disponibles */}
+                  {product.available === false && (
+                    <div className="bg-[#f8f2ed] text-center py-3 border-t border-[#e6dfd8]">
+                      <span className="text-[#b08968] font-medium text-sm">
+                        🕓 Coming Soon!
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
