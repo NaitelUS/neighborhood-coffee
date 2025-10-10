@@ -9,11 +9,14 @@ interface Product {
   category?: string;
   image?: string;
   image_url?: string;
+  has_addons?: boolean;
+  addons?: string[];
 }
 
 const Menu: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customizingId, setCustomizingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -44,7 +47,7 @@ const Menu: React.FC = () => {
       </div>
     );
 
-  // 🔹 Agrupar productos por categoría
+  // Agrupar por categoría
   const grouped = products.reduce((acc: Record<string, Product[]>, product) => {
     const category = product.category || "Other";
     if (!acc[category]) acc[category] = [];
@@ -68,7 +71,6 @@ const Menu: React.FC = () => {
 
         {Object.keys(grouped).map((category) => (
           <section key={category} className="mb-12">
-            {/* Encabezado de categoría */}
             <div className="flex items-center justify-center mb-6">
               <span className="text-3xl mr-2">
                 {categoryIcons[category] || "☕"}
@@ -78,7 +80,7 @@ const Menu: React.FC = () => {
               </h3>
             </div>
 
-            {/* 💎 Grid responsivo ajustado */}
+            {/* GRID con breakpoints suaves */}
             <div
               className="
                 grid
@@ -87,6 +89,7 @@ const Menu: React.FC = () => {
                 sm:grid-cols-2
                 md:grid-cols-2
                 lg:grid-cols-3
+                xl:grid-cols-3
                 2xl:grid-cols-4
                 place-items-center
               "
@@ -117,6 +120,43 @@ const Menu: React.FC = () => {
 
                   <div className="p-5">
                     <MenuItem {...product} />
+                  </div>
+
+                  {/* 🔹 Customize your drink section */}
+                  <div className="px-5 pb-4">
+                    <button
+                      onClick={() =>
+                        setCustomizingId(
+                          customizingId === product.id ? null : product.id
+                        )
+                      }
+                      className="text-sm font-medium text-[#5a4036] hover:text-[#2f1f1b] mt-2"
+                    >
+                      {customizingId === product.id
+                        ? "Close customization ✖️"
+                        : "☕ Customize your drink"}
+                    </button>
+
+                    {customizingId === product.id && (
+                      <div className="mt-3 bg-[#f5eee8] rounded-xl p-3 text-sm text-[#4a2e2b] space-y-2 border border-[#e6dfd8]">
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" />{" "}
+                          <span>Extra shot of espresso (+$1.00)</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" />{" "}
+                          <span>Oat milk (+$0.75)</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" />{" "}
+                          <span>Whipped cream (+$0.50)</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" />{" "}
+                          <span>Caramel drizzle (+$0.50)</span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
