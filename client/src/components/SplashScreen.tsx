@@ -1,76 +1,51 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-interface Settings {
-  showSplash: boolean;
-  splashMessage?: string;
+interface SplashScreenProps {
+  message: string;
+  image?: string;
+  onClose: () => void;
 }
 
-const SplashScreen: React.FC = () => {
-  const [visible, setVisible] = useState(false);
-  const [fadeOut, setFadeOut] = useState(false);
-  const [message, setMessage] = useState<string>("");
+const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) => {
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const response = await fetch("/.netlify/functions/settings");
-        const data: Settings = await response.json();
-
-        if (data.showSplash && !sessionStorage.getItem("fallSplashSeen")) {
-          setMessage(data.splashMessage || "Use coupon NEIGHBOR15 — Valid until October 31st");
-          setVisible(true);
-          const timer = setTimeout(() => handleClose(), 10000);
-          return () => clearTimeout(timer);
-        }
-      } catch (err) {
-        console.error("Error fetching settings:", err);
-      }
-    }
-
-    fetchSettings();
-  }, []);
-
-  const handleClose = () => {
-    setFadeOut(true);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setVisible(false);
-      sessionStorage.setItem("fallSplashSeen", "true");
-    }, 500);
-  };
+      onClose();
+    }, 10000); // ⏱️ 10 segundos
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
   if (!visible) return null;
 
   return (
     <div
-      className={`fixed inset-0 flex flex-col items-center justify-center z-[9999]
-        bg-white bg-opacity-95 transition-opacity duration-500 overflow-hidden
-        ${fadeOut ? "opacity-0" : "opacity-100"}`}
+      className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-95 z-50 animate-fadeIn"
+      style={{
+        animation: "fadeIn 0.8s ease-out",
+      }}
     >
-      <button
-        onClick={handleClose}
-        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl transition-colors"
-      >
-        ✕
-      </button>
-
-      {/* 🍂 Hojas cayendo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <span key={i} className="leaf"></span>
-        ))}
-      </div>
-
-      {/* 🖼 Imagen de la promo */}
-      <img
-        src="/attached_assets/Splash.png"
-        alt="Seasonal Promotion"
-        className="w-72 sm:w-80 md:w-96 max-w-[90%] rounded-2xl shadow-lg animate-fadeIn relative z-10"
-      />
-
-      {/* 💬 Mensaje dinámico desde Airtable */}
-      <p className="mt-4 text-sm text-gray-600 sm:text-base md:text-lg text-center px-4 relative z-10">
+      {image && (
+        <img
+          src={image}
+          alt="Promotion"
+          className="w-80 h-auto mb-4 rounded-lg shadow-lg animate-bounce-slow"
+        />
+      )}
+      <p className="text-lg text-gray-800 font-semibold text-center max-w-md mb-6 px-4">
         {message}
       </p>
+      <button
+        onClick={() => {
+          setVisible(false);
+          onClose();
+        }}
+        className="bg-[#8B4513] text-white px-5 py-2 rounded-lg shadow hover:bg-[#a0522d] transition-all"
+      >
+        Close
+      </button>
     </div>
   );
 };
