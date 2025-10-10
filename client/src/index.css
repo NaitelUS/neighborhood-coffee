@@ -6,11 +6,9 @@
 :root {
   --button-outline: rgba(0, 0, 0, .10);
   --badge-outline: rgba(0, 0, 0, .05);
-
   --background: 45 4% 96%;
   --foreground: 20 8% 20%;
   --border: 45 6% 85%;
-
   --primary: 25 60% 25%;
   --primary-foreground: 45 25% 92%;
   --secondary: 45 12% 88%;
@@ -21,7 +19,6 @@
   --muted-foreground: 20 6% 45%;
   --card: 45 8% 94%;
   --card-foreground: 20 8% 18%;
-
   --input: 45 10% 75%;
   --ring: 25 60% 25%;
   --radius: 0.5rem;
@@ -32,7 +29,6 @@
   --background: 20 6% 8%;
   --foreground: 45 15% 85%;
   --border: 20 8% 18%;
-
   --primary: 25 60% 25%;
   --primary-foreground: 45 25% 92%;
   --secondary: 20 10% 16%;
@@ -59,15 +55,37 @@
 
 /* 💡 Utilidades extra */
 @layer utilities {
-  /* Ocultar botón feo del input search */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
 
-  /* Placeholder bonito para contenteditable */
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);
     color: hsl(var(--muted-foreground));
     pointer-events: none;
+  }
+}
+
+/* 🍂 Animaciones Splash */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* 📱 Optimización móvil */
+html, body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+@media (max-width: 400px) {
+  img {
+    max-width: 90vw;
+    height: auto;
   }
 }
