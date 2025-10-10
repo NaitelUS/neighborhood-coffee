@@ -1,127 +1,51 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* 🎨 Variables principales (modo claro) */
-:root {
-  --button-outline: rgba(0, 0, 0, .10);
-  --badge-outline: rgba(0, 0, 0, .05);
-  --background: 45 4% 96%;
-  --foreground: 20 8% 20%;
-  --border: 45 6% 85%;
-  --primary: 25 60% 25%;
-  --primary-foreground: 45 25% 92%;
-  --secondary: 45 12% 88%;
-  --secondary-foreground: 20 8% 22%;
-  --accent: 45 10% 88%;
-  --accent-foreground: 20 8% 25%;
-  --muted: 45 8% 90%;
-  --muted-foreground: 20 6% 45%;
-  --card: 45 8% 94%;
-  --card-foreground: 20 8% 18%;
-  --input: 45 10% 75%;
-  --ring: 25 60% 25%;
-  --radius: 0.5rem;
-}
-
-/* 🌙 Variables modo oscuro */
-.dark {
-  --background: 20 6% 8%;
-  --foreground: 45 15% 85%;
-  --border: 20 8% 18%;
-  --primary: 25 60% 25%;
-  --primary-foreground: 45 25% 92%;
-  --secondary: 20 10% 16%;
-  --secondary-foreground: 45 12% 72%;
-  --accent: 20 8% 12%;
-  --accent-foreground: 45 10% 70%;
-  --muted: 20 8% 14%;
-  --muted-foreground: 45 6% 55%;
-  --card: 20 8% 10%;
-  --card-foreground: 45 15% 82%;
-}
-
-/* 🌎 Estilos base */
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-    padding-top: 64px; /* Altura del header fijo */
-  }
-}
-
-/* 💡 Utilidades extra */
-@layer utilities {
-  input[type="search"]::-webkit-search-cancel-button {
-    @apply hidden;
-  }
-
-  [contenteditable][data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: hsl(var(--muted-foreground));
-    pointer-events: none;
-  }
-}
-
-/* 🍂 Animaciones de entrada Splash */
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.5s ease-out forwards;
+  animation: fadeIn 0.8s ease-in-out;
 }
 
-/* 🍁 Falling leaves animation */
-.leaf {
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+/* 🍁 Hojitas cayendo */
+.falling-leaf {
   position: absolute;
   top: -10%;
-  width: 24px;
-  height: 24px;
-  background: url("/attached_assets/leaf.png") no-repeat center/contain;
-  animation: fall linear infinite;
-  opacity: 0.9;
+  font-size: 1.5rem;
+  opacity: 0.8;
+  animation: fall 10s linear infinite;
 }
-
-/* Cada hoja tiene su propio delay y duración */
-.leaf:nth-child(1) { left: 10%; animation-duration: 8s; animation-delay: 0s; }
-.leaf:nth-child(2) { left: 20%; animation-duration: 9s; animation-delay: 2s; }
-.leaf:nth-child(3) { left: 30%; animation-duration: 10s; animation-delay: 4s; }
-.leaf:nth-child(4) { left: 40%; animation-duration: 11s; animation-delay: 1s; }
-.leaf:nth-child(5) { left: 50%; animation-duration: 9s; animation-delay: 3s; }
-.leaf:nth-child(6) { left: 60%; animation-duration: 8s; animation-delay: 5s; }
-.leaf:nth-child(7) { left: 70%; animation-duration: 10s; animation-delay: 0s; }
-.leaf:nth-child(8) { left: 80%; animation-duration: 9s; animation-delay: 2s; }
-.leaf:nth-child(9) { left: 90%; animation-duration: 11s; animation-delay: 4s; }
-.leaf:nth-child(10) { left: 15%; animation-duration: 12s; animation-delay: 6s; }
-.leaf:nth-child(11) { left: 35%; animation-duration: 8s; animation-delay: 1s; }
-.leaf:nth-child(12) { left: 65%; animation-duration: 10s; animation-delay: 3s; }
 
 @keyframes fall {
   0% {
-    transform: translateY(-10vh) rotate(0deg);
+    transform: translateY(-10%) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50vh) rotate(180deg);
     opacity: 0.9;
   }
   100% {
     transform: translateY(110vh) rotate(360deg);
-    opacity: 0.2;
-  }
-}
-
-/* 📱 Optimización móvil */
-html, body {
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  overflow-x: hidden;
-}
-
-@media (max-width: 400px) {
-  img {
-    max-width: 90vw;
-    height: auto;
+    opacity: 0;
   }
 }
