@@ -28,6 +28,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
   const [selectedOption, setSelectedOption] = useState(options[0] || "");
   const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
   const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
 
   const handleAddOnChange = (addon: AddOn, isChecked: boolean) => {
     setSelectedAddOns((prev) =>
@@ -46,20 +47,33 @@ const MenuItem: React.FC<MenuItemProps> = ({
       addons: selectedAddOns,
       quantity,
     });
+
+    // 🔔 Toast visual (desde Menu)
+    window.dispatchEvent(
+      new CustomEvent("itemAdded", { detail: { name } })
+    );
+
+    // 🔁 reset de UI
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
     setSelectedAddOns([]);
     setQuantity(1);
   };
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-[#00454E]">{name}</h2>
+      {/* Nombre y descripción */}
+      <h2 className="text-lg font-semibold text-[#4a2e2b]">{name}</h2>
       {description && (
-        <p className="text-sm text-gray-600">{description}</p>
+        <p className="text-sm text-gray-600 mt-1">{description}</p>
       )}
-      <p className="text-md font-bold mt-1">
+
+      {/* Precio */}
+      <p className="text-md font-bold mt-2 text-[#4a2e2b]">
         ${Number(price ?? 0).toFixed(2)}
       </p>
 
+      {/* Opciones (Hot / Iced, etc.) */}
       {options.length > 0 && (
         <div className="mt-3">
           <label className="text-sm font-medium text-gray-700 mr-2">
@@ -68,7 +82,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
           <select
             value={selectedOption}
             onChange={(e) => setSelectedOption(e.target.value)}
-            className="border rounded-lg px-2 py-1 text-sm"
+            className="border rounded-lg px-2 py-1 text-sm bg-white"
           >
             {options.map((opt) => (
               <option key={opt} value={opt}>
@@ -79,6 +93,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
         </div>
       )}
 
+      {/* Add-ons */}
       {addons.length > 0 && (
         <div className="mt-3">
           <AddOnSelector
@@ -89,6 +104,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
         </div>
       )}
 
+      {/* Cantidad */}
       <div className="mt-3 flex items-center space-x-2">
         <button
           onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -105,11 +121,16 @@ const MenuItem: React.FC<MenuItemProps> = ({
         </button>
       </div>
 
+      {/* Botón principal */}
       <button
         onClick={handleAddToCart}
-        className="w-full mt-4 bg-[#00454E] text-white rounded-xl py-2 font-semibold hover:bg-[#1D9099] transition"
+        className={`w-full mt-4 rounded-xl py-2 font-semibold transition ${
+          added
+            ? "bg-emerald-600 text-white"
+            : "bg-[#4a2e2b] text-white hover:bg-[#5a4036]"
+        }`}
       >
-        Add to Order
+        {added ? "✅ Added!" : "Add to Order"}
       </button>
     </div>
   );
