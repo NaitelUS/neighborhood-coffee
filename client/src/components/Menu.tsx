@@ -78,15 +78,16 @@ const Menu: React.FC = () => {
               </h3>
             </div>
 
-            {/* 💎 Grid responsivo */}
+            {/* 💎 Grid responsivo ajustado */}
             <div
               className="
-                grid 
-                gap-8 
-                grid-cols-1 
-                sm:grid-cols-2 
-                lg:grid-cols-3 
-                xl:grid-cols-4 
+                grid
+                gap-8
+                grid-cols-1
+                sm:grid-cols-2
+                md:grid-cols-2
+                lg:grid-cols-3
+                2xl:grid-cols-4
                 place-items-center
               "
             >
@@ -94,9 +95,9 @@ const Menu: React.FC = () => {
                 <div
                   key={product.id}
                   className="
-                    w-full max-w-sm bg-white rounded-2xl 
-                    shadow-md hover:shadow-xl 
-                    transition duration-200 
+                    w-full max-w-sm bg-white rounded-2xl
+                    shadow-md hover:shadow-xl
+                    transition duration-200
                     overflow-hidden border border-[#e6dfd8]
                   "
                 >
