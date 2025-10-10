@@ -1,17 +1,21 @@
+import Header from "./components/Header";
+
 export default function App() {
   return (
     <div
       style={{
-        backgroundColor: "red",
-        color: "white",
-        fontSize: "2rem",
-        height: "100vh",
+        backgroundColor: "#fffaf3",
+        color: "#2d2d2d",
+        minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
+        flexDirection: "column",
         alignItems: "center",
+        justifyContent: "center",
+        fontSize: "1.5rem",
       }}
     >
-      APP BASE — TEST RENDER
+      <Header />
+      <p>Header loaded successfully ✅</p>
     </div>
   );
 }
