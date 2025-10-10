@@ -2,32 +2,33 @@ import Airtable from "airtable";
 
 export async function handler() {
   try {
-    // Inicializa conexión a Airtable
     const base = new Airtable({
       apiKey: process.env.AIRTABLE_API_KEY,
     }).base(process.env.AIRTABLE_BASE_ID);
 
-    // Obtiene todos los registros de la tabla Settings
+    // Obtener todos los registros de Settings
     const records = await base("Settings").select().all();
 
-    // Convierte las filas tipo name:value en un objeto
-    const settingsObj: Record<string, any> = {};
+    // Crear objeto con todas las configuraciones
+    const settings: Record<string, any> = {};
     records.forEach((r) => {
-      const name = r.get("name");
+      const name = r.get("name")?.toString();
       const value = r.get("value");
-      if (name && value !== undefined) settingsObj[name] = value;
+      if (name) settings[name] = value;
     });
 
-    // Busca la fila donde name = "Splash"
-    const splashRow = records.find(
+    // Buscar el registro Splash específicamente
+    const splashRecord = records.find(
       (r) => r.get("name")?.toString().toLowerCase() === "splash"
     );
 
-    // Verifica si el splash está activado
-    const showSplash = splashRow?.get("showSplash") === true;
-    const splashMessage = splashRow?.get("value") || "";
+    // Si existe el registro Splash, tomar el valor y el checkbox showSplash
+    const showSplash = splashRecord?.get("showSplash") === true;
+    const splashMessage =
+      (splashRecord?.get("value") as string) ||
+      "Welcome to The Neighborhood Coffee ☕";
 
-    // Devuelve JSON con todos los valores necesarios
+    // Respuesta JSON
     return {
       statusCode: 200,
       headers: {
@@ -35,11 +36,11 @@ export async function handler() {
         "Access-Control-Allow-Origin": "*",
       },
       body: JSON.stringify({
-        open_hour: settingsObj.open_hour,
-        close_hour: settingsObj.close_hour,
-        active_days: settingsObj.active_days,
-        holiday_dates: settingsObj.holiday_dates,
-        timezone: settingsObj.timezone || "America/Denver",
+        open_hour: settings.open_hour || "6",
+        close_hour: settings.close_hour || "11",
+        active_days: settings.active_days || "",
+        holiday_dates: settings.holiday_dates || "",
+        timezone: settings.timezone || "America/Denver",
         showSplash,
         splashMessage,
       }),
@@ -50,7 +51,7 @@ export async function handler() {
       statusCode: 500,
       body: JSON.stringify({
         error: "Error fetching settings",
-        details: error.message,
+        details: (error as Error).message,
       }),
     };
   }
