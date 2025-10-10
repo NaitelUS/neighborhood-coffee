@@ -12,9 +12,13 @@ function App() {
       try {
         const res = await fetch("/.netlify/functions/settings");
         const data = await res.json();
+        console.log("Settings:", data);
+
         if (data.showSplash) {
           setSplashMessage(data.splashMessage || "");
           setShowSplash(true);
+        } else {
+          setShowSplash(false);
         }
       } catch (error) {
         console.error("Error loading settings:", error);
@@ -27,16 +31,15 @@ function App() {
     <>
       {showSplash && (
         <SplashScreen
-          image="/attached_assets/Splash.png"
-          message={splashMessage}
-          onClose={() => setShowSplash(false)}
+          visible={showSplash}
+          message={splashMessage || "Welcome to The Neighborhood Coffee ☕"}
+          duration={10000} // 10 segundos
         />
       )}
 
       <div className="min-h-screen bg-[#fffaf3]">
         <Header />
         <Menu />
-        {/* Resto de tu contenido */}
       </div>
     </>
   );
