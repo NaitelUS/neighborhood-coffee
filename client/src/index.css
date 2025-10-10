@@ -49,8 +49,13 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    padding-top: 64px; /* espacio para header fijo */
     margin: 0;
+    padding: 0;
+    background-color: #fffaf3;
+    color: #2d2d2d;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
   }
 }
 
@@ -65,16 +70,6 @@
     color: hsl(var(--muted-foreground));
     pointer-events: none;
   }
-}
-
-/* 💬 Tipografía general */
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: #fffaf3;
-  color: #2d2d2d;
-  margin: 0;
-  padding: 0;
-  line-height: 1.5;
 }
 
 /* ☕ Botones */
@@ -92,6 +87,20 @@ img {
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+/* 💥 Forzar visibilidad del Splash */
+#splash-root,
+.splash-visible,
+div[class*="SplashScreen"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999999 !important;
+  background-color: #fffaf3 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* 🪶 Responsive */
