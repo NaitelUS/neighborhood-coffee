@@ -8,7 +8,7 @@ const SplashScreen: React.FC = () => {
     const seen = sessionStorage.getItem("fallSplashSeen");
     if (!seen) {
       setVisible(true);
-      const timer = setTimeout(() => handleClose(), 10000); // Auto close after 10s
+      const timer = setTimeout(() => handleClose(), 10000); // auto close after 10 s
       return () => clearTimeout(timer);
     }
   }, []);
@@ -18,15 +18,15 @@ const SplashScreen: React.FC = () => {
     setTimeout(() => {
       setVisible(false);
       sessionStorage.setItem("fallSplashSeen", "true");
-    }, 500); // duration matches CSS fade-out
+    }, 500); // matches fade-out duration
   };
 
   if (!visible) return null;
 
   return (
     <div
-      className={`fixed inset-0 flex flex-col items-center justify-center z-50 
-        bg-white bg-opacity-95 transition-opacity duration-500 
+      className={`fixed inset-0 flex flex-col items-center justify-center z-50
+        bg-white bg-opacity-95 transition-opacity duration-500
         ${fadeOut ? "opacity-0" : "opacity-100"}`}
     >
       <button
@@ -40,8 +40,12 @@ const SplashScreen: React.FC = () => {
       <img
         src="/attached_assets/FallCoupon15.png"
         alt="Fall Coupon 15% Off"
-        className="w-80 sm:w-96 rounded-2xl shadow-lg animate-fadeIn"
+        className="w-72 sm:w-80 md:w-96 max-w-[90%] rounded-2xl shadow-lg animate-fadeIn"
       />
+
+      <p className="mt-4 text-sm text-gray-600 sm:text-base md:text-lg">
+        Use coupon <span className="font-semibold text-orange-600">NEIGHBOR15</span> — Valid until <span className="font-semibold">October 31st</span>
+      </p>
     </div>
   );
 };
