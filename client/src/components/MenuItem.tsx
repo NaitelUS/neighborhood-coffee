@@ -14,6 +14,7 @@ interface MenuItemProps {
   price: number;
   options?: string[];
   addons?: AddOn[];
+  available?: boolean;
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({
@@ -23,6 +24,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
   price,
   options = [],
   addons = [],
+  available = true,
 }) => {
   const { addToCart } = useContext(CartContext);
   const [selectedOption, setSelectedOption] = useState(options[0] || "");
@@ -39,6 +41,8 @@ const MenuItem: React.FC<MenuItemProps> = ({
   };
 
   const handleAddToCart = () => {
+    if (!available) return; // bloquea productos "Coming Soon"
+
     addToCart({
       id,
       name,
@@ -48,12 +52,11 @@ const MenuItem: React.FC<MenuItemProps> = ({
       quantity,
     });
 
-    // 🔔 Toast visual (desde Menu)
+    // 🔔 Dispara toast global (capturado en Menu)
     window.dispatchEvent(
       new CustomEvent("itemAdded", { detail: { name } })
     );
 
-    // 🔁 reset de UI
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
     setSelectedAddOns([]);
@@ -63,17 +66,17 @@ const MenuItem: React.FC<MenuItemProps> = ({
   return (
     <div>
       {/* Nombre y descripción */}
-      <h2 className="text-lg font-semibold text-[#4a2e2b]">{name}</h2>
+      <h2 className="text-lg font-semibold text-[#00454E]">{name}</h2>
       {description && (
         <p className="text-sm text-gray-600 mt-1">{description}</p>
       )}
 
       {/* Precio */}
-      <p className="text-md font-bold mt-2 text-[#4a2e2b]">
+      <p className="text-md font-bold mt-2 text-[#00454E]">
         ${Number(price ?? 0).toFixed(2)}
       </p>
 
-      {/* Opciones (Hot / Iced, etc.) */}
+      {/* Opciones */}
       {options.length > 0 && (
         <div className="mt-3">
           <label className="text-sm font-medium text-gray-700 mr-2">
@@ -124,13 +127,16 @@ const MenuItem: React.FC<MenuItemProps> = ({
       {/* Botón principal */}
       <button
         onClick={handleAddToCart}
+        disabled={!available}
         className={`w-full mt-4 rounded-xl py-2 font-semibold transition ${
-          added
-            ? "bg-emerald-600 text-white"
-            : "bg-[#4a2e2b] text-white hover:bg-[#5a4036]"
+          available
+            ? added
+              ? "bg-[#1D9099] text-white"
+              : "bg-[#1D9099] text-white hover:bg-[#00454E]"
+            : "bg-gray-300 text-gray-600 cursor-not-allowed"
         }`}
       >
-        {added ? "✅ Added!" : "Add to Order"}
+        {available ? (added ? "✅ Added!" : "Add to Order") : "Coming Soon"}
       </button>
     </div>
   );
