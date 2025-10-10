@@ -22,11 +22,28 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) 
 
   return (
     <div
-      className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-95 z-50 animate-fadeIn"
+      className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-95 z-50 animate-fadeIn overflow-hidden"
       style={{
         animation: "fadeIn 0.8s ease-out",
       }}
     >
+      {/* Capa de hojitas cayendo */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="falling-leaf"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${6 + Math.random() * 5}s`,
+            }}
+          >
+            🍂
+          </div>
+        ))}
+      </div>
+
       {image && (
         <img
           src={image}
@@ -34,7 +51,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) 
           className="w-80 h-auto mb-4 rounded-lg shadow-lg animate-bounce-slow"
         />
       )}
-      <p className="text-lg text-gray-800 font-semibold text-center max-w-md mb-6 px-4">
+      <p className="text-lg text-gray-800 font-semibold text-center max-w-md mb-6 px-4 drop-shadow-sm">
         {message}
       </p>
       <button
