@@ -1,57 +1,79 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import SplashImage from "/attached_assets/Splash.png"; // asegúrate que esté en public/attached_assets/Splash.png
 
 interface SplashScreenProps {
   message: string;
-  image?: string;
-  onClose: () => void;
+  visible: boolean;
+  duration?: number; // por defecto 10s
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ message, image, onClose }) => {
-  const [visible, setVisible] = useState(true);
+const SplashScreen: React.FC<SplashScreenProps> = ({
+  message,
+  visible,
+  duration = 10000,
+}) => {
+  const [show, setShow] = useState(visible);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false);
-      onClose();
-    }, 10000); // ⏱️ 10 segundos
+    if (visible) {
+      const timer = setTimeout(() => setShow(false), duration);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, duration]);
 
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  if (!visible) return null;
+  if (!show) return null;
 
   return (
     <div
-      className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[9999]"
+      id="splash-root"
       style={{
+        position: "fixed",
+        inset: 0,
         backgroundColor: "#fffaf3",
+        zIndex: 999999,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        textAlign: "center",
+        transition: "opacity 0.5s ease-in-out",
+        padding: "20px",
       }}
     >
-      {image ? (
-        <img
-          src={image}
-          alt="Promotion"
-          className="w-80 h-auto mb-4 rounded-lg shadow-lg"
-          onError={(e) => {
-            console.error("Error loading splash image:", e);
-          }}
-        />
-      ) : (
-        <p className="text-gray-600 mb-4">Loading promotion...</p>
-      )}
-
-      <p className="text-lg text-gray-800 font-semibold text-center max-w-md mb-6 px-4">
-        {message || "Welcome to The Neighborhood Coffee ☕"}
-      </p>
-
-      <button
-        onClick={() => {
-          setVisible(false);
-          onClose();
+      <img
+        src={SplashImage}
+        alt="The Neighborhood Coffee Promo"
+        style={{
+          maxWidth: "90%",
+          height: "auto",
+          marginBottom: "1rem",
         }}
-        className="bg-[#8B4513] text-white px-5 py-2 rounded-lg shadow hover:bg-[#a0522d] transition-all"
+      />
+      <p
+        style={{
+          fontSize: "1.1rem",
+          fontWeight: 500,
+          color: "#3a2f2a",
+          marginBottom: "20px",
+          maxWidth: "80%",
+        }}
       >
-        Close
+        {message}
+      </p>
+      <button
+        onClick={() => setShow(false)}
+        style={{
+          backgroundColor: "#3a2f2a",
+          color: "#fffaf3",
+          border: "none",
+          borderRadius: "8px",
+          padding: "10px 20px",
+          fontSize: "1rem",
+          cursor: "pointer",
+          transition: "background-color 0.3s ease",
+        }}
+      >
+        Got it
       </button>
     </div>
   );
