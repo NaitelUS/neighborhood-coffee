@@ -14,11 +14,17 @@ import DeliveryPage from "./pages/DeliveryPage";
 // 🧠 Contexto global del carrito
 import { CartProvider } from "./context/CartContext";
 
+// 🍂 Splash Screen Promocional
+import SplashScreen from "./components/SplashScreen";
+
 export default function App() {
   return (
     <Router>
       <CartProvider>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 relative">
+          {/* 🍂 Splash Screen visible una sola vez por sesión */}
+          <SplashScreen />
+
           {/* 🌐 Header visible en todas las páginas */}
           <Header />
 
