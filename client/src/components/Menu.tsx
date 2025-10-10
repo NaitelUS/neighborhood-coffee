@@ -33,7 +33,6 @@ const Menu: React.FC = () => {
     fetchMenu();
   }, []);
 
-  // escuchar eventos de agregado al carrito
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       if (e.detail?.name) {
@@ -53,14 +52,6 @@ const Menu: React.FC = () => {
       </div>
     );
 
-  if (products.length === 0)
-    return (
-      <div className="flex justify-center items-center h-screen text-gray-500">
-        No products available.
-      </div>
-    );
-
-  // agrupar por categoría
   const grouped = products.reduce((acc: Record<string, Product[]>, p) => {
     const cat = p.category || "Other";
     if (!acc[cat]) acc[cat] = [];
@@ -76,45 +67,45 @@ const Menu: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#f7f3ef] py-10 px-4">
-      {/* toast */}
+    <div className="relative min-h-screen bg-[#f7f3ef] py-8 px-4">
+      {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg transition-all duration-300">
+        <div className="fixed top-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg transition-all duration-300 z-50">
           {toast}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-serif text-[#4a2e2b] mb-10 text-center">
+      <div className="max-w-[1400px] mx-auto">
+        <h2 className="text-4xl font-serif text-[#4a2e2b] mb-8 text-center">
           Our Menu
         </h2>
 
         {Object.keys(grouped).map((category) => (
-          <section key={category} className="mb-12">
-            <div className="flex items-center justify-center mb-6">
+          <section key={category} className="mb-10">
+            <div className="flex items-center justify-center mb-5">
               <span className="text-3xl mr-2">{icons[category]}</span>
               <h3 className="text-2xl font-semibold text-[#4a2e2b] border-b-2 border-[#d4b996] pb-1">
                 {category}
               </h3>
             </div>
 
-            {/* ✅ layout fijo: 1–2–3 columnas */}
+            {/* 💎 Nuevo layout responsivo + scroll lateral en móvil */}
             <div
               className="
-                grid
-                gap-8
-                grid-cols-1
-                sm:grid-cols-2
-                md:grid-cols-2
-                lg:grid-cols-3
-                xl:grid-cols-3
-                justify-items-center
+                flex flex-wrap justify-center gap-8 
+                overflow-x-auto snap-x snap-mandatory pb-3
+                sm:grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 sm:overflow-visible
               "
             >
               {grouped[category].map((product) => (
                 <div
                   key={product.id}
-                  className="w-full max-w-sm bg-white rounded-2xl shadow-md hover:shadow-xl border border-[#e6dfd8] overflow-hidden flex flex-col justify-between"
+                  className="
+                    flex-shrink-0 snap-center
+                    w-[85%] sm:w-full max-w-sm bg-white rounded-2xl
+                    shadow-md hover:shadow-xl border border-[#e6dfd8]
+                    overflow-hidden flex flex-col justify-between
+                  "
                 >
                   {(product.image || product.image_url) && (
                     <img
@@ -134,7 +125,7 @@ const Menu: React.FC = () => {
                     <MenuItem {...product} />
                   </div>
 
-                  {/* 🔹 Customize toggle */}
+                  {/* Customize drink */}
                   {product.available !== false && (
                     <div className="px-5 pb-4">
                       <button
@@ -143,7 +134,7 @@ const Menu: React.FC = () => {
                             customizingId === product.id ? null : product.id
                           )
                         }
-                        className="text-sm font-medium text-[#5a4036] hover:text-[#2f1f1b] mt-2"
+                        className="text-sm font-medium text-[#4a2e2b] hover:text-[#2f1f1b] mt-2"
                       >
                         {customizingId === product.id
                           ? "Close customization ✖️"
@@ -173,7 +164,7 @@ const Menu: React.FC = () => {
                     </div>
                   )}
 
-                  {/* 🔸 Coming soon para no disponibles */}
+                  {/* Coming soon */}
                   {product.available === false && (
                     <div className="bg-[#f8f2ed] text-center py-3 border-t border-[#e6dfd8]">
                       <span className="text-[#b08968] font-medium text-sm">
