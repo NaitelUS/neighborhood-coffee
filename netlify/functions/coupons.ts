@@ -1,55 +1,74 @@
-import { Handler } from "@netlify/functions";
-import { getAirtableClient } from "../lib/airtableClient";
+import Airtable from "airtable";
 
-const handler: Handler = async () => {
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
+
+exports.handler = async (event) => {
   try {
-    const base = getAirtableClient();
-    const table = base(process.env.AIRTABLE_TABLE_COUPONS || "Coupons");
+    const codeParam = event.queryStringParameters?.code;
+    if (!codeParam) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Missing code" }) };
+    }
 
-    const records = await table.select().all();
+    const code = codeParam.trim().toUpperCase();
 
-    const coupons = records.map((record) => {
-      const fields = record.fields;
+    const records = await base("Coupons")
+      .select({
+        filterByFormula: `UPPER({code}) = '${code}'`,
+        maxRecords: 1,
+      })
+      .firstPage();
 
+    if (!records || records.length === 0) {
       return {
-        id: record.id,
-        code: (fields.code || "").trim().toUpperCase(),
-        percent_off:
-          typeof fields.percent_off === "number"
-            ? fields.percent_off
-            : parseFloat(fields.percent_off) / 100 || 0,
-        valid_from: fields.valid_from || null,
-        valid_until: fields.valid_until || null,
-
-        // ✅ Garantiza booleano
-        active: !!fields.active && fields.active !== "false" && fields.active !== 0,
+        statusCode: 404,
+        body: JSON.stringify({ error: "Coupon not found" }),
       };
-    });
+    }
 
-    // ✅ Filtra solo cupones activos y válidos por fecha
+    const coupon = records[0].fields;
     const now = new Date();
-    const validCoupons = coupons.filter((coupon) => {
-      const from = coupon.valid_from ? new Date(coupon.valid_from) : null;
-      const until = coupon.valid_until ? new Date(coupon.valid_until) : null;
-      const isWithinDate =
-        (!from || now >= from) && (!until || now <= until);
-      return coupon.active && isWithinDate && coupon.code.length > 0;
-    });
+
+    // ✅ Validaciones
+    if (!coupon.active) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Coupon inactive" }),
+      };
+    }
+
+    if (
+      (coupon.valid_from && new Date(coupon.valid_from) > now) ||
+      (coupon.valid_until && new Date(coupon.valid_until) < now)
+    ) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Coupon expired or not yet valid" }),
+      };
+    }
+
+    const percent_off = Number(coupon.percent_off || 0);
+    if (percent_off <= 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid discount value" }),
+      };
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify(validCoupons),
+      body: JSON.stringify({
+        success: true,
+        code: coupon.code,
+        percent_off,
+      }),
     };
-  } catch (error: any) {
-    console.error("❌ Error loading coupons:", error);
+  } catch (err) {
+    console.error("Coupon error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: "Failed to fetch coupons",
-        details: error.message,
-      }),
+      body: JSON.stringify({ error: "Server error verifying coupon" }),
     };
   }
 };
-
-export { handler };
