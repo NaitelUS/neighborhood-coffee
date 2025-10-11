@@ -16,7 +16,7 @@ export default function OrderPage() {
     window.matchMedia("(max-width: 767px)").matches;
 
   return (
-    <div className="min-h-screen bg-[#fdf6ed]">
+    <div className="min-h-screen bg-[#fdf6ed] pt-20">
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
         <div className="mb-4">
           <h1 className="text-2xl md:text-3xl font-semibold text-[#5a3825]">
@@ -68,7 +68,7 @@ export default function OrderPage() {
 
             <button
               onClick={handleScrollToButton}
-              className="w-full bg-[#5a3825] hover:bg-[#4c2f1f] text-white py-3 rounded-xl font-semibold transition"
+              className="w-full bg-[#00454E] hover:bg-[#00373E] text-white py-3 rounded-xl font-semibold transition"
             >
               Place Order ☕
             </button>
