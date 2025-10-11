@@ -25,8 +25,6 @@ export default function Menu() {
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
         const data = await response.json();
-
-        // ✅ Filtrar productos disponibles
         const validProducts = Array.isArray(data)
           ? data.filter((p) => p.available !== false)
           : [];
@@ -48,7 +46,6 @@ export default function Menu() {
   if (error)
     return <p className="text-center text-red-500 mt-10">{error}</p>;
 
-  // ✅ Agrupar productos por categoría
   const groupByCategory = (category: string) =>
     products.filter(
       (p) => p.category?.toLowerCase() === category.toLowerCase()
@@ -59,60 +56,76 @@ export default function Menu() {
   const specialItems = groupByCategory("Special");
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      <h1 className="text-3xl md:text-4xl font-bold mb-10 text-amber-900 text-center tracking-wide">
         Our Menu
       </h1>
 
-      {/* ☕ House Brews */}
-      {coffeeItems.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6 text-amber-900 text-center">
-            ☕ House Brews
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
-            {coffeeItems.map((product) => (
-              <div key={product.id} className="flex justify-center">
-                <MenuItem product={product} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* SECTION WRAPPER */}
+      <div className="space-y-16">
 
-      {/* 🥐 From the Oven */}
-      {pastryItems.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6 text-amber-900 text-center">
-            🥐 From the Oven
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
-            {pastryItems.map((product) => (
-              <div key={product.id} className="flex justify-center">
-                <MenuItem product={product} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+        {/* ☕ House Brews */}
+        {coffeeItems.length > 0 && (
+          <section>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-semibold text-amber-900">
+                ☕ House Brews
+              </h2>
+              <div className="w-32 h-1 mx-auto mt-3 bg-gradient-to-r from-amber-700 to-yellow-500 rounded-full"></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
+              {coffeeItems.map((product) => (
+                <div key={product.id} className="flex justify-center">
+                  <MenuItem product={product} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-      {/* 🍂 Neighbor’s Picks */}
-      {specialItems.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-semibold mb-6 text-amber-900 text-center">
-            🍂 Neighbor’s Picks
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
-            {specialItems.map((product) => (
-              <div key={product.id} className="flex justify-center">
-                <MenuItem product={product} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+        {/* 🥐 From the Oven */}
+        {pastryItems.length > 0 && (
+          <section>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-semibold text-amber-900">
+                🥐 From the Oven
+              </h2>
+              <div className="w-32 h-1 mx-auto mt-3 bg-gradient-to-r from-amber-700 to-yellow-500 rounded-full"></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
+              {pastryItems.map((product) => (
+                <div key={product.id} className="flex justify-center">
+                  <MenuItem product={product} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-      {/* 🕊️ Sin productos */}
+        {/* 🍂 Neighbor’s Picks */}
+        {specialItems.length > 0 && (
+          <section>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-semibold text-amber-900">
+                🍂 Neighbor’s Picks
+              </h2>
+              <p className="text-sm text-amber-800 italic">
+                Seasonal favorites and limited-time blends
+              </p>
+              <div className="w-32 h-1 mx-auto mt-3 bg-gradient-to-r from-amber-700 to-yellow-500 rounded-full"></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
+              {specialItems.map((product) => (
+                <div key={product.id} className="flex justify-center">
+                  <MenuItem product={product} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+      </div>
+
       {products.length === 0 && (
         <p className="text-center text-gray-500 mt-8">
           No products available at this time.
