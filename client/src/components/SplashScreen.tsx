@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import SplashImage from "/attached_assets/Splash.png"; // asegúrate que esté en public/attached_assets/Splash.png
+import SplashImage from "/attached_assets/Splash.png"; // debe estar en client/public/attached_assets/Splash.png
 
 interface SplashScreenProps {
   message: string;
   visible: boolean;
-  duration?: number; // por defecto 10s
+  duration?: number;
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({
@@ -12,10 +12,11 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
   visible,
   duration = 10000,
 }) => {
-  const [show, setShow] = useState(visible);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (visible) {
+      setShow(true);
       const timer = setTimeout(() => setShow(false), duration);
       return () => clearTimeout(timer);
     }
@@ -36,8 +37,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         justifyContent: "center",
         alignItems: "center",
         textAlign: "center",
-        transition: "opacity 0.5s ease-in-out",
         padding: "20px",
+        transition: "opacity 0.5s ease-in-out",
       }}
     >
       <img
@@ -70,7 +71,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
           padding: "10px 20px",
           fontSize: "1rem",
           cursor: "pointer",
-          transition: "background-color 0.3s ease",
         }}
       >
         Got it
