@@ -3,100 +3,93 @@ import { CartContext } from "@/context/CartContext";
 import CouponField from "@/components/CouponField";
 
 export default function OrderSummary() {
-  const {
-    cartItems,
-    discount,
-    appliedCoupon,
-    removeFromCart,
-    subtotal,
-    total,
-  } = useContext(CartContext);
-
-  if (cartItems.length === 0) {
-    return (
-      <div className="bg-white shadow-md rounded-xl p-6 text-center">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Your Order</h2>
-        <p className="text-gray-500">Your cart is empty.</p>
-      </div>
-    );
-  }
+  const { cartItems, removeFromCart, subtotal, discount, total } =
+    useContext(CartContext);
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-6 w-full">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800">Your Order</h2>
+    <div className="space-y-4">
+      {/* Items */}
+      <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+        {cartItems.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            Your cart is empty.
+          </div>
+        ) : (
+          cartItems.map((item, i) => {
+            const qty = Number(item.qty || 1);
+            const base = Number(item.basePrice ?? item.price ?? 0);
+            const addonsTotal = Array.isArray(item.addons)
+              ? item.addons.reduce((sum, a) => sum + Number(a.price || 0), 0)
+              : 0;
+            const line = (base + addonsTotal) * qty;
 
-      {/* 🧾 Lista de productos */}
-      <ul className="divide-y divide-gray-200 mb-4">
-        {cartItems.map((item, index) => (
-          <li key={index} className="py-3">
-            <div className="flex justify-between items-start gap-3">
-              <div className="flex-1">
-                <p className="font-medium text-gray-800">{item.name}</p>
-
-                {/* ✅ Add-ons debajo del nombre */}
-                {item.addons && item.addons.length > 0 && (
-                  <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
-                    {item.addons.map((addon, idx) => (
-                      <li key={idx}>
-                        {addon.name} (+${addon.price.toFixed(2)})
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            return (
+              <div
+                key={i}
+                className="p-4 flex items-start justify-between hover:bg-amber-50/40 transition"
+              >
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {item.name} {item.option && `(${item.option})`}
+                  </div>
+                  {item.addons?.length > 0 && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      Add-ons: {item.addons.map((a) => a.name).join(", ")}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 mt-1">Qty: {qty}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-900">${line.toFixed(2)}</div>
+                  <button
+                    onClick={() => removeFromCart(item)}
+                    className="mt-1 text-xs text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-
-              {/* 💵 Precio */}
-              <div className="flex flex-col items-end">
-                <span className="text-gray-700 font-semibold">
-                  ${item.price.toFixed(2)}
-                </span>
-
-                {/* ❌ Botón de eliminar */}
-                <button
-                  onClick={() => removeFromCart(item)}
-                  className="text-red-500 hover:text-red-700 text-xs mt-1"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {/* 💵 Subtotal */}
-      <div className="flex justify-between py-1 text-gray-700">
-        <span>Subtotal</span>
-        <span>${subtotal.toFixed(2)}</span>
+            );
+          })
+        )}
       </div>
 
-      {/* 💸 Descuento */}
-      {discount > 0 && (
-        <div className="flex justify-between py-1 text-[#1D9099] font-medium">
-          <span>Discount ({appliedCoupon})</span>
-          <span>- ${(subtotal * discount).toFixed(2)}</span>
-        </div>
-      )}
-
-      {/* 🧾 Total */}
-      <div className="flex justify-between border-t mt-3 pt-3 text-lg font-bold text-gray-900">
-        <span>Total</span>
-        <span>${total.toFixed(2)}</span>
-      </div>
-
-      {/* 🏷️ Campo de cupón (debajo del total) */}
-      <div className="mt-4">
+      {/* Coupon */}
+      <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-[#5a3825] mb-2">Coupon</h3>
         <CouponField />
       </div>
 
-      {/* 🚀 Botón opcional */}
-      {cartItems.length > 0 && (
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
-            Review your items before checkout.
-          </p>
+      {/* Totales */}
+      <div className="bg-white border border-gray-100 rounded-xl p-4">
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Subtotal</span>
+          <span>${subtotal?.toFixed(2)}</span>
         </div>
-      )}
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Discount</span>
+          <span className={discount > 0 ? "text-green-600" : ""}>
+            - ${discount?.toFixed(2)}
+          </span>
+        </div>
+        <div className="flex justify-between font-semibold text-[#5a3825] text-base mt-1">
+          <span>Total</span>
+          <span>${total?.toFixed(2)}</span>
+        </div>
+      </div>
+
+      {/* Botón real */}
+      <button
+        id="place-order-button"
+        type="submit"
+        form="customer-info-form"
+        className="w-full bg-[#5a3825] hover:bg-[#4c2f1f] text-white py-3 rounded-xl font-semibold transition"
+      >
+        Place Order
+      </button>
+      <p className="text-[12px] text-gray-500 text-center">
+        One last step to great coffee ☕
+      </p>
     </div>
   );
 }
