@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
+interface OrderItem {
+  product_name: string;
+  option?: string;
+  addons?: string;
+  price?: number;
+  qty?: number;
+}
+
 interface Order {
   id: string;
   orderId: string;
@@ -15,13 +23,7 @@ interface Order {
   schedule_date?: string;
   schedule_time?: string;
   notes?: string;
-  items?: {
-    product_name: string;
-    option?: string;
-    addons?: string;
-    price?: number;
-    qty?: number;
-  }[];
+  items?: OrderItem[];
 }
 
 export default function ThankYou() {
@@ -51,22 +53,20 @@ export default function ThankYou() {
 
   if (!order)
     return (
-    <div className="text-center py-20">
-      <h1 className="text-2xl font-bold text-red-600 mb-4">
-        Order not found. Please check your link.
-      </h1>
-      <Link to="/" className="text-teal-600 underline font-medium">
-        Return to Menu
-      </Link>
-    </div>
-  );
-
-  const discountPct = order.discount ? order.discount * 100 : 0;
+      <div className="text-center py-20">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
+          Order not found. Please check your link.
+        </h1>
+        <Link to="/" className="text-teal-600 underline font-medium">
+          Return to Menu
+        </Link>
+      </div>
+    );
 
   return (
     <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 mt-10 mb-10">
-      <h1 className="text-3xl font-bold text-center text-teal-700 mb-4">
-        🎉 Your order has been received!
+      <h1 className="text-3xl font-bold text-center text-[#00454E] mb-4">
+        🎉 Thank you for your order!
       </h1>
 
       <div className="text-center mb-6">
@@ -81,27 +81,40 @@ export default function ThankYou() {
       {/* 🧾 Lista de productos */}
       {order.items && order.items.length > 0 && (
         <div className="border-t border-b py-4 mb-4 text-sm text-gray-800 space-y-2">
-          {order.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between">
-              <div>
-                <strong>{item.product_name}</strong>{" "}
-                {item.option && (
-                  <span className="text-gray-500">({item.option})</span>
-                )}
-                {item.addons && (
-                  <p className="text-gray-500 text-xs">+ {item.addons}</p>
-                )}
-                {item.qty && (
-                  <p className="text-xs text-gray-400">Qty: {item.qty}</p>
-                )}
+          {order.items.map((item, idx) => {
+            const addons =
+              item.addons && typeof item.addons === "string"
+                ? item.addons.split(",")
+                : [];
+            const addonsFormatted =
+              addons.length > 0
+                ? addons.map((a) => `+ ${a.trim()}`).join(", ")
+                : "";
+
+            const itemTotal = (item.price || 0) * (item.qty || 1);
+
+            return (
+              <div key={idx} className="flex justify-between">
+                <div>
+                  <p className="font-medium">
+                    {item.product_name}{" "}
+                    {item.option && (
+                      <span className="text-gray-500 text-sm">
+                        ({item.option})
+                      </span>
+                    )}
+                  </p>
+                  {addonsFormatted && (
+                    <p className="text-gray-500 text-xs">{addonsFormatted}</p>
+                  )}
+                  {item.qty && (
+                    <p className="text-xs text-gray-400">Qty: {item.qty}</p>
+                  )}
+                </div>
+                <p className="font-semibold">${itemTotal.toFixed(2)}</p>
               </div>
-              {item.price && (
-                <p className="font-medium">
-                  ${(Number(item.price) * (item.qty || 1)).toFixed(2)}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -115,12 +128,12 @@ export default function ThankYou() {
             </span>
           </p>
         )}
-        {order.coupon && (
+        {order.coupon && order.discount ? (
           <p className="text-green-700">
-            Discount ({order.coupon}): -{discountPct.toFixed(0)}%
+            Discount ({order.coupon}): -{(order.discount * 100).toFixed(0)}%
           </p>
-        )}
-        <p className="text-lg font-bold text-teal-800 mt-2">
+        ) : null}
+        <p className="text-lg font-bold text-[#00454E] mt-2">
           Total: ${Number(order.total).toFixed(2)}
         </p>
       </div>
@@ -145,11 +158,11 @@ export default function ThankYou() {
         )}
       </div>
 
-      {/* Botones */}
+      {/* 🔘 Botones */}
       <div className="text-center space-y-3">
         <Link
           to={`/status?id=${order.orderId || order.id}`}
-          className="block w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-700"
+          className="block w-full bg-[#00454E] text-white py-2 rounded-lg font-semibold hover:bg-[#046A71]"
         >
           Check Order Status
         </Link>
