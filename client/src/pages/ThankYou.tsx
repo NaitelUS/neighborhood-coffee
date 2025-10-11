@@ -8,33 +8,30 @@ const ThankYou: React.FC = () => {
   const orderId = searchParams.get("orderId");
 
   useEffect(() => {
-    // 🧹 Limpia el carrito completamente al llegar a la página
     clearCart();
   }, [clearCart]);
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-emerald-50 px-6 py-10">
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-md text-center">
-        <h1 className="text-3xl font-bold text-emerald-700 mb-4">
-          Thank You!
-        </h1>
-        <p className="text-gray-700 text-lg mb-4">
+        <h1 className="text-3xl font-bold text-emerald-700 mb-4">Thank You!</h1>
+        <p className="text-gray-700 text-lg mb-3">
           Your order has been placed successfully.
         </p>
 
         {orderId ? (
-          <p className="text-gray-500 text-sm mb-6">
+          <p className="text-gray-500 text-sm mb-5">
             <strong>Order ID:</strong> {orderId}
           </p>
         ) : (
-          <p className="text-red-500 text-sm mb-6">
+          <p className="text-red-500 text-sm mb-5">
             ⚠️ Order not found. Please check your connection or try again.
           </p>
         )}
 
         <img
           src="/attached_assets/coffee_success.png"
-          alt="Success illustration"
+          alt="Success"
           className="mx-auto mb-6 w-32 h-32 object-contain"
         />
 
