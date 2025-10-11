@@ -66,24 +66,24 @@ export default function OrderSummary() {
           <span>Subtotal</span>
           <span>${subtotal?.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>Discount</span>
-          <span className={discount > 0 ? "text-green-600" : ""}>
-            - ${discount?.toFixed(2)}
-          </span>
-        </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-sm text-green-700">
+            <span>Discount</span>
+            <span>- ${discount?.toFixed(2)}</span>
+          </div>
+        )}
         <div className="flex justify-between font-semibold text-[#5a3825] text-base mt-1">
           <span>Total</span>
           <span>${total?.toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Botón real */}
+      {/* Botón final */}
       <button
         id="place-order-button"
         type="submit"
         form="customer-info-form"
-        className="w-full bg-[#5a3825] hover:bg-[#4c2f1f] text-white py-3 rounded-xl font-semibold transition"
+        className="w-full bg-[#00454E] hover:bg-[#00373E] text-white py-3 rounded-xl font-semibold transition"
       >
         Place Order
       </button>
