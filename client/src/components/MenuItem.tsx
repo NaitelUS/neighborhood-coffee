@@ -1,149 +1,161 @@
-import React, { useContext, useState } from "react";
-import { CartContext } from "../context/CartContext";
-import { formatProductName } from "../utils/formatProductName";
+import React, { useState, useContext } from "react";
+import { CartContext } from "@/context/CartContext";
+import AddOnSelector from "@/components/AddOnSelector";
 
 interface AddOn {
+  id?: string;
   name: string;
   price: number;
+  description?: string;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  image?: string; // nombre de archivo, ej: "americano_hot.png"
-  addons?: AddOn[];
-}
-
-export default function MenuItem({ product }: { product: Product }) {
-  const { addToCart } = useContext(CartContext);
-  const [selectedOption, setSelectedOption] = useState("Hot");
-  const [showCustomize, setShowCustomize] = useState(false);
-  const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
-  const isPastry = product.category === "Pastry";
-
-  const basePrice = product.price || 0;
-  const addOnTotal = selectedAddOns.reduce(
-    (sum, addon) => sum + (addon.price || 0),
-    0
-  );
-  const totalPrice = basePrice + addOnTotal;
-
-  const toggleAddOn = (addon: AddOn) => {
-    if (selectedAddOns.some((a) => a.name === addon.name)) {
-      setSelectedAddOns((prev) => prev.filter((a) => a.name !== addon.name));
-    } else {
-      setSelectedAddOns((prev) => [...prev, addon]);
-    }
+interface MenuItemProps {
+  product: {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    image_url?: string;
+    is_hot?: boolean;
+    is_iced?: boolean;
+    category?: string;
   };
+}
+
+export default function MenuItem({ product }: MenuItemProps) {
+  const { addToCart } = useContext(CartContext);
+
+  const [selectedOption, setSelectedOption] = useState<string>(
+    product.is_hot ? "Hot" : product.is_iced ? "Iced" : ""
+  );
+  const [customize, setCustomize] = useState(false);
+  const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
+
+  const totalPrice =
+    product.price + selectedAddOns.reduce((sum, a) => sum + a.price, 0);
+
+  const isPastry = product.category?.toLowerCase() === "pastry";
 
   const handleAddToCart = () => {
-    const itemName = formatProductName(product.name, isPastry ? undefined : selectedOption);
+    if (isPastry) return;
+
+    if (!selectedOption && !isPastry) {
+      alert("Please select Hot or Iced before adding to your order.");
+      return;
+    }
+
+    const itemName = isPastry
+      ? product.name
+      : `${product.name} (${selectedOption})`;
+
     addToCart({
       id: product.id,
       name: itemName,
       price: totalPrice,
-      option: isPastry ? undefined : selectedOption,
+      option: selectedOption,
       addons: !isPastry
         ? selectedAddOns.map((a) => ({
             name: a.name,
             price: a.price,
           }))
         : [],
-      qty: 1,
     });
-    // opcional: reset de add-ons tras agregar
-    // setSelectedAddOns([]);
+
+    alert(`${itemName} added to your order!`);
   };
 
-  const imgSrc = product.image
-    ? `/attached_assets/${product.image}`
-    : "/attached_assets/placeholder.png"; // fallback opcional
-
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center text-center">
-      {/* Imagen */}
+    <div className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-all">
+      {/* 🖼 Imagen */}
       <img
-        src={imgSrc}
+        src={`${import.meta.env.BASE_URL}${
+          product.image_url?.replace(/^\//, "") || "attached_assets/tnclogo.png"
+        }`}
         alt={product.name}
-        className="w-24 h-24 object-contain mb-2"
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).src = "/attached_assets/placeholder.png";
-        }}
+        className="w-full h-48 object-cover rounded-md mb-3"
       />
 
-      {/* Nombre + precio */}
-      <p className="text-lg font-semibold text-[#00454E] mb-1">
-        {formatProductName(product.name, isPastry ? undefined : selectedOption)}
+      {/* 📋 Nombre y descripción */}
+      <h2 className="text-lg font-semibold mb-1">{product.name}</h2>
+      <p className="text-sm text-gray-600 mb-2">
+        {product.description || "Delicious item from our menu"}
       </p>
-      <p className="text-gray-600 mb-3">${totalPrice.toFixed(2)}</p>
 
-      {/* Opciones de bebida */}
-      {!isPastry && (
-        <div className="flex space-x-3 mb-3">
-          {["Hot", "Iced"].map((opt) => (
-            <button
-              key={opt}
-              onClick={() => setSelectedOption(opt)}
-              className={`px-3 py-1 rounded-full border ${
-                selectedOption === opt
-                  ? "bg-[#00454E] text-white"
-                  : "bg-white text-gray-700"
-              }`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
+      {/* 🥐 Coming Soon */}
+      {isPastry && (
+        <p className="text-sm text-[#1D9099] font-medium mb-3">🥐 Coming Soon</p>
       )}
 
-      {/* Customize your drink (checkbox) */}
-      {!isPastry && product.addons && product.addons.length > 0 && (
-        <div className="w-full text-left">
-          <label className="flex items-center space-x-2 mb-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showCustomize}
-              onChange={() => setShowCustomize((v) => !v)}
-              className="accent-[#00454E]"
-            />
-            <span className="text-sm text-gray-700">Customize your drink</span>
-          </label>
-
-          {showCustomize && (
-            <div className="w-full border-t pt-2 mt-2">
-              {product.addons.map((addon) => (
-                <label
-                  key={addon.name}
-                  className="flex items-center justify-between text-sm mb-1"
-                >
-                  <span>{addon.name}</span>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-gray-500 text-xs">
-                      +${addon.price.toFixed(2)}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={selectedAddOns.some((a) => a.name === addon.name)}
-                      onChange={() => toggleAddOn(addon)}
-                      className="accent-[#00454E]"
-                    />
-                  </div>
-                </label>
-              ))}
-            </div>
+      {/* ☕ Hot/Iced solo si no es empanada */}
+      {!isPastry && (
+        <div className="flex gap-2 mb-3">
+          {product.is_hot && (
+            <button
+              onClick={() => setSelectedOption("Hot")}
+              className={`px-3 py-1 rounded-md border ${
+                selectedOption === "Hot"
+                  ? "bg-[#1D9099] text-white border-[#00454E]"
+                  : "bg-white text-gray-800 border-gray-300 hover:bg-[#e0f7f8]"
+              }`}
+            >
+              Hot
+            </button>
+          )}
+          {product.is_iced && (
+            <button
+              onClick={() => setSelectedOption("Iced")}
+              className={`px-3 py-1 rounded-md border ${
+                selectedOption === "Iced"
+                  ? "bg-[#1D9099] text-white border-[#00454E]"
+                  : "bg-white text-gray-800 border-gray-300 hover:bg-[#e0f7f8]"
+              }`}
+            >
+              Iced
+            </button>
           )}
         </div>
       )}
 
-      {/* Botón agregar */}
-      <button
-        onClick={handleAddToCart}
-        className="mt-4 w-full bg-[#00454E] text-white py-2 rounded-lg font-semibold hover:bg-[#00363C]"
-      >
-        Add to Order
-      </button>
+      {/* 🧩 Customize */}
+      {!isPastry && (
+        <>
+          <label className="flex items-center gap-2 mb-3">
+            <input
+              type="checkbox"
+              checked={customize}
+              onChange={(e) => setCustomize(e.target.checked)}
+            />
+            <span className="font-medium">Customize your drink</span>
+          </label>
+
+          {customize && (
+            <AddOnSelector
+              onSelect={(addons) => {
+                setSelectedAddOns(addons);
+              }}
+            />
+          )}
+        </>
+      )}
+
+      {/* 💵 Total y botón */}
+      <div className="mt-3 flex justify-between items-center">
+        <span className="text-lg font-semibold text-gray-800">
+          ${totalPrice.toFixed(2)}
+        </span>
+
+        <button
+          onClick={handleAddToCart}
+          disabled={isPastry}
+          className={`px-4 py-2 rounded-md font-medium ${
+            isPastry
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-[#1D9099] text-white hover:bg-[#00454E]"
+          }`}
+        >
+          {isPastry ? "Coming Soon" : "Add to Order"}
+        </button>
+      </div>
     </div>
   );
 }
