@@ -3,90 +3,82 @@ import { CartContext } from "@/context/CartContext";
 import CouponField from "@/components/CouponField";
 
 export default function OrderSummary() {
-  const { cartItems, removeFromCart, subtotal, discount, total } =
-    useContext(CartContext);
+  const { cartItems, subtotal, discount, total } = useContext(CartContext);
+
+  if (!cartItems || cartItems.length === 0) {
+    return (
+      <div className="text-center text-gray-600 py-12">
+        Your cart is empty ☕
+        <br />
+        <a href="/" className="text-emerald-700 hover:underline mt-2 inline-block">
+          ← Go back to menu
+        </a>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Items */}
-      <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
-        {cartItems.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            Your cart is empty.
-          </div>
-        ) : (
-          cartItems.map((item, i) => {
-            const qty = Number(item.qty || 1);
-            const base = Number(item.basePrice ?? item.price ?? 0);
-            const addonsTotal = Array.isArray(item.addons)
-              ? item.addons.reduce((sum, a) => sum + Number(a.price || 0), 0)
-              : 0;
-            const line = (base + addonsTotal) * qty;
+    <div className="bg-white rounded-2xl shadow-md p-6">
+      <h2 className="text-2xl font-semibold text-amber-900 mb-6 text-center">
+        Review Your Order
+      </h2>
 
-            return (
-              <div
-                key={i}
-                className="p-4 flex items-start justify-between hover:bg-amber-50/40 transition"
-              >
-                <div>
-                  <div className="font-medium text-gray-900">
-                    {item.name} {item.option && `(${item.option})`}
-                  </div>
-                  {item.addons?.length > 0 && (
-                    <div className="text-xs text-gray-600 mt-1">
-                      Add-ons: {item.addons.map((a) => a.name).join(", ")}
-                    </div>
-                  )}
-                  <div className="text-xs text-gray-500 mt-1">Qty: {qty}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-900">${line.toFixed(2)}</div>
-                  <button
-                    onClick={() => removeFromCart(item)}
-                    className="mt-1 text-xs text-red-600 hover:text-red-700 font-medium"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+      {/* Items */}
+      <ul className="divide-y divide-gray-200 mb-6">
+        {cartItems.map((item, i) => (
+          <li key={i} className="py-3 flex justify-between items-start">
+            <div>
+              <p className="font-medium text-gray-800">
+                {item.name} {item.option ? `(${item.option})` : ""}
+              </p>
+              {item.addons && item.addons.length > 0 && (
+                <p className="text-sm text-gray-500">
+                  Add-ons:{" "}
+                  {item.addons.map((a: any) => `${a.name} (+$${a.price})`).join(", ")}
+                </p>
+              )}
+            </div>
+            <p className="font-semibold text-gray-800">${item.total?.toFixed(2) || item.price?.toFixed(2)}</p>
+          </li>
+        ))}
+      </ul>
 
       {/* Coupon */}
-      <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-[#5a3825] mb-2">Coupon</h3>
+      <div className="mb-6">
         <CouponField />
       </div>
 
-      {/* Totales */}
-      <div className="bg-white border border-gray-100 rounded-xl p-4">
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>Subtotal</span>
-          <span>${subtotal?.toFixed(2)}</span>
+      {/* Totals */}
+      <div className="border-t border-gray-200 pt-4 space-y-1 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Subtotal</span>
+          <span className="font-medium text-gray-800">${subtotal.toFixed(2)}</span>
         </div>
         {discount > 0 && (
-          <div className="flex justify-between text-sm text-green-700">
+          <div className="flex justify-between text-green-600">
             <span>Discount</span>
-            <span>- ${discount?.toFixed(2)}</span>
+            <span>- ${discount.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between font-semibold text-[#5a3825] text-base mt-1">
+        <div className="flex justify-between text-lg font-semibold text-amber-900 mt-2">
           <span>Total</span>
-          <span>${total?.toFixed(2)}</span>
+          <span>${total.toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Botón final */}
-      <button
-        id="place-order-button"
-        type="submit"
-        form="customer-info-form"
-        className="w-full bg-[#00454E] hover:bg-[#00373E] text-white py-3 rounded-xl font-semibold transition"
-      >
-        Place Order
-      </button>
+      {/* Main Button */}
+      <div className="mt-8 text-center">
+        <button
+          type="submit"
+          form="customer-info-form"
+          className="w-full bg-[#00454E] hover:bg-[#00353D] text-white py-3.5 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-sm"
+        >
+          Place Order <span className="text-lg">☕</span>
+        </button>
+        <p className="text-sm text-gray-500 mt-2">
+          One last step to great coffee.
+        </p>
+      </div>
     </div>
   );
 }
