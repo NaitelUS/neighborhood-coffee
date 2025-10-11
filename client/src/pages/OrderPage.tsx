@@ -1,4 +1,3 @@
-// client/src/pages/OrderPage.tsx
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "@/context/CartContext";
@@ -14,8 +13,8 @@ export default function OrderPage() {
 
   const handleOrderSubmit = async (
     info: any,
-    schedule_date: string,
-    schedule_time: string
+    scheduleDate: string,
+    scheduleTime: string
   ) => {
     if (cartItems.length === 0) {
       alert("Your cart is empty.");
@@ -25,34 +24,35 @@ export default function OrderPage() {
     setLoading(true);
 
     try {
-      const orderData = {
-        customer_name: info.name,
-        customer_phone: info.phone,
+      const payload = {
+        name: info.name,
+        phone: info.phone,
         address: info.method === "Delivery" ? info.address : "",
-        order_type: info.method,
-        schedule_date,
-        schedule_time,
+        orderType: info.method,
+        scheduleDate,
+        scheduleTime,
         subtotal,
         discount,
         total,
-        coupon_code: appliedCoupon || "",
+        coupon: appliedCoupon || "",
         notes: info.notes || "",
         items: cartItems.map((item) => ({
-          name: item.name,
+          product_name: item.name,
           option: item.option || "",
+          addons: item.addons?.map((a) => a.name).join(", ") || "",
           price: item.price,
-          addons: item.addons || [],
+          qty: item.qty,
         })),
       };
 
       const res = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(payload),
       });
 
       const result = await res.json();
-      if (!result.success) throw new Error("Order creation failed");
+      if (!result.success) throw new Error(result.error || "Order creation failed");
 
       const orderId = result.orderId;
       navigate(`/thank-you?id=${orderId}`);
@@ -73,6 +73,7 @@ export default function OrderPage() {
       <div>
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
+
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg text-center">
