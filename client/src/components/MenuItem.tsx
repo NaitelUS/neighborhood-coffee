@@ -22,6 +22,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ product, addons = [] }) => {
   const [selectedOption, setSelectedOption] = useState("Hot");
   const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([]);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [addedMessage, setAddedMessage] = useState(false);
 
   const toggleAddOn = (addon: AddOn) => {
     setSelectedAddOns((prev) =>
@@ -40,33 +41,43 @@ const MenuItem: React.FC<MenuItemProps> = ({ product, addons = [] }) => {
       name: `${product.name} (${selectedOption})`,
       option: selectedOption,
       price: totalPrice,
-      basePrice: basePrice,
-      includesAddons: true,
+      basePrice,
+      includesAddons: selectedAddOns.length > 0,
       addons: selectedAddOns,
       image_url: product.image_url,
     };
 
     addToCart(item);
+    setAddedMessage(true);
+    setTimeout(() => setAddedMessage(false), 1200);
+  };
+
+  const getImagePath = () => {
+    if (product.image_url?.startsWith("/attached_assets/")) {
+      return product.image_url;
+    }
+    return `/attached_assets/${product.image_url || "placeholder.png"}`;
   };
 
   return (
-    <div className="bg-white shadow-md rounded-2xl p-4 flex flex-col items-center text-center">
+    <div className="bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center text-center w-full max-w-sm mx-auto transition-transform hover:scale-[1.02]">
       <img
-        src={product.image_url || "/placeholder.png"}
+        src={getImagePath()}
         alt={product.name}
-        className="w-24 h-24 object-cover mb-2 rounded-lg"
+        className="w-28 h-28 object-cover mb-3 rounded-xl shadow-sm"
       />
       <h3 className="font-semibold text-lg text-gray-800">{product.name}</h3>
-      <p className="text-sm text-gray-500 mb-2">${product.price.toFixed(2)}</p>
+      <p className="text-sm text-gray-500 mb-3">${product.price.toFixed(2)}</p>
 
+      {/* Hot / Iced buttons */}
       <div className="flex justify-center space-x-2 mb-3">
         {product.hot_available && (
           <button
             onClick={() => setSelectedOption("Hot")}
-            className={`px-3 py-1 rounded-full border ${
+            className={`px-3 py-1 rounded-full border transition ${
               selectedOption === "Hot"
-                ? "bg-emerald-600 text-white"
-                : "bg-white text-emerald-600"
+                ? "bg-emerald-600 text-white border-emerald-600"
+                : "bg-white text-emerald-600 border-emerald-600"
             }`}
           >
             Hot
@@ -75,10 +86,10 @@ const MenuItem: React.FC<MenuItemProps> = ({ product, addons = [] }) => {
         {product.iced_available && (
           <button
             onClick={() => setSelectedOption("Iced")}
-            className={`px-3 py-1 rounded-full border ${
+            className={`px-3 py-1 rounded-full border transition ${
               selectedOption === "Iced"
-                ? "bg-emerald-600 text-white"
-                : "bg-white text-emerald-600"
+                ? "bg-emerald-600 text-white border-emerald-600"
+                : "bg-white text-emerald-600 border-emerald-600"
             }`}
           >
             Iced
@@ -86,7 +97,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ product, addons = [] }) => {
         )}
       </div>
 
-      <label className="text-sm font-medium text-emerald-700 cursor-pointer mb-2">
+      {/* Customize */}
+      <label className="text-sm font-medium text-emerald-700 cursor-pointer mb-2 flex items-center justify-center">
         <input
           type="checkbox"
           checked={showCustomize}
@@ -97,7 +109,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ product, addons = [] }) => {
       </label>
 
       {showCustomize && addons.length > 0 && (
-        <div className="w-full mb-3 text-left">
+        <div className="w-full border rounded-xl border-gray-200 bg-emerald-50 p-3 mb-3">
           {addons.map((addon) => (
             <label
               key={addon.name}
@@ -122,9 +134,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ product, addons = [] }) => {
 
       <button
         onClick={handleAddToCart}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full text-sm font-semibold mt-2 transition"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-full text-sm font-semibold mt-2 transition-all"
       >
-        Add to order
+        {addedMessage ? "✓ Added!" : "Add to order"}
       </button>
     </div>
   );
