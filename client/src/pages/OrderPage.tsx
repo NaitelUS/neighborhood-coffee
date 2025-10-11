@@ -18,15 +18,6 @@ export default function OrderPage() {
   return (
     <div className="min-h-screen bg-[#fdf6ed] pt-20">
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
-        <div className="mb-4">
-          <h1 className="text-2xl md:text-3xl font-semibold text-[#5a3825]">
-            Review Your Order
-          </h1>
-          <p className="text-sm text-gray-600">
-            Confirm your drinks and pickup details below.
-          </p>
-        </div>
-
         {/* GRID PRINCIPAL */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           {/* 🧾 Orden */}
@@ -72,9 +63,6 @@ export default function OrderPage() {
             >
               Place Order ☕
             </button>
-            <p className="text-[11px] text-center text-gray-500 mt-1">
-              One last step to great coffee
-            </p>
           </div>
         </div>
       )}
