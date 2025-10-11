@@ -1,0 +1,22 @@
+{
+  "short_name": "TNC",
+  "name": "The Neighborhood Coffee",
+  "description": "Order your favorite coffee, pastries, and seasonal drinks from The Neighborhood Coffee.",
+  "icons": [
+    {
+      "src": "/attached_assets/tnclogo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/attached_assets/tnclogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#a9712a",
+  "background_color": "#fff8ee",
+  "orientation": "portrait-primary"
+}
