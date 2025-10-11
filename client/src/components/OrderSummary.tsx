@@ -53,7 +53,7 @@ export default function OrderSummary() {
 
                 {/* ❌ Botón de eliminar */}
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item)}
                   className="text-red-500 hover:text-red-700 text-xs mt-1"
                 >
                   Remove
