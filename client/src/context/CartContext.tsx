@@ -1,133 +1,146 @@
-import React, { createContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 
-type AddOn = { name: string; price: number };
-type CartItem = {
-  id: string;
-  name: string;
-  option?: string;
-  price: number;      // precio base SIN add-ons
-  addons?: AddOn[];   // [{name, price}]
-  qty: number;
-};
-
-type CartContextType = {
-  cartItems: CartItem[];
-  addToCart: (item: Omit<CartItem, "qty">) => void;
-  updateQty: ((item: CartItem, newQty: number) => void) &
-             ((id: string, option: string | undefined, delta: number) => void);
-  removeFromCart: ((item: CartItem) => void) &
-                  ((id: string, option?: string) => void);
-  clearCart: () => void;
-  appliedCoupon: string | null;
-  setAppliedCoupon: (c: string | null) => void;
-  discount: number; // 0..1
-  setDiscount: (n: number) => void;
-  subtotal: number;
-  total: number;
-};
-
-export const CartContext = createContext<CartContextType>({} as any);
-
-const addonsKey = (addons?: AddOn[]) =>
-  JSON.stringify((addons || []).map(a => ({ n: a.name, p: a.price })));
-
-const sameLine = (a: CartItem, b: Omit<CartItem,"qty">) =>
-  a.name === b.name &&
-  a.option === b.option &&
-  addonsKey(a.addons) === addonsKey(b.addons);
+export const CartContext = createContext<any>(null);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    try {
-      const raw = localStorage.getItem("tnc.cart.v1");
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
-  });
+  // -----------------------------
+  // 🧮 Estados principales
+  // -----------------------------
+  const [cartItems, setCartItems] = useState<any[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discount, setDiscount] = useState<number>(0);
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [total, setTotal] = useState<number>(0);
 
+  // -----------------------------
+  // 🧾 Control de versión (para limpiar carrito en cada deploy)
+  // -----------------------------
   useEffect(() => {
-    localStorage.setItem("tnc.cart.v1", JSON.stringify(cartItems));
+    const currentVersion = "v2.0.1"; // 🔁 actualiza este número en cada deploy
+    const savedVersion = localStorage.getItem("cartVersion");
+
+    if (savedVersion !== currentVersion) {
+      console.log("🧹 Clearing old cart from previous version");
+      localStorage.removeItem("cartItems");
+      localStorage.setItem("cartVersion", currentVersion);
+    }
+
+    const savedCart = localStorage.getItem("cartItems");
+    if (savedCart) {
+      try {
+        setCartItems(JSON.parse(savedCart));
+      } catch (err) {
+        console.error("Error loading cart:", err);
+      }
+    }
+  }, []);
+
+  // -----------------------------
+  // 💾 Guardar carrito en localStorage cada vez que cambie
+  // -----------------------------
+  useEffect(() => {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // 👉 NO sumamos add-ons aquí; los sumamos una sola vez en subtotal.
-  const addToCart = (product: Omit<CartItem, "qty">) => {
-    const idx = cartItems.findIndex(ci => sameLine(ci, product));
-    if (idx >= 0) {
-      const next = [...cartItems];
-      next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
-      setCartItems(next);
-    } else {
-      setCartItems([...cartItems, { ...product, qty: 1 }]);
-    }
+  // -----------------------------
+  // 🧮 Recalcular subtotal y total dinámicamente
+  // -----------------------------
+  useEffect(() => {
+    const newSubtotal = cartItems.reduce((sum, item) => {
+      const addonsTotal = (item.addons || []).reduce(
+        (s: number, a: any) => s + (a.price || 0),
+        0
+      );
+      return sum + (item.price + addonsTotal) * (item.qty || 1);
+    }, 0);
+
+    setSubtotal(newSubtotal);
+
+    // total con descuento si hay cupón aplicado
+    const newTotal = appliedCoupon ? newSubtotal * (1 - discount) : newSubtotal;
+    setTotal(newTotal);
+  }, [cartItems, discount, appliedCoupon]);
+
+  // -----------------------------
+  // 🛒 Funciones del carrito
+  // -----------------------------
+
+  // Agregar producto
+  const addToCart = (product: any) => {
+    setCartItems((prev) => {
+      const existing = prev.find(
+        (p) =>
+          p.name === product.name &&
+          p.option === product.option &&
+          JSON.stringify(p.addons) === JSON.stringify(product.addons)
+      );
+
+    // si ya existe, solo aumenta cantidad
+      if (existing) {
+        return prev.map((p) =>
+          p === existing ? { ...p, qty: (p.qty || 1) + 1 } : p
+        );
+      } else {
+        return [...prev, { ...product, qty: 1 }];
+      }
+    });
   };
 
-  // Firma 1: updateQty(item, newQty)
-  const updateQtyByItem = (item: CartItem, newQty: number) => {
-    const nextQty = Math.max(1, Math.floor(newQty || 1));
-    setCartItems(prev =>
-      prev.map(ci =>
-        ci === item || sameLine(ci, item) ? { ...ci, qty: nextQty } : ci
+  // Remover producto
+  const removeFromCart = (item: any) => {
+    setCartItems((prev) =>
+      prev.filter(
+        (p) =>
+          !(
+            p.name === item.name &&
+            p.option === item.option &&
+            JSON.stringify(p.addons) === JSON.stringify(item.addons)
+          )
       )
     );
   };
-  // Firma 2: updateQty(id, option, delta)
-  const updateQtyByKey = (id: string, option: string | undefined, delta: number) => {
-    setCartItems(prev =>
-      prev.map(ci =>
-        ci.id === id && ci.option === option
-          ? { ...ci, qty: Math.max(1, (ci.qty || 1) + (delta || 0)) }
-          : ci
+
+  // Actualizar cantidad
+  const updateQty = (item: any, newQty: number) => {
+    setCartItems((prev) =>
+      prev.map((p) =>
+        p.name === item.name &&
+        p.option === item.option &&
+        JSON.stringify(p.addons) === JSON.stringify(item.addons)
+          ? { ...p, qty: newQty }
+          : p
       )
     );
   };
-  const updateQty: any = (a: any, b: any, c?: any) => {
-    if (typeof a === "object") return updateQtyByItem(a, b);
-    return updateQtyByKey(a, b, c);
-  };
 
-  // Firma 1: removeFromCart(item)
-  const removeByItem = (item: CartItem) => {
-    setCartItems(prev => prev.filter(ci => !(ci === item || sameLine(ci, item))));
-  };
-  // Firma 2: removeFromCart(id, option)
-  const removeByKey = (id: string, option?: string) => {
-    setCartItems(prev => prev.filter(ci => !(ci.id === id && ci.option === option)));
-  };
-  const removeFromCart: any = (a: any, b?: any) => {
-    if (typeof a === "object") return removeByItem(a);
-    return removeByKey(a, b);
-  };
-
+  // Vaciar carrito (para ThankYou o cancelaciones)
   const clearCart = () => {
     setCartItems([]);
     setAppliedCoupon(null);
     setDiscount(0);
+    localStorage.removeItem("cartItems");
   };
 
-  // 💵 Subtotal: (precio base + add-ons) * qty — solo una vez
-  const subtotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => {
-      const addonsTotal = (item.addons || []).reduce((s, a) => s + (a.price || 0), 0);
-      return sum + (item.price + addonsTotal) * (item.qty || 1);
-    }, 0);
-  }, [cartItems]);
-
-  const total = useMemo(() => subtotal * (1 - discount), [subtotal, discount]);
-
-  const value: CartContextType = {
-    cartItems,
-    addToCart,
-    updateQty,
-    removeFromCart,
-    clearCart,
-    appliedCoupon,
-    setAppliedCoupon,
-    discount,
-    setDiscount,
-    subtotal,
-    total,
-  };
-
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  // -----------------------------
+  // 🔗 Exportar todo el contexto
+  // -----------------------------
+  return (
+    <CartContext.Provider
+      value={{
+        cartItems,
+        subtotal,
+        total,
+        appliedCoupon,
+        discount,
+        addToCart,
+        removeFromCart,
+        updateQty,
+        clearCart,
+        setAppliedCoupon,
+        setDiscount,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 };
