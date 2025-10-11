@@ -1,6 +1,3 @@
-// === VERSION STICKY CATEGORY BAR (Checkpoint 1.6) ===
-// To rollback: replace with Menu_Checkpoint1.5
-
 import React, { useEffect, useState, useRef } from "react";
 import MenuItem from "@/components/MenuItem";
 
@@ -64,11 +61,7 @@ export default function Menu() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10 relative">
-      <h1 className="text-3xl md:text-4xl font-bold text-center text-amber-900 mb-10 tracking-wide animate-fadeIn">
-        Our Menu
-      </h1>
-
+    <div className="max-w-7xl mx-auto px-4 py-10 relative pt-20">
       {/* Sticky category bar */}
       <div className="sticky top-0 z-10 py-3 backdrop-blur-sm text-center mb-10">
         <div className="flex justify-center space-x-6 text-amber-900 font-medium text-sm md:text-base overflow-x-auto scrollbar-hide">
@@ -97,7 +90,6 @@ export default function Menu() {
                 <div className="w-32 h-1 mx-auto mt-3 bg-gradient-to-r from-amber-700 to-yellow-500 rounded-full"></div>
               </div>
 
-              {/* mobile carousel */}
               <div className="block md:hidden overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4">
                 <div className="flex space-x-6 px-2">
                   {items.map((p) => (
@@ -113,7 +105,6 @@ export default function Menu() {
                 </div>
               </div>
 
-              {/* desktop grid */}
               <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {items.map((p) => (
                   <div
