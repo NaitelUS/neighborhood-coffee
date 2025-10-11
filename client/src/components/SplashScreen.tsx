@@ -75,12 +75,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
       >
         Got it
       </button>
-
-<div style={{ backgroundColor: 'red', width: '100%', height: '100%' }}>
-  <p>Testing Splash Visibility</p>
-</div>
-
-      
     </div>
   );
 };
