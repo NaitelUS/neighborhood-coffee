@@ -1,17 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { formatProductName } from "../utils/formatProductName";
-
-interface OrderItem {
-  product_name: string;
-  option?: string;
-  addons?: string;
-  price?: number;
-  qty?: number;
-}
 
 interface Order {
   id: string;
+  orderId: string;
   name: string;
   phone: string;
   order_type: string;
@@ -23,7 +15,13 @@ interface Order {
   schedule_date?: string;
   schedule_time?: string;
   notes?: string;
-  items?: OrderItem[];
+  items?: {
+    product_name: string;
+    option?: string;
+    addons?: string;
+    price?: number;
+    qty?: number;
+  }[];
 }
 
 export default function ThankYou() {
@@ -34,12 +32,13 @@ export default function ThankYou() {
 
   useEffect(() => {
     if (!orderId) return;
+
     fetch(`/.netlify/functions/orders-get?id=${orderId}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data && data.id) setOrder(data);
+        if (data && (data.id || data.orderId)) setOrder(data);
       })
-      .catch((err) => console.error("Error fetching order:", err))
+      .catch((err) => console.error("❌ Error fetching order:", err))
       .finally(() => setLoading(false));
   }, [orderId]);
 
@@ -52,27 +51,27 @@ export default function ThankYou() {
 
   if (!order)
     return (
-      <div className="text-center py-20">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Order not found. Please check your link.
-        </h1>
-        <Link to="/" className="text-teal-600 underline font-medium">
-          Return to Menu
-        </Link>
-      </div>
-    );
+    <div className="text-center py-20">
+      <h1 className="text-2xl font-bold text-red-600 mb-4">
+        Order not found. Please check your link.
+      </h1>
+      <Link to="/" className="text-teal-600 underline font-medium">
+        Return to Menu
+      </Link>
+    </div>
+  );
 
   const discountPct = order.discount ? order.discount * 100 : 0;
 
   return (
-    <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 mt-10">
+    <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 mt-10 mb-10">
       <h1 className="text-3xl font-bold text-center text-teal-700 mb-4">
         🎉 Your order has been received!
       </h1>
 
       <div className="text-center mb-6">
         <p className="text-gray-700 font-mono text-lg mb-1">
-          Order #: {order.id}
+          Order #: {order.orderId || order.id}
         </p>
         <p className="text-gray-500 text-sm">
           {order.order_type} — {order.schedule_date} {order.schedule_time}
@@ -83,27 +82,24 @@ export default function ThankYou() {
       {order.items && order.items.length > 0 && (
         <div className="border-t border-b py-4 mb-4 text-sm text-gray-800 space-y-2">
           {order.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between items-start">
-              <div className="flex-1 pr-2">
-                <strong>
-                  {formatProductName(item.product_name, item.option)}
-                </strong>
+            <div key={idx} className="flex justify-between">
+              <div>
+                <strong>{item.product_name}</strong>{" "}
+                {item.option && (
+                  <span className="text-gray-500">({item.option})</span>
+                )}
                 {item.addons && (
                   <p className="text-gray-500 text-xs">+ {item.addons}</p>
                 )}
-              </div>
-              <div className="text-right">
-                {item.qty && item.qty > 1 && (
-                  <p className="text-xs text-gray-500">
-                    Qty: <strong>{item.qty}</strong>
-                  </p>
-                )}
-                {item.price && (
-                  <p className="font-medium">
-                    ${(Number(item.price) * (item.qty || 1)).toFixed(2)}
-                  </p>
+                {item.qty && (
+                  <p className="text-xs text-gray-400">Qty: {item.qty}</p>
                 )}
               </div>
+              {item.price && (
+                <p className="font-medium">
+                  ${(Number(item.price) * (item.qty || 1)).toFixed(2)}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -114,7 +110,9 @@ export default function ThankYou() {
         {order.subtotal && (
           <p>
             Subtotal:{" "}
-            <span className="font-semibold">${order.subtotal.toFixed(2)}</span>
+            <span className="font-semibold">
+              ${Number(order.subtotal).toFixed(2)}
+            </span>
           </p>
         )}
         {order.coupon && (
@@ -129,16 +127,28 @@ export default function ThankYou() {
 
       {/* 👤 Información del cliente */}
       <div className="text-sm text-gray-700 mb-4">
-        <p><strong>👤 Name:</strong> {order.name}</p>
-        <p><strong>📞 Phone:</strong> {order.phone}</p>
-        {order.address && <p><strong>🏠 Address:</strong> {order.address}</p>}
-        {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
+        <p>
+          <strong>👤 Name:</strong> {order.name}
+        </p>
+        <p>
+          <strong>📞 Phone:</strong> {order.phone}
+        </p>
+        {order.address && (
+          <p>
+            <strong>🏠 Address:</strong> {order.address}
+          </p>
+        )}
+        {order.notes && (
+          <p>
+            <strong>📝 Notes:</strong> {order.notes}
+          </p>
+        )}
       </div>
 
       {/* Botones */}
       <div className="text-center space-y-3">
         <Link
-          to={`/status?id=${order.id}`}
+          to={`/status?id=${order.orderId || order.id}`}
           className="block w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-700"
         >
           Check Order Status
