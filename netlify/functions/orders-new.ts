@@ -1,19 +1,20 @@
+import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
+  process.env.AIRTABLE_BASE_ID || ""
 );
 
-exports.handler = async (event) => {
-  try {
-    if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({ error: "Method not allowed" }),
-      };
-    }
+export const handler: Handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
+  }
 
-    const data = JSON.parse(event.body || "{}");
+  try {
+    const body = JSON.parse(event.body || "{}");
     const {
       name,
       phone,
@@ -27,20 +28,21 @@ exports.handler = async (event) => {
       coupon,
       notes,
       items,
-    } = data;
+    } = body;
 
-    if (!items || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Missing items" }),
+        body: JSON.stringify({ error: "No items provided" }),
       };
     }
 
-    // ✅ Agrupar productos idénticos (mismo id + option + addons)
+    // 🧩 Agrupar productos idénticos antes de enviarlos
     const groupedItems = Object.values(
-      items.reduce((acc, item) => {
-        const key = `${item.id || item.name}-${item.option || ""}-${(item.addons || [])
-          .map((a) => a.name || a)
+      items.reduce((acc: Record<string, any>, item) => {
+        const key = `${item.product_name}-${item.option || ""}-${(item.addons ||
+          [])
+          .map((a: any) => (typeof a === "string" ? a : a.name))
           .sort()
           .join(",")}`;
         if (!acc[key]) {
@@ -49,13 +51,15 @@ exports.handler = async (event) => {
           acc[key].qty += item.qty || 1;
         }
         return acc;
-      }, {} as Record<string, any>)
+      }, {})
     );
 
-    // 🧾 Crear el registro en Orders
-    const now = new Date();
-    const orderId = `TNC-${now.getTime().toString().slice(-6)}`;
+    // 🧾 Crear un OrderID y OrderNumber
+    const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
+    const orderId = `TNC-${timestamp}`;
+    const orderNumber = Math.floor(Math.random() * 1000000);
 
+    // 🧱 Crear registro principal (Orders)
     const [orderRecord] = await base("Orders").create([
       {
         fields: {
@@ -69,49 +73,49 @@ exports.handler = async (event) => {
           Discount: discount || 0,
           Total: total || 0,
           Coupon: coupon || "",
-          Status: "Received",
           Notes: notes || "",
+          Status: "Received",
           OrderID: orderId,
-          CreatedAt: now.toISOString(),
+          OrderNumber: orderNumber,
+          Date: new Date().toISOString(),
+          CreatedAt: new Date().toISOString(),
         },
       },
     ]);
 
-    // 🧩 Crear registros en OrderItems (ya agrupados)
-    await Promise.all(
-      groupedItems.map(async (item) => {
-        const addonsString = (item.addons || [])
-          .map((a) => (typeof a === "string" ? a : a.name))
-          .join(", ");
+    // 📦 Crear registros en OrderItems
+    const orderItemRecords = groupedItems.map((item: any) => ({
+      fields: {
+        Order: orderId,
+        ProductName: item.product_name,
+        Option: item.option || "",
+        AddOns:
+          typeof item.addons === "string"
+            ? item.addons
+            : item.addons?.map((a: any) => a.name || a).join(", "),
+        Price: item.price || 0,
+        Qty: item.qty || 1,
+      },
+    }));
 
-        await base("OrderItems").create([
-          {
-            fields: {
-              Order: orderId,
-              ProductName: item.name,
-              Option: item.option || "",
-              AddOns: addonsString,
-              Price: item.price || 0,
-              Qty: item.qty || 1,
-            },
-          },
-        ]);
-      })
-    );
+    await base("OrderItems").create(orderItemRecords);
+
+    console.log(`✅ Order created: ${orderId} (${orderItemRecords.length} items)`);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
         id: orderId,
-        items: groupedItems,
+        orderNumber,
+        groupedItemsCount: groupedItems.length,
       }),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Error creating order:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: "Failed to create order" }),
     };
   }
 };
