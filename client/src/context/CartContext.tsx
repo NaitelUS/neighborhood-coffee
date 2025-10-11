@@ -1,55 +1,102 @@
-import React, { createContext, useState, useMemo } from "react";
+import React, { createContext, useEffect, useMemo, useState } from "react";
 
-export const CartContext = createContext<any>(null);
+type AddOn = { name: string; price: number };
+type CartItem = {
+  id: string;
+  name: string;
+  option?: string;
+  price: number;      // precio base SIN add-ons
+  addons?: AddOn[];   // [{name, price}]
+  qty: number;
+};
 
-export const CartProvider = ({ children }: any) => {
-  const [cartItems, setCartItems] = useState<any[]>([]);
+type CartContextType = {
+  cartItems: CartItem[];
+  addToCart: (item: Omit<CartItem, "qty">) => void;
+  updateQty: ((item: CartItem, newQty: number) => void) &
+             ((id: string, option: string | undefined, delta: number) => void);
+  removeFromCart: ((item: CartItem) => void) &
+                  ((id: string, option?: string) => void);
+  clearCart: () => void;
+  appliedCoupon: string | null;
+  setAppliedCoupon: (c: string | null) => void;
+  discount: number; // 0..1
+  setDiscount: (n: number) => void;
+  subtotal: number;
+  total: number;
+};
+
+export const CartContext = createContext<CartContextType>({} as any);
+
+const addonsKey = (addons?: AddOn[]) =>
+  JSON.stringify((addons || []).map(a => ({ n: a.name, p: a.price })));
+
+const sameLine = (a: CartItem, b: Omit<CartItem,"qty">) =>
+  a.name === b.name &&
+  a.option === b.option &&
+  addonsKey(a.addons) === addonsKey(b.addons);
+
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem("tnc.cart.v1");
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discount, setDiscount] = useState<number>(0);
 
-  // ✅ Agregar producto (NO suma los AddOns aquí)
-  const addToCart = (product: any) => {
-    const existing = cartItems.find(
-      (item) =>
-        item.name === product.name &&
-        item.option === product.option &&
-        JSON.stringify(item.addons) === JSON.stringify(product.addons)
-    );
+  useEffect(() => {
+    localStorage.setItem("tnc.cart.v1", JSON.stringify(cartItems));
+  }, [cartItems]);
 
-    if (existing) {
-      setCartItems(
-        cartItems.map((item) =>
-          item === existing ? { ...item, qty: item.qty + 1 } : item
-        )
-      );
+  // 👉 NO sumamos add-ons aquí; los sumamos una sola vez en subtotal.
+  const addToCart = (product: Omit<CartItem, "qty">) => {
+    const idx = cartItems.findIndex(ci => sameLine(ci, product));
+    if (idx >= 0) {
+      const next = [...cartItems];
+      next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+      setCartItems(next);
     } else {
       setCartItems([...cartItems, { ...product, qty: 1 }]);
     }
   };
 
-  const removeFromCart = (product: any) => {
-    setCartItems(
-      cartItems.filter(
-        (item) =>
-          !(
-            item.name === product.name &&
-            item.option === product.option &&
-            JSON.stringify(item.addons) === JSON.stringify(product.addons)
-          )
+  // Firma 1: updateQty(item, newQty)
+  const updateQtyByItem = (item: CartItem, newQty: number) => {
+    const nextQty = Math.max(1, Math.floor(newQty || 1));
+    setCartItems(prev =>
+      prev.map(ci =>
+        ci === item || sameLine(ci, item) ? { ...ci, qty: nextQty } : ci
       )
     );
   };
-
-  const updateQty = (product: any, qty: number) => {
-    setCartItems(
-      cartItems.map((item) =>
-        item.name === product.name &&
-        item.option === product.option &&
-        JSON.stringify(item.addons) === JSON.stringify(product.addons)
-          ? { ...item, qty }
-          : item
+  // Firma 2: updateQty(id, option, delta)
+  const updateQtyByKey = (id: string, option: string | undefined, delta: number) => {
+    setCartItems(prev =>
+      prev.map(ci =>
+        ci.id === id && ci.option === option
+          ? { ...ci, qty: Math.max(1, (ci.qty || 1) + (delta || 0)) }
+          : ci
       )
     );
+  };
+  const updateQty: any = (a: any, b: any, c?: any) => {
+    if (typeof a === "object") return updateQtyByItem(a, b);
+    return updateQtyByKey(a, b, c);
+  };
+
+  // Firma 1: removeFromCart(item)
+  const removeByItem = (item: CartItem) => {
+    setCartItems(prev => prev.filter(ci => !(ci === item || sameLine(ci, item))));
+  };
+  // Firma 2: removeFromCart(id, option)
+  const removeByKey = (id: string, option?: string) => {
+    setCartItems(prev => prev.filter(ci => !(ci.id === id && ci.option === option)));
+  };
+  const removeFromCart: any = (a: any, b?: any) => {
+    if (typeof a === "object") return removeByItem(a);
+    return removeByKey(a, b);
   };
 
   const clearCart = () => {
@@ -58,28 +105,21 @@ export const CartProvider = ({ children }: any) => {
     setDiscount(0);
   };
 
-  // ✅ Subtotal calcula AddOns solo una vez
+  // 💵 Subtotal: (precio base + add-ons) * qty — solo una vez
   const subtotal = useMemo(() => {
     return cartItems.reduce((sum, item) => {
-      const addonsTotal = item.addons
-        ? item.addons.reduce(
-            (addonSum: number, addon: any) => addonSum + (addon.price || 0),
-            0
-          )
-        : 0;
-      const itemTotal = (item.price + addonsTotal) * (item.qty || 1);
-      return sum + itemTotal;
+      const addonsTotal = (item.addons || []).reduce((s, a) => s + (a.price || 0), 0);
+      return sum + (item.price + addonsTotal) * (item.qty || 1);
     }, 0);
   }, [cartItems]);
 
-  // ✅ Total con descuento (solo una vez)
   const total = useMemo(() => subtotal * (1 - discount), [subtotal, discount]);
 
-  const value = {
+  const value: CartContextType = {
     cartItems,
     addToCart,
-    removeFromCart,
     updateQty,
+    removeFromCart,
     clearCart,
     appliedCoupon,
     setAppliedCoupon,
