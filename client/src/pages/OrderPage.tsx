@@ -1,83 +1,80 @@
-// client/src/pages/OrderPage.tsx
-import React, { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext } from "react";
 import { CartContext } from "@/context/CartContext";
 import OrderSummary from "@/components/OrderSummary";
 import CustomerInfoForm from "@/components/CustomerInfoForm";
 
 export default function OrderPage() {
-  const { cartItems, subtotal, discount, appliedCoupon, total, clearCart } =
-    useContext(CartContext);
+  const { cartItems, subtotal, discount, total } = useContext(CartContext);
 
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-
-  const handleOrderSubmit = async (
-    info: any,
-    schedule_date: string,
-    schedule_time: string
-  ) => {
-    if (cartItems.length === 0) {
-      alert("Your cart is empty.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const orderData = {
-        customer_name: info.name,
-        customer_phone: info.phone,
-        address: info.method === "Delivery" ? info.address : "",
-        order_type: info.method,
-        schedule_date,
-        schedule_time,
-        subtotal,
-        discount,
-        total,
-        coupon_code: appliedCoupon || "",
-        notes: info.notes || "",
-        items: cartItems.map((item) => ({
-          name: item.name,
-          option: item.option || "",
-          price: item.price,
-          addons: item.addons || [],
-        })),
-      };
-
-      const res = await fetch("/.netlify/functions/orders-new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-
-      const result = await res.json();
-      if (!result.success) throw new Error("Order creation failed");
-
-      const orderId = result.orderId;
-      navigate(`/thank-you?id=${orderId}`);
-      clearCart();
-    } catch (err) {
-      console.error("❌ Error sending order:", err);
-      alert("There was an error submitting your order.");
-    } finally {
-      setLoading(false);
-    }
+  const handleScrollToButton = () => {
+    const btn = document.getElementById("place-order-button");
+    if (btn) btn.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  const isMobile =
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches;
+
   return (
-    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 px-4 mt-6">
-      <div>
-        <OrderSummary />
+    <div className="min-h-screen bg-[#fdf6ed]">
+      <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
+        <div className="mb-4">
+          <h1 className="text-2xl md:text-3xl font-semibold text-[#5a3825]">
+            Review Your Order
+          </h1>
+          <p className="text-sm text-gray-600">
+            Confirm your drinks and pickup details below.
+          </p>
+        </div>
+
+        {/* GRID PRINCIPAL */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+          {/* 🧾 Orden */}
+          <section className="bg-white rounded-2xl shadow-md p-4 md:p-6">
+            <h2 className="text-lg font-medium text-[#5a3825] mb-3">
+              Your Drinks
+            </h2>
+            <OrderSummary />
+          </section>
+
+          {/* 👤 Información del cliente */}
+          <section className="bg-white rounded-2xl shadow-md p-4 md:p-6">
+            <h2 className="text-lg font-medium text-[#5a3825] mb-3">
+              Pickup Details
+            </h2>
+            <CustomerInfoForm />
+          </section>
+        </div>
       </div>
-      <div>
-        <CustomerInfoForm onSubmit={handleOrderSubmit} />
-      </div>
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#1D9099] mx-auto mb-3"></div>
-            <p className="text-gray-700">Submitting your order...</p>
+
+      {/* Barra fija móvil */}
+      {isMobile && cartItems.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4">
+          <div className="bg-white shadow-lg rounded-2xl border border-amber-100 p-4">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Subtotal</span>
+              <span>${subtotal?.toFixed(2)}</span>
+            </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-sm text-green-600 mb-2">
+                <span>Discount</span>
+                <span>- ${discount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold text-[#5a3825] text-base mb-3">
+              <span>Total</span>
+              <span>${total?.toFixed(2)}</span>
+            </div>
+
+            <button
+              onClick={handleScrollToButton}
+              className="w-full bg-[#5a3825] hover:bg-[#4c2f1f] text-white py-3 rounded-xl font-semibold transition"
+            >
+              Place Order ☕
+            </button>
+            <p className="text-[11px] text-center text-gray-500 mt-1">
+              One last step to great coffee
+            </p>
           </div>
         </div>
       )}
