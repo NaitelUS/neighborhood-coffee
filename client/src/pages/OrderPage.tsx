@@ -1,89 +1,151 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CartContext } from "@/context/CartContext";
-import OrderSummary from "@/components/OrderSummary";
-import CustomerInfoForm from "@/components/CustomerInfoForm";
+import { CartContext } from "../context/CartContext";
 
-export default function OrderPage() {
-  const { cartItems, subtotal, discount, appliedCoupon, total, clearCart } =
-    useContext(CartContext);
-
+const OrderPage: React.FC = () => {
+  const { cartItems, total, clearCart } = useContext(CartContext);
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
 
-  const handleOrderSubmit = async (
-    info: any,
-    schedule_date: string,
-    schedule_time: string
-  ) => {
-    if (cartItems.length === 0) {
-      alert("Your cart is empty.");
-      return;
-    }
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryType, setDeliveryType] = useState("pickup");
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
-      const orderData = {
-        customer_name: info.name,
-        customer_phone: info.phone,
-        address: info.method === "Delivery" ? info.address : "",
-        order_type: info.method,
-        schedule_date,
-        schedule_time,
-        subtotal,
-        discount,
-        total,
-        coupon_code: appliedCoupon || "",
-        notes: info.notes || "",
-        items: cartItems.map((item) => ({
-          name: item.name,
-          option: item.option || "",
-          price: item.price,
-          qty: item.qty || 1,
-          addons: item.addons || [],
-        })),
-      };
-
-      const res = await fetch("/.netlify/functions/orders-new", {
+      const response = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify({
+          customerName,
+          customerPhone,
+          deliveryType,
+          scheduleDate,
+          scheduleTime,
+          cartItems,
+          total,
+        }),
       });
 
-      const result = await res.json();
+      const data = await response.json();
 
-      if (!result.success || !result.orderId) {
-        throw new Error(result.error || "Order creation failed");
+      if (data.success) {
+        // 🧹 limpia el carrito al registrar orden
+        clearCart();
+        navigate(`/thank-you?orderId=${data.orderId}`);
+      } else {
+        alert("⚠️ Error placing order: " + data.error);
       }
-
-      const orderId = result.orderId;
-      clearCart();
-      navigate(`/thank-you?id=${orderId}`);
     } catch (err) {
-      console.error("❌ Error sending order:", err);
-      alert("There was an error submitting your order.");
+      console.error("Order submit error:", err);
+      alert("An error occurred while placing your order.");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
+  if (!cartItems.length)
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          Your cart is empty
+        </h2>
+        <a href="/" className="text-emerald-600 underline">
+          ← Go back to menu
+        </a>
+      </div>
+    );
+
   return (
-    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 px-4 mt-6">
-      <div>
-        <OrderSummary />
-      </div>
-      <div>
-        <CustomerInfoForm onSubmit={handleOrderSubmit} />
-      </div>
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#1D9099] mx-auto mb-3"></div>
-            <p className="text-gray-700">Submitting your order...</p>
+    <div className="max-w-xl mx-auto bg-white shadow-md rounded-2xl p-6 mt-6">
+      <h2 className="text-2xl font-semibold text-center text-emerald-700 mb-4">
+        Complete Your Order
+      </h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">Name</label>
+          <input
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            required
+            className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500"
+            placeholder="Your name"
+          />
+        </div>
+
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">Phone</label>
+          <input
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            required
+            className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500"
+            placeholder="555-123-4567"
+          />
+        </div>
+
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">
+            Delivery Type
+          </label>
+          <select
+            value={deliveryType}
+            onChange={(e) => setDeliveryType(e.target.value)}
+            className="w-full border rounded-md px-3 py-2"
+          >
+            <option value="pickup">Pickup</option>
+            <option value="delivery">Delivery</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Date
+            </label>
+            <input
+              type="date"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
+              required
+              className="w-full border rounded-md px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Time
+            </label>
+            <input
+              type="time"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+              required
+              className="w-full border rounded-md px-3 py-2"
+            />
           </div>
         </div>
-      )}
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`w-full py-3 mt-2 font-semibold text-white rounded-md transition ${
+            isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-emerald-600 hover:bg-emerald-700"
+          }`}
+        >
+          {isSubmitting ? "Placing Order..." : `Place Order ($${total.toFixed(2)})`}
+        </button>
+      </form>
     </div>
   );
-}
+};
+
+export default OrderPage;
