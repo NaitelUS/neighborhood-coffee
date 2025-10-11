@@ -2,44 +2,46 @@ import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
+  process.env.AIRTABLE_BASE_ID as string
 );
 
-const TABLE_COUPONS = "Coupons";
-
 export const handler: Handler = async (event) => {
-  try {
-    const code = (event.queryStringParameters?.code || "").trim();
-    if (!code) {
-      return { statusCode: 200, body: JSON.stringify({ valid: false, reason: "Missing code" }) };
-    }
+  const code = event.queryStringParameters?.code?.trim().toUpperCase();
 
-    const records = await base(TABLE_COUPONS)
-      .select({
-        filterByFormula: `LOWER({code}) = '${code.toLowerCase()}'`,
-        maxRecords: 1,
-      })
+  if (!code) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ valid: false, reason: "Missing coupon code" }),
+    };
+  }
+
+  try {
+    const records = await base("Coupons")
+      .select({ filterByFormula: `{code} = "${code}"` })
       .firstPage();
 
-    if (records.length === 0) {
-      return { statusCode: 200, body: JSON.stringify({ valid: false, reason: "Coupon not found" }) };
+    if (!records.length) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ valid: false, reason: "Coupon not found" }),
+      };
     }
 
-    const c = records[0].fields as any;
-    const active = !!c.active;
-    const pct = Number(c.percent_off || 0) / 100;
+    const record = records[0];
+    const isActive = record.get("active");
+    const discountField = record.get("percent_off");
 
-    // Validación de fechas (si existen)
-    const now = new Date();
-    const fromOk = !c.valid_from || new Date(c.valid_from) <= now;
-    const untilOk = !c.valid_until || new Date(c.valid_until) >= now;
+    const discount =
+      typeof discountField === "number"
+        ? discountField
+        : parseFloat(String(discountField || "0"));
 
-    if (!active || !fromOk || !untilOk || !(pct > 0)) {
+    if (!isActive || discount <= 0) {
       return {
         statusCode: 200,
         body: JSON.stringify({
           valid: false,
-          reason: !active ? "Inactive" : !fromOk ? "Not started" : !untilOk ? "Expired" : "Invalid discount",
+          reason: "Inactive or invalid coupon",
         }),
       };
     }
@@ -48,14 +50,18 @@ export const handler: Handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         valid: true,
-        code: c.code,
-        discount: pct, // 0.15 = 15%
+        code,
+        discount,
       }),
     };
   } catch (err) {
-    console.error("coupons.ts error:", err);
-    // Responder 200 para no romper UI
-    return { statusCode: 200, body: JSON.stringify({ valid: false, reason: "Server error" }) };
-    // Si prefieres 500, cambia el statusCode a 500 y ajusta el front.
+    console.error("Error verifying coupon:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        valid: false,
+        reason: "Server error verifying coupon",
+      }),
+    };
   }
 };
