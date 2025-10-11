@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import SplashImage from "/attached_assets/Splash.png"; // debe estar en client/public/attached_assets/Splash.png
+import SplashImage from "/attached_assets/Splash.png"; // Asegúrate de que esté en client/public/attached_assets/Splash.png
 
 interface SplashScreenProps {
   message: string;
@@ -76,3 +76,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         Got it
       </button>
     </div>
+  );
+};
+
+export default SplashScreen;
