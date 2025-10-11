@@ -28,31 +28,28 @@ export default function OrderSummary() {
         Your Order
       </h2>
 
-      {/* 🧾 Lista de productos */}
       <div className="space-y-3">
         {cartItems.map((item) => (
           <div
             key={`${item.id}-${item.option || ""}`}
             className="flex items-center justify-between border-b pb-2"
           >
-            {/* 👉 Selector de cantidad */}
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => updateQty(item.id, -1)}
+                onClick={() => updateQty(item.id, item.option, -1)}
                 className="px-2 py-1 border rounded hover:bg-gray-100"
               >
                 -
               </button>
               <span className="w-6 text-center">{item.qty}</span>
               <button
-                onClick={() => updateQty(item.id, 1)}
+                onClick={() => updateQty(item.id, item.option, 1)}
                 className="px-2 py-1 border rounded hover:bg-gray-100"
               >
                 +
               </button>
             </div>
 
-            {/* 🧾 Detalle del producto */}
             <div className="flex-1 px-3">
               <p className="font-semibold">
                 {formatProductName(item.name, item.option)}
@@ -64,13 +61,12 @@ export default function OrderSummary() {
               )}
             </div>
 
-            {/* 💰 Precio */}
             <div className="text-right">
               <p className="font-semibold">
                 ${(item.price * item.qty).toFixed(2)}
               </p>
               <button
-                onClick={() => removeFromCart(item.id)}
+                onClick={() => removeFromCart(item.id, item.option)}
                 className="text-xs text-red-500 hover:underline"
               >
                 Remove
@@ -80,7 +76,6 @@ export default function OrderSummary() {
         ))}
       </div>
 
-      {/* 💰 Totales */}
       <div className="border-t pt-3 text-right space-y-1">
         <p>
           Subtotal:{" "}
@@ -96,7 +91,6 @@ export default function OrderSummary() {
         </p>
       </div>
 
-      {/* 🏷️ Campo de cupón */}
       <CouponField />
     </div>
   );
