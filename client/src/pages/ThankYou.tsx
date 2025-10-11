@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { formatProductName } from "../utils/formatProductName";
 
 interface Order {
   id: string;
@@ -76,8 +77,9 @@ export default function ThankYou() {
           {order.items.map((item, idx) => (
             <div key={idx} className="flex justify-between">
               <div>
-                <strong>{item.product_name}</strong>{" "}
-                {item.option && <span className="text-gray-500">({item.option})</span>}
+                <strong>
+                  {formatProductName(item.product_name, item.option)}
+                </strong>
                 {item.addons && (
                   <p className="text-gray-500 text-xs">+ {item.addons}</p>
                 )}
@@ -90,11 +92,12 @@ export default function ThankYou() {
         </div>
       )}
 
-      {/* 💰 Totales (movido arriba) */}
+      {/* 💰 Totales */}
       <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4">
         {order.subtotal && (
           <p>
-            Subtotal: <span className="font-semibold">${order.subtotal.toFixed(2)}</span>
+            Subtotal:{" "}
+            <span className="font-semibold">${order.subtotal.toFixed(2)}</span>
           </p>
         )}
         {order.coupon && (
