@@ -89,7 +89,7 @@ export default function MenuItem({ product }: { product: Product }) {
           {product.addons.map((addon) => (
             <label
               key={addon.name}
-              className="flex items-center justify-between text-sm"
+              className="flex items-center justify-between text-sm mb-1"
             >
               <span>{addon.name}</span>
               <div className="flex items-center space-x-1">
@@ -103,3 +103,18 @@ export default function MenuItem({ product }: { product: Product }) {
                   className="accent-[#00454E]"
                 />
               </div>
+            </label>
+          ))}
+        </div>
+      )}
+
+      {/* 🛒 Botón agregar */}
+      <button
+        onClick={handleAddToCart}
+        className="mt-4 w-full bg-[#00454E] text-white py-2 rounded-lg font-semibold hover:bg-[#00363C]"
+      >
+        Add to Order
+      </button>
+    </div>
+  );
+}
