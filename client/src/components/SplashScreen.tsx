@@ -76,7 +76,3 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         Got it
       </button>
     </div>
-  );
-};
-
-export default SplashScreen;
