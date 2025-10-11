@@ -1,112 +1,56 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useState, useEffect } from "react";
 
 export const CartContext = createContext<any>(null);
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cartItems, setCartItems] = useState<any[]>([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [total, setTotal] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  const [discount, setDiscount] = useState<number>(0);
-  const [subtotal, setSubtotal] = useState<number>(0);
-  const [total, setTotal] = useState<number>(0);
 
-  // 🧾 Limpieza automática del carrito en nuevos deploys
+  // Load cart from localStorage
   useEffect(() => {
-    const currentVersion = "v2.0.2"; // ⬅️ cambia cada vez que hagas deploy
-    const savedVersion = localStorage.getItem("cartVersion");
-
-    if (savedVersion !== currentVersion) {
-      console.log("🧹 Clearing old cart from previous version");
-      localStorage.removeItem("cartItems");
-      localStorage.setItem("cartVersion", currentVersion);
-    }
-
-    const savedCart = localStorage.getItem("cartItems");
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (err) {
-        console.error("Error loading cart:", err);
-      }
-    }
+    const stored = localStorage.getItem("cartItems");
+    if (stored) setCartItems(JSON.parse(stored));
   }, []);
 
-  // 💾 Guardar carrito en localStorage
+  // Save cart to localStorage
   useEffect(() => {
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // 🧮 Calcular subtotal y total con precisión
+  // Calculate subtotal
   useEffect(() => {
-    const newSubtotal = cartItems.reduce((sum, item) => {
-      const addonsTotal = (item.addons || []).reduce(
-        (s: number, a: any) => s + (a.price || 0),
-        0
-      );
-
-      // Usa basePrice si está definido
-      const basePrice = item.basePrice ?? item.price;
-
-      // Solo suma addons si el producto no los incluye
-      const totalItemPrice =
-        basePrice + (!item.includesAddons ? addonsTotal : 0);
-
-      return sum + totalItemPrice * (item.qty || 1);
+    const sum = cartItems.reduce((acc, item) => {
+      const base = Number(item.basePrice ?? item.price ?? 0);
+      const addonsTotal = Array.isArray(item.addons)
+        ? item.addons.reduce((sum, a) => sum + Number(a.price || 0), 0)
+        : 0;
+      const qty = Number(item.qty || 1);
+      return acc + (base + addonsTotal) * qty;
     }, 0);
+    setSubtotal(sum);
+  }, [cartItems]);
 
-    setSubtotal(newSubtotal);
+  // Calculate total
+  useEffect(() => {
+    let finalTotal = subtotal;
+    if (discount > 0) finalTotal -= discount;
+    setTotal(finalTotal > 0 ? finalTotal : 0);
+  }, [subtotal, discount]);
 
-    const newTotal = appliedCoupon ? newSubtotal * (1 - discount) : newSubtotal;
-    setTotal(newTotal);
-  }, [cartItems, discount, appliedCoupon]);
-
-  // -------------------------------
-  // 🛒 Funciones principales
-  // -------------------------------
-
+  // Add to cart
   const addToCart = (product: any) => {
-    setCartItems((prev) => {
-      const existing = prev.find(
-        (p) =>
-          p.name === product.name &&
-          p.option === product.option &&
-          JSON.stringify(p.addons) === JSON.stringify(product.addons)
-      );
-
-      if (existing) {
-        return prev.map((p) =>
-          p === existing ? { ...p, qty: (p.qty || 1) + 1 } : p
-        );
-      } else {
-        return [...prev, { ...product, qty: 1 }];
-      }
-    });
+    setCartItems((prev) => [...prev, product]);
   };
 
-  const removeFromCart = (item: any) => {
-    setCartItems((prev) =>
-      prev.filter(
-        (p) =>
-          !(
-            p.name === item.name &&
-            p.option === item.option &&
-            JSON.stringify(p.addons) === JSON.stringify(item.addons)
-          )
-      )
-    );
+  // Remove from cart
+  const removeFromCart = (product: any) => {
+    setCartItems((prev) => prev.filter((item) => item !== product));
   };
 
-  const updateQty = (item: any, newQty: number) => {
-    setCartItems((prev) =>
-      prev.map((p) =>
-        p.name === item.name &&
-        p.option === item.option &&
-        JSON.stringify(p.addons) === JSON.stringify(item.addons)
-          ? { ...p, qty: newQty }
-          : p
-      )
-    );
-  };
-
+  // Clear cart (after order)
   const clearCart = () => {
     setCartItems([]);
     setAppliedCoupon(null);
@@ -114,20 +58,55 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("cartItems");
   };
 
+  // 🟩 Apply coupon — compatible with /functions/checkCoupon.ts
+  const applyCoupon = async (code: string) => {
+    try {
+      const res = await fetch("/.netlify/functions/checkCoupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        console.warn("Invalid coupon:", data.message);
+        setAppliedCoupon(null);
+        setDiscount(0);
+        return { success: false };
+      }
+
+      // Determine discount type
+      let discountValue = 0;
+      if (data.type === "percent") {
+        discountValue = subtotal * data.discount; // e.g. 0.1 = 10%
+      } else if (data.type === "amount") {
+        discountValue = data.discount;
+      }
+
+      // Clamp max discount
+      if (discountValue > subtotal) discountValue = subtotal;
+
+      setAppliedCoupon(code.toUpperCase());
+      setDiscount(discountValue);
+      return { success: true };
+    } catch (err) {
+      console.error("Coupon apply failed:", err);
+      return { success: false };
+    }
+  };
+
   return (
     <CartContext.Provider
       value={{
         cartItems,
-        subtotal,
-        total,
-        appliedCoupon,
-        discount,
         addToCart,
         removeFromCart,
-        updateQty,
         clearCart,
-        setAppliedCoupon,
-        setDiscount,
+        subtotal,
+        discount,
+        total,
+        appliedCoupon,
+        applyCoupon,
       }}
     >
       {children}
