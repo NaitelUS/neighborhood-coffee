@@ -2,13 +2,15 @@ import React, { useState, useContext } from "react";
 import { CartContext } from "@/context/CartContext";
 
 export default function CouponField() {
-  const { applyDiscount, appliedCoupon } = useContext(CartContext);
+  // Si tu contexto no expone applyDiscount, usa setAppliedCoupon y setDiscount
+  const { applyDiscount, setAppliedCoupon, setDiscount, appliedCoupon } = useContext(CartContext);
   const [coupon, setCoupon] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleApplyCoupon = async () => {
-    if (!coupon.trim()) {
+    const code = coupon.trim().toUpperCase();
+    if (!code) {
       setMessage("Please enter a coupon code.");
       return;
     }
@@ -17,41 +19,47 @@ export default function CouponField() {
     setMessage(null);
 
     try {
-      const response = await fetch("/.netlify/functions/coupons");
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      // ✅ Llamamos al backend con el código
+      const res = await fetch(`/.netlify/functions/coupons?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
 
-      const coupons = await response.json();
+      if (!res.ok) {
+        // Errores claros desde el backend
+        setMessage(
+          data?.error
+            ? `❌ ${data.error}`
+            : "❌ Invalid or expired coupon."
+        );
+        return;
+      }
 
-      const normalizedCode = coupon.trim().toUpperCase();
-      const found = coupons.find(
-        (c: any) =>
-          c.code?.trim().toUpperCase() === normalizedCode &&
-          c.active === true
-      );
+      // Soporta ambas formas: objeto {success, percent_off} o, si tuvieras un listado, lo normaliza
+      let percent: number | null = null;
 
-      if (!found) {
+      if (data && typeof data === "object" && "percent_off" in data) {
+        percent = Number(data.percent_off);
+      } else if (Array.isArray(data)) {
+        const found = data.find(
+          (c: any) => String(c.code).trim().toUpperCase() === code && c.active === true
+        );
+        percent = found ? Number(found.percent_off) : null;
+      }
+
+      if (!percent || Number.isNaN(percent) || percent <= 0) {
         setMessage("❌ Invalid or expired coupon.");
         return;
       }
 
-      // ✅ Verificación adicional por fechas
-      const now = new Date();
-      const from = found.valid_from ? new Date(found.valid_from) : null;
-      const until = found.valid_until ? new Date(found.valid_until) : null;
-      const isValidDate =
-        (!from || now >= from) && (!until || now <= until);
-
-      if (!isValidDate) {
-        setMessage("❌ This coupon is not valid today.");
-        return;
+      // ✅ Aplica el descuento decimal (0.10 = 10%)
+      if (typeof applyDiscount === "function") {
+        applyDiscount(code, percent);
+      } else {
+        // fallback por si tu contexto no tiene applyDiscount
+        setAppliedCoupon?.(code);
+        setDiscount?.(percent);
       }
 
-      // ✅ Aplica el descuento al carrito
-      applyDiscount(found.code, found.percent_off);
-
-      setMessage(
-        `✅ Coupon "${found.code}" applied! You got a ${(found.percent_off * 100).toFixed(0)}% discount.`
-      );
+      setMessage(`✅ Coupon "${code}" applied! You got ${(percent * 100).toFixed(0)}% OFF.`);
     } catch (err) {
       console.error("Error verifying coupon:", err);
       setMessage("⚠️ Unable to verify coupon right now. Please try again later.");
@@ -79,12 +87,11 @@ export default function CouponField() {
           type="button"
           onClick={handleApplyCoupon}
           disabled={loading || !!appliedCoupon}
-          className={`px-4 py-2 rounded-md font-semibold transition-colors
-            ${
-              appliedCoupon
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#1D9099] hover:bg-[#00454E] text-white"
-            }`}
+          className={`px-4 py-2 rounded-md font-semibold transition-colors ${
+            appliedCoupon
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-[#1D9099] hover:bg-[#00454E] text-white"
+          }`}
         >
           {appliedCoupon ? "Applied" : loading ? "Checking..." : "Apply"}
         </button>
