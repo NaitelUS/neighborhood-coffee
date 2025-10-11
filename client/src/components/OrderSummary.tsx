@@ -189,8 +189,17 @@ const OrderSummary: React.FC = () => {
         )}
       </div>
 
-      {/* Want more items */}
+          {/* Want more items */}
       <div className="mt-6 text-center">
         <Link
           to="/"
-          className="inline-block text-emerald-700 font-semibold un
+          className="inline-block text-emerald-700 font-semibold underline hover:text-emerald-900"
+        >
+          ← Want more items?
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default OrderSummary;
