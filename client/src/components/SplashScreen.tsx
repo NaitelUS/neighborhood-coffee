@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import SplashImage from "/attached_assets/Splash.png"; // Asegúrate de que esté en client/public/attached_assets/Splash.png
+import SplashImage from "/attached_assets/Splash.png"; // asegúrate de que esté en public/attached_assets/Splash.png
 
 interface SplashScreenProps {
   message: string;
@@ -29,7 +29,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
       id="splash-root"
       style={{
         position: "fixed",
-        inset: 0,
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
         backgroundColor: "#fffaf3",
         zIndex: 999999,
         display: "flex",
@@ -37,26 +40,29 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         justifyContent: "center",
         alignItems: "center",
         textAlign: "center",
-        padding: "20px",
-        transition: "opacity 0.5s ease-in-out",
+        overflow: "hidden",
+        padding: "0 1rem",
       }}
     >
       <img
         src={SplashImage}
         alt="The Neighborhood Coffee Promo"
         style={{
-          maxWidth: "90%",
+          width: "min(400px, 80vw)",
           height: "auto",
+          maxHeight: "60vh",
+          objectFit: "contain",
           marginBottom: "1rem",
         }}
       />
       <p
         style={{
-          fontSize: "1.1rem",
+          fontSize: "1rem",
           fontWeight: 500,
           color: "#3a2f2a",
-          marginBottom: "20px",
-          maxWidth: "80%",
+          marginBottom: "1.5rem",
+          maxWidth: "90%",
+          lineHeight: "1.4",
         }}
       >
         {message}
