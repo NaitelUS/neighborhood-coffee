@@ -87,9 +87,6 @@ export default function OrderSummary() {
       >
         Place Order
       </button>
-      <p className="text-[12px] text-gray-500 text-center">
-        One last step to great coffee ☕
-      </p>
     </div>
   );
 }
