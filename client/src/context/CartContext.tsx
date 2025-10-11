@@ -10,7 +10,7 @@ interface CartItem {
   id: string;
   name: string;
   price: number;
-  qty: number; // 💡 NUEVO
+  qty: number;
   option?: string;
   addons?: AddOn[];
 }
@@ -18,8 +18,8 @@ interface CartItem {
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string) => void;
-  updateQty: (id: string, delta: number) => void; // 💡 NUEVO
+  removeFromCart: (id: string, option?: string) => void;
+  updateQty: (id: string, option: string | undefined, delta: number) => void;
   clearCart: () => void;
   discount: number;
   appliedCoupon?: string;
@@ -32,7 +32,7 @@ export const CartContext = createContext<CartContextType>({
   cartItems: [],
   addToCart: () => {},
   removeFromCart: () => {},
-  updateQty: () => {}, // 💡 NUEVO
+  updateQty: () => {},
   clearCart: () => {},
   discount: 0,
   applyDiscount: () => {},
@@ -46,33 +46,45 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [discount, setDiscount] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | undefined>();
 
-  // ➕ Agregar al carrito
+  // ➕ Agregar al carrito (distinción por option)
   const addToCart = (item: CartItem) => {
     setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
+      const existing = prev.find(
+        (i) => i.id === item.id && i.option === item.option
+      );
+
       if (existing) {
+        // Incrementa cantidad si ya existe misma variante
         return prev.map((i) =>
-          i.id === item.id ? { ...i, qty: i.qty + 1 } : i
+          i.id === item.id && i.option === item.option
+            ? { ...i, qty: i.qty + 1 }
+            : i
         );
       }
-      return [...prev, { ...item, qty: 1 }]; // 💡 inicia con qty: 1
+
+      // Si es una variante nueva, agrega nuevo registro
+      return [...prev, { ...item, qty: 1 }];
     });
   };
 
-  // 💡 Actualizar cantidad
-  const updateQty = (id: string, delta: number) => {
+  // 🔄 Actualizar cantidad por id + opción
+  const updateQty = (id: string, option: string | undefined, delta: number) => {
     setCartItems((prev) =>
       prev
         .map((i) =>
-          i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i
+          i.id === id && i.option === option
+            ? { ...i, qty: Math.max(1, i.qty + delta) }
+            : i
         )
         .filter((i) => i.qty > 0)
     );
   };
 
   // ❌ Remover del carrito
-  const removeFromCart = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (id: string, option?: string) => {
+    setCartItems((prev) =>
+      prev.filter((item) => !(item.id === id && item.option === option))
+    );
   };
 
   // 🧹 Vaciar carrito
@@ -88,7 +100,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setAppliedCoupon(couponCode);
   };
 
-  // 💰 Subtotal con Add-ons y qty
+  // 💰 Subtotal con add-ons y qty
   const subtotal = useMemo(() => {
     return cartItems.reduce((sum, item) => {
       const basePrice = item.price || 0;
@@ -98,7 +110,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }, 0);
   }, [cartItems]);
 
-  // 💸 Total con descuento aplicado
+  // 💸 Total con descuento
   const total = useMemo(() => {
     const discountAmount = subtotal * discount;
     return subtotal - discountAmount;
@@ -110,7 +122,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         cartItems,
         addToCart,
         removeFromCart,
-        updateQty, // 💡 NUEVO
+        updateQty,
         clearCart,
         discount,
         appliedCoupon,
