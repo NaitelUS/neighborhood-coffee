@@ -13,8 +13,8 @@ export default function OrderPage() {
 
   const handleOrderSubmit = async (
     info: any,
-    scheduleDate: string,
-    scheduleTime: string
+    schedule_date: string,
+    schedule_time: string
   ) => {
     if (cartItems.length === 0) {
       alert("Your cart is empty.");
@@ -24,39 +24,42 @@ export default function OrderPage() {
     setLoading(true);
 
     try {
-      const payload = {
-        name: info.name,
-        phone: info.phone,
+      const orderData = {
+        customer_name: info.name,
+        customer_phone: info.phone,
         address: info.method === "Delivery" ? info.address : "",
-        orderType: info.method,
-        scheduleDate,
-        scheduleTime,
+        order_type: info.method,
+        schedule_date,
+        schedule_time,
         subtotal,
         discount,
         total,
-        coupon: appliedCoupon || "",
+        coupon_code: appliedCoupon || "",
         notes: info.notes || "",
         items: cartItems.map((item) => ({
-          product_name: item.name,
+          name: item.name,
           option: item.option || "",
-          addons: item.addons?.map((a) => a.name).join(", ") || "",
           price: item.price,
-          qty: item.qty,
+          qty: item.qty || 1,
+          addons: item.addons || [],
         })),
       };
 
       const res = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(orderData),
       });
 
       const result = await res.json();
-      if (!result.success) throw new Error(result.error || "Order creation failed");
+
+      if (!result.success || !result.orderId) {
+        throw new Error(result.error || "Order creation failed");
+      }
 
       const orderId = result.orderId;
-      navigate(`/thank-you?id=${orderId}`);
       clearCart();
+      navigate(`/thank-you?id=${orderId}`);
     } catch (err) {
       console.error("❌ Error sending order:", err);
       alert("There was an error submitting your order.");
@@ -73,7 +76,6 @@ export default function OrderPage() {
       <div>
         <CustomerInfoForm onSubmit={handleOrderSubmit} />
       </div>
-
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg text-center">
