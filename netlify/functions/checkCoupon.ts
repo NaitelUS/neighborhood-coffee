@@ -1,51 +1,37 @@
+import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
-const base = new Airtable({
-  apiKey: process.env.AIRTABLE_API_KEY,
-}).base(process.env.AIRTABLE_BASE_ID!);
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID as string
+);
 
-const TABLE_COUPONS = process.env.AIRTABLE_TABLE_COUPONS || "Coupons";
-
-export default async (req: Request) => {
+export const handler: Handler = async (event) => {
   try {
-    const { coupon } = await req.json();
+    const { code } = JSON.parse(event.body || "{}");
+    if (!code) return { statusCode: 400, body: JSON.stringify({ success: false, message: "Missing code" }) };
 
-    if (!coupon) {
-      return new Response(
-        JSON.stringify({ error: "Coupon code is required" }),
-        { status: 400 }
-      );
-    }
+    const records = await base("Coupons")
+      .select({ filterByFormula: `{Code} = '${code}'` })
+      .firstPage();
 
-    const records = await base(TABLE_COUPONS)
-      .select({
-        filterByFormula: `AND({Code}='${coupon}', {Active}=TRUE())`,
-      })
-      .all();
+    if (records.length === 0)
+      return { statusCode: 404, body: JSON.stringify({ success: false, message: "Invalid coupon" }) };
 
-    if (records.length === 0) {
-      return new Response(
-        JSON.stringify({ valid: false, message: "Invalid or expired coupon" }),
-        { status: 200 }
-      );
-    }
+    const coupon = records[0].fields;
+    const percent_off = Number(coupon.percent_off || 0);
+    const amount_off = Number(coupon.amount_off || 0);
+    const discount = amount_off > 0 ? amount_off : percent_off;
 
-    const record = records[0];
-    const discount = record.get("Discount") || 0;
-
-    return new Response(
-      JSON.stringify({
-        valid: true,
-        discount: Number(discount),
-        message: "Coupon applied successfully",
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        success: true,
+        discount,
+        type: amount_off > 0 ? "amount" : "percent",
       }),
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error("Error verifying coupon:", err);
-    return new Response(
-      JSON.stringify({ error: "Error verifying coupon" }),
-      { status: 500 }
-    );
+    };
+  } catch (err: any) {
+    console.error("Coupon check failed:", err);
+    return { statusCode: 500, body: JSON.stringify({ success: false, message: "Server error" }) };
   }
 };
