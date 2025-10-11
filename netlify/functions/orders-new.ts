@@ -2,120 +2,104 @@ import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID || ""
+  process.env.AIRTABLE_BASE_ID!
 );
+
+const TABLE_ORDERS = "Orders";
+const TABLE_ORDERITEMS = "OrderItems";
+
+// 🔢 Obtiene el siguiente número consecutivo
+async function getNextOrderNumber() {
+  try {
+    const records = await base(TABLE_ORDERS)
+      .select({
+        sort: [{ field: "OrderNumber", direction: "desc" }],
+        maxRecords: 1,
+      })
+      .firstPage();
+
+    if (records.length > 0) {
+      const last = records[0].fields["OrderNumber"];
+      if (typeof last === "number") return last + 1;
+    }
+    return 1;
+  } catch (err) {
+    console.error("⚠️ Error fetching last order number:", err);
+    return 1;
+  }
+}
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: "Method not allowed" }),
-    };
+    return { statusCode: 405, body: "Method not allowed" };
   }
 
   try {
-    const body = JSON.parse(event.body || "{}");
-    const {
-      name,
-      phone,
-      address,
-      orderType,
-      scheduleDate,
-      scheduleTime,
-      subtotal,
-      discount,
-      total,
-      coupon,
-      notes,
-      items,
-    } = body;
+    const orderData = JSON.parse(event.body || "{}");
+    console.log("🧾 Incoming order:", orderData);
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "No items provided" }),
-      };
-    }
-
-    // 🧩 Agrupar productos idénticos antes de enviarlos
-    const groupedItems = Object.values(
-      items.reduce((acc: Record<string, any>, item) => {
-        const key = `${item.product_name}-${item.option || ""}-${(item.addons ||
-          [])
-          .map((a: any) => (typeof a === "string" ? a : a.name))
-          .sort()
-          .join(",")}`;
-        if (!acc[key]) {
-          acc[key] = { ...item, qty: item.qty || 1 };
-        } else {
-          acc[key].qty += item.qty || 1;
-        }
-        return acc;
-      }, {})
-    );
-
-    // 🧾 Crear un OrderID y OrderNumber
-    const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
-    const orderId = `TNC-${timestamp}`;
-    const orderNumber = Math.floor(Math.random() * 1000000);
+    // Generar número incremental y formato de ID corto
+    const nextNumber = await getNextOrderNumber();
+    const orderId = `TNC-${String(nextNumber).padStart(3, "0")}`;
 
     // 🧱 Crear registro principal (Orders)
-    const [orderRecord] = await base("Orders").create([
+    const [orderRecord] = await base(TABLE_ORDERS).create([
       {
         fields: {
-          Name: name || "",
-          Phone: phone || "",
-          Address: address || "",
-          OrderType: orderType || "",
-          ScheduleDate: scheduleDate || "",
-          ScheduleTime: scheduleTime || "",
-          Subtotal: subtotal || 0,
-          Discount: discount || 0,
-          Total: total || 0,
-          Coupon: coupon || "",
-          Notes: notes || "",
-          Status: "Received",
           OrderID: orderId,
-          OrderNumber: orderNumber,
-          Date: new Date().toISOString(),
+          OrderNumber: nextNumber,
+          Name: orderData.customer_name || "",
+          Phone: orderData.customer_phone || "",
+          Address: orderData.address || "",
+          OrderType: orderData.order_type || "",
+          ScheduleDate: orderData.schedule_date || "",
+          ScheduleTime: orderData.schedule_time || "",
+          Subtotal: orderData.subtotal || 0,
+          Discount: orderData.discount || 0,
+          Total: orderData.total || 0,
+          Coupon: orderData.coupon_code || "",
+          Notes: orderData.notes || "",
+          Status: "Received",
           CreatedAt: new Date().toISOString(),
         },
       },
     ]);
 
-    // 📦 Crear registros en OrderItems
-    const orderItemRecords = groupedItems.map((item: any) => ({
-      fields: {
-        Order: orderId,
-        ProductName: item.product_name,
-        Option: item.option || "",
-        AddOns:
-          typeof item.addons === "string"
-            ? item.addons
-            : item.addons?.map((a: any) => a.name || a).join(", "),
-        Price: item.price || 0,
-        Qty: item.qty || 1,
-      },
-    }));
+    console.log(`✅ Order created: ${orderId}`);
 
-    await base("OrderItems").create(orderItemRecords);
+    // 📦 Crear ítems asociados
+    if (Array.isArray(orderData.items) && orderData.items.length > 0) {
+      const orderItems = orderData.items.map((item: any) => ({
+        fields: {
+          Order: orderId,
+          ProductName: item.name,
+          Option: item.option || "",
+          Price: item.price || 0,
+          AddOns: Array.isArray(item.addons)
+            ? item.addons.map((a: any) => a.name || "").join(", ")
+            : "",
+          Qty: item.qty || 1,
+        },
+      }));
 
-    console.log(`✅ Order created: ${orderId} (${orderItemRecords.length} items)`);
+      while (orderItems.length > 0) {
+        const batch = orderItems.splice(0, 10);
+        await base(TABLE_ORDERITEMS).create(batch);
+      }
 
+      console.log("✅ OrderItems saved successfully");
+    }
+
+    // 🔁 Respuesta exitosa
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        id: orderId,
-        orderNumber,
-        groupedItemsCount: groupedItems.length,
-      }),
+      body: JSON.stringify({ success: true, orderId }),
     };
-  } catch (error) {
-    console.error("❌ Error creating order:", error);
+  } catch (err) {
+    console.error("❌ Error creating order:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to create order" }),
+      body: JSON.stringify({ success: false, error: "Failed to create order" }),
     };
   }
 };
