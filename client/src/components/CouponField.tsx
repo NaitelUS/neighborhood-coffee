@@ -4,15 +4,19 @@ import { CartContext } from "@/context/CartContext";
 export default function CouponField() {
   const { applyCoupon, appliedCoupon } = useContext(CartContext);
   const [couponCode, setCouponCode] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<"idle" | "verifying" | "applied" | "error">("idle");
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setStatus("verifying");
-    const result = await applyCoupon(couponCode.trim());
-    if (result.success) {
-      setStatus("applied");
-    } else {
+    try {
+      const result = await applyCoupon(couponCode.trim());
+      if (result?.success) {
+        setStatus("applied");
+      } else {
+        setStatus("error");
+      }
+    } catch {
       setStatus("error");
     }
   };
@@ -34,14 +38,14 @@ export default function CouponField() {
       >
         {status === "verifying"
           ? "Verifying..."
-          : appliedCoupon
+          : status === "applied"
           ? "Applied"
           : "Apply"}
       </button>
 
       {status === "error" && (
         <p className="text-xs text-red-600 mt-1">
-          ⚠️ Unable to verify coupon. Try again.
+          ⚠️ Invalid coupon or server unavailable.
         </p>
       )}
       {status === "applied" && appliedCoupon && (
