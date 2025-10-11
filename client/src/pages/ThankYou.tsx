@@ -2,6 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { formatProductName } from "../utils/formatProductName";
 
+interface OrderItem {
+  product_name: string;
+  option?: string;
+  addons?: string;
+  price?: number;
+  qty?: number;
+}
+
 interface Order {
   id: string;
   name: string;
@@ -15,7 +23,7 @@ interface Order {
   schedule_date?: string;
   schedule_time?: string;
   notes?: string;
-  items?: { product_name: string; option?: string; addons?: string; price?: number }[];
+  items?: OrderItem[];
 }
 
 export default function ThankYou() {
@@ -75,8 +83,8 @@ export default function ThankYou() {
       {order.items && order.items.length > 0 && (
         <div className="border-t border-b py-4 mb-4 text-sm text-gray-800 space-y-2">
           {order.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between">
-              <div>
+            <div key={idx} className="flex justify-between items-start">
+              <div className="flex-1 pr-2">
                 <strong>
                   {formatProductName(item.product_name, item.option)}
                 </strong>
@@ -84,9 +92,18 @@ export default function ThankYou() {
                   <p className="text-gray-500 text-xs">+ {item.addons}</p>
                 )}
               </div>
-              {item.price && (
-                <p className="font-medium">${Number(item.price).toFixed(2)}</p>
-              )}
+              <div className="text-right">
+                {item.qty && item.qty > 1 && (
+                  <p className="text-xs text-gray-500">
+                    Qty: <strong>{item.qty}</strong>
+                  </p>
+                )}
+                {item.price && (
+                  <p className="font-medium">
+                    ${(Number(item.price) * (item.qty || 1)).toFixed(2)}
+                  </p>
+                )}
+              </div>
             </div>
           ))}
         </div>
