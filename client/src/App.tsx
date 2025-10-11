@@ -18,7 +18,7 @@ function App() {
           setSplashMessage(data.splashMessage || "");
           setShowSplash(true);
 
-          // ⏱️ Ocultar automáticamente a los 10 s
+          // Cerrar automáticamente después de 10 segundos
           setTimeout(() => setShowSplash(false), 10000);
         } else {
           setShowSplash(false);
@@ -33,16 +33,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#fffaf3]">
-      {/* ☕ Splash al inicio */}
-      {showSplash && (
+      {/* Splash inicial */}
+      {showSplash ? (
         <SplashScreen
           visible={true}
           message={splashMessage || "Welcome to The Neighborhood Coffee ☕"}
           duration={10000}
         />
-      )}
+      ) : null}
 
-      {/* 🧭 Contenido principal */}
+      {/* Contenido principal */}
       <Header />
       <Menu />
     </div>
