@@ -10,6 +10,7 @@ import OrderStatus from "./pages/OrderStatus";
 import AdminPanel from "./pages/AdminPanel";
 import AdminOrders from "./pages/AdminOrders";
 import DeliveryPage from "./pages/DeliveryPage";
+import SplashScreen from "./components/SplashScreen"; // ✅ Import del splash
 
 // 🧠 Contexto global del carrito
 import { CartProvider } from "./context/CartContext";
@@ -18,6 +19,9 @@ export default function App() {
   return (
     <Router>
       <CartProvider>
+        {/* 🌟 Splash simple de bienvenida */}
+        <SplashScreen />
+
         <div className="min-h-screen bg-gray-50">
           {/* 🌐 Header visible en todas las páginas */}
           <Header />
