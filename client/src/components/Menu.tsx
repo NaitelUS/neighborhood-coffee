@@ -1,7 +1,7 @@
-// === VERSION MOBILE-CAROUSEL (Checkpoint 1.5 Visual Enhancement) ===
-// To rollback: replace with Menu_Checkpoint1.3 or Menu_Checkpoint1.4
+// === VERSION STICKY CATEGORY BAR (Checkpoint 1.6) ===
+// To rollback: replace with Menu_Checkpoint1.5
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import MenuItem from "@/components/MenuItem";
 
 interface Product {
@@ -19,12 +19,18 @@ export default function Menu() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const refs = {
+    Coffee: useRef<HTMLDivElement>(null),
+    Pastry: useRef<HTMLDivElement>(null),
+    Special: useRef<HTMLDivElement>(null),
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("/.netlify/functions/products");
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-        const data = await response.json();
+        const res = await fetch("/.netlify/functions/products");
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        const data = await res.json();
         const valid = Array.isArray(data)
           ? data.filter((p) => p.available !== false)
           : [];
@@ -53,18 +59,37 @@ export default function Menu() {
     { title: "🍂 Neighbor’s Picks", key: "Special" },
   ];
 
+  const scrollTo = (key: keyof typeof refs) => {
+    refs[key].current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
+    <div className="max-w-7xl mx-auto px-4 py-10 relative">
       <h1 className="text-3xl md:text-4xl font-bold text-center text-amber-900 mb-10 tracking-wide animate-fadeIn">
         Our Menu
       </h1>
+
+      {/* Sticky category bar */}
+      <div className="sticky top-0 z-10 py-3 backdrop-blur-sm text-center mb-10">
+        <div className="flex justify-center space-x-6 text-amber-900 font-medium text-sm md:text-base overflow-x-auto scrollbar-hide">
+          {sections.map(({ title, key }) => (
+            <button
+              key={key}
+              onClick={() => scrollTo(key as keyof typeof refs)}
+              className="transition-colors hover:text-amber-700"
+            >
+              {title}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="space-y-16">
         {sections.map(({ title, key }) => {
           const items = groupBy(key);
           if (!items.length) return null;
           return (
-            <section key={key} className="animate-fadeIn">
+            <section key={key} ref={refs[key as keyof typeof refs]} className="animate-fadeIn">
               <div className="text-center mb-6">
                 <h2 className="text-2xl md:text-3xl font-semibold text-amber-900">
                   {title}
