@@ -1,5 +1,5 @@
-// === VERSION MOBILE-CAROUSEL (Checkpoint 1.4) ===
-// To rollback: replace with Menu_Checkpoint1.3
+// === VERSION MOBILE-CAROUSEL (Checkpoint 1.5 Visual Enhancement) ===
+// To rollback: replace with Menu_Checkpoint1.3 or Menu_Checkpoint1.4
 
 import React, { useEffect, useState } from "react";
 import MenuItem from "@/components/MenuItem";
@@ -40,7 +40,7 @@ export default function Menu() {
   }, []);
 
   if (loading)
-    return <p className="text-center text-gray-600 mt-10">Loading menu...</p>;
+    return <p className="text-center text-gray-600 mt-10 animate-pulse">Loading menu...</p>;
   if (error)
     return <p className="text-center text-red-500 mt-10">{error}</p>;
 
@@ -55,7 +55,7 @@ export default function Menu() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
-      <h1 className="text-3xl md:text-4xl font-bold text-center text-amber-900 mb-10 tracking-wide">
+      <h1 className="text-3xl md:text-4xl font-bold text-center text-amber-900 mb-10 tracking-wide animate-fadeIn">
         Our Menu
       </h1>
 
@@ -64,7 +64,7 @@ export default function Menu() {
           const items = groupBy(key);
           if (!items.length) return null;
           return (
-            <section key={key}>
+            <section key={key} className="animate-fadeIn">
               <div className="text-center mb-6">
                 <h2 className="text-2xl md:text-3xl font-semibold text-amber-900">
                   {title}
@@ -78,9 +78,11 @@ export default function Menu() {
                   {items.map((p) => (
                     <div
                       key={p.id}
-                      className="snap-center flex-shrink-0 w-[80%] mx-auto"
+                      className="snap-center flex-shrink-0 w-[80%] mx-auto transition-transform duration-300 ease-in-out transform hover:scale-105"
                     >
-                      <MenuItem product={p} />
+                      <div className="shadow-lg hover:shadow-2xl rounded-2xl overflow-hidden bg-white">
+                        <MenuItem product={p} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -89,8 +91,13 @@ export default function Menu() {
               {/* desktop grid */}
               <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {items.map((p) => (
-                  <div key={p.id} className="flex justify-center">
-                    <MenuItem product={p} />
+                  <div
+                    key={p.id}
+                    className="flex justify-center transition-transform duration-300 ease-in-out transform hover:scale-105"
+                  >
+                    <div className="shadow-md hover:shadow-xl rounded-2xl bg-white overflow-hidden">
+                      <MenuItem product={p} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -100,9 +107,7 @@ export default function Menu() {
       </div>
 
       {products.length === 0 && (
-        <p className="text-center text-gray-500 mt-8">
-          No products available at this time.
-        </p>
+        <p className="text-center text-gray-500 mt-8">No products available at this time.</p>
       )}
     </div>
   );
