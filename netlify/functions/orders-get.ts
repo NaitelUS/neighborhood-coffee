@@ -1,12 +1,12 @@
 import { Handler } from "@netlify/functions";
 import Airtable from "airtable";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY! }).base(
-  process.env.AIRTABLE_BASE_ID!
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID as string
 );
 
 const handler: Handler = async (event) => {
-  const { id } = event.queryStringParameters || {};
+  const id = event.queryStringParameters?.id;
 
   if (!id) {
     return {
@@ -16,51 +16,46 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    // Buscar la orden por record ID
-    const order = await base("Orders").find(id);
-
-    // Buscar los items relacionados (OrderItems con campo Order = [id])
-    const items = await base("OrderItems")
+    const orderRecord = await base(process.env.AIRTABLE_TABLE_ORDERS as string).find(id);
+    const orderItems = await base(process.env.AIRTABLE_TABLE_ORDERITEMS as string)
       .select({
-        filterByFormula: `FIND("${id}", ARRAYJOIN(Order))`,
+        filterByFormula: `{Order} = '${orderRecord.id}'`,
       })
       .all();
 
-    const formattedItems = items.map((item) => ({
-      id: item.id,
-      name: item.get("ProductName") || "",
-      option: item.get("Option") || "",
-      price: item.get("Price") || 0,
-      qty: item.get("Qty") || 1,
-      addons: item.get("AddOns") || "",
+    const items = orderItems.map((item) => ({
+      name: item.get("Product") as string,
+      option: item.get("Option") as string,
+      price: item.get("Price") as number,
+      qty: item.get("Qty") as number,
+      addons: item.get("AddOns") as string,
     }));
+
+    const orderData = {
+      id: orderRecord.id,
+      OrderID: orderRecord.get("OrderID"), // ✅ añadido para ThankYou
+      name: orderRecord.get("Customer Name"),
+      phone: orderRecord.get("Phone"),
+      order_type: orderRecord.get("Order Type"),
+      address: orderRecord.get("Address"),
+      schedule_date: orderRecord.get("Schedule Date"),
+      schedule_time: orderRecord.get("Schedule Time"),
+      notes: orderRecord.get("Notes"),
+      total: orderRecord.get("Total"),
+      subtotal: orderRecord.get("Subtotal"),
+      discount: orderRecord.get("Discount"),
+      items,
+    };
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        id: order.id,
-        name: order.get("Name"),
-        phone: order.get("Phone"),
-        address: order.get("Address"),
-        order_type: order.get("OrderType"),
-        schedule_date: order.get("ScheduleDate"),
-        schedule_time: order.get("ScheduleTime"),
-        subtotal: order.get("Subtotal"),
-        discount: order.get("Discount"),
-        total: order.get("Total"),
-        coupon_code: order.get("Coupon"),
-        notes: order.get("Notes"),
-        orderId: order.get("OrderID"),
-        order_number: order.get("OrderNumber"),
-        created_at: order.get("CreatedAt"),
-        items: formattedItems,
-      }),
+      body: JSON.stringify(orderData),
     };
-  } catch (error) {
-    console.error("❌ orders-get error:", error);
+  } catch (err) {
+    console.error("❌ Error in orders-get:", err);
     return {
-      statusCode: 404,
-      body: JSON.stringify({ error: "Order not found" }),
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to fetch order" }),
     };
   }
 };
