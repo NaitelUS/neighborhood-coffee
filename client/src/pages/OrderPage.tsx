@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import OrderSummary from "../components/OrderSummary";
@@ -9,78 +9,84 @@ const OrderPage = () => {
     subtotal,
     total,
     discount,
-    clearCart,
     appliedCoupon,
+    clearCart,
   } = useContext(CartContext);
-  const [formData, setFormData] = useState({
+
+  const [form, setForm] = useState({
     name: "",
     phone: "",
     address: "",
     method: "Pickup",
-    notes: "",
     schedule_date: "",
     schedule_time: "",
+    notes: "",
   });
+
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const navigate = useNavigate();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleMethodChange = (method: string) => {
-    setFormData((prev) => ({ ...prev, method }));
+    setForm((prev) => ({ ...prev, method }));
   };
 
-  const handleOrderSubmit = async (
-    info: any,
-    schedule_date: string,
-    schedule_time: string
-  ) => {
-    if (cartItems.length === 0) {
-      alert("Your cart is empty.");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!form.name || !form.phone || !form.schedule_date || !form.schedule_time) {
+      setError("Please fill in all required fields.");
       return;
     }
 
+    setError(null);
     setLoading(true);
 
-    try {
-      const orderData = {
-        customer_name: info.name,
-        customer_phone: info.phone,
-        address: info.method === "Delivery" ? info.address : "",
-        order_type: info.method,
-        schedule_date,
-        schedule_time,
-        subtotal,
-        discount,
-        total,
-        coupon_code: appliedCoupon || "",
-        notes: info.notes || "",
-        items: cartItems.map((item) => ({
-          name: item.name,
-          option: item.option || "",
-          price: item.price,
-          addons: item.addons || [],
-          qty: item.qty || 1, // ✅ Aquí se incluye qty
-        })),
-      };
+    const payload = {
+      customer_name: form.name,
+      customer_phone: form.phone,
+      address: form.method === "Delivery" ? form.address : "",
+      order_type: form.method,
+      schedule_date: form.schedule_date,
+      schedule_time: form.schedule_time,
+      subtotal,
+      discount,
+      total,
+      coupon_code: appliedCoupon || "",
+      notes: form.notes,
+      items: cartItems.map((item) => ({
+        name: item.name,
+        option: item.option,
+        price: item.price,
+        addons: item.addons,
+        qty: item.qty || 1,
+      })),
+    };
 
+    try {
       const res = await fetch("/.netlify/functions/orders-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(payload),
       });
 
       const result = await res.json();
-      if (!res.ok || !result.orderId) throw new Error("Order creation failed");
 
-      navigate(`/thank-you?id=${result.orderId}`);
+      if (!res.ok || !result.orderId) {
+        throw new Error("Order creation failed");
+      }
+
       clearCart();
-    } catch (err) {
-      console.error("❌ Error sending order:", err);
-      alert("There was an error submitting your order.");
+      navigate(`/thank-you?id=${result.orderId}`);
+    } catch (err: any) {
+      console.error("❌ Order submission error:", err);
+      setError("There was an error submitting your order. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -88,61 +94,56 @@ const OrderPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-4 text-teal-900">Pickup Details</h1>
-      <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleOrderSubmit(formData, formData.schedule_date, formData.schedule_time);
-        }}
-      >
+      <h1 className="text-2xl font-bold mb-4">Pickup Details</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           name="name"
           placeholder="Your Name"
+          value={form.name}
+          onChange={handleChange}
           className="w-full p-2 border rounded"
-          value={formData.name}
-          onChange={handleInputChange}
           required
         />
         <input
           type="tel"
           name="phone"
           placeholder="Phone Number"
+          value={form.phone}
+          onChange={handleChange}
           className="w-full p-2 border rounded"
-          value={formData.phone}
-          onChange={handleInputChange}
           required
         />
         <input
           type="date"
           name="schedule_date"
+          value={form.schedule_date}
+          onChange={handleChange}
           className="w-full p-2 border rounded"
-          value={formData.schedule_date}
-          onChange={handleInputChange}
           required
         />
         <input
           type="time"
           name="schedule_time"
+          value={form.schedule_time}
+          onChange={handleChange}
           className="w-full p-2 border rounded"
-          value={formData.schedule_time}
-          onChange={handleInputChange}
           required
         />
         <textarea
           name="notes"
           placeholder="Notes (optional)"
+          value={form.notes}
+          onChange={handleChange}
           className="w-full p-2 border rounded"
-          value={formData.notes}
-          onChange={handleInputChange}
         />
-        <div className="flex items-center gap-4">
+
+        <div className="flex gap-4 items-center">
           <label>
             <input
               type="radio"
               name="method"
-              checked={formData.method === "Pickup"}
+              checked={form.method === "Pickup"}
               onChange={() => handleMethodChange("Pickup")}
             />
             <span className="ml-2">Pickup</span>
@@ -151,33 +152,36 @@ const OrderPage = () => {
             <input
               type="radio"
               name="method"
-              checked={formData.method === "Delivery"}
+              checked={form.method === "Delivery"}
               onChange={() => handleMethodChange("Delivery")}
             />
             <span className="ml-2">Delivery</span>
           </label>
         </div>
-        {formData.method === "Delivery" && (
+
+        {form.method === "Delivery" && (
           <input
             type="text"
             name="address"
             placeholder="Delivery Address"
+            value={form.address}
+            onChange={handleChange}
             className="w-full p-2 border rounded"
-            value={formData.address}
-            onChange={handleInputChange}
             required
           />
         )}
+
         <button
           type="submit"
-          className="w-full bg-[#00454E] text-white font-bold py-2 rounded hover:bg-teal-700 transition"
+          className="w-full bg-[#00454E] text-white py-2 font-semibold rounded hover:opacity-90"
           disabled={loading}
         >
           {loading ? "Submitting..." : "Place Order"}
         </button>
+        {error && <p className="text-red-600 text-sm">{error}</p>}
       </form>
 
-      <h2 className="text-2xl font-bold my-6 text-teal-900">Review your Order</h2>
+      <h2 className="text-2xl font-bold my-6">Review Your Order</h2>
       <OrderSummary />
     </div>
   );
