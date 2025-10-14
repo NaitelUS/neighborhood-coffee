@@ -15,17 +15,10 @@ createRoot(document.getElementById("root")!).render(
 
 // ✅ Registro del Service Worker para habilitar PWA
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/service-worker.js")
-      .then((registration) => {
-        console.log(
-          "✅ Service Worker registrado correctamente con scope:",
-          registration.scope
-        );
-      })
-      .catch((error) => {
-        console.error("❌ Error al registrar el Service Worker:", error);
-      });
+  // 🔥 Esto borra cualquier Service Worker viejo que esté registrado
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let reg of registrations) {
+      reg.unregister();
+    }
   });
 }
