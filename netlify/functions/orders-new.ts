@@ -38,6 +38,7 @@ const handler: Handler = async (event) => {
       Discount: data.discount,
       Total: data.total,
       Coupon: data.coupon_code,
+      Status: "Received",
       Notes: data.notes,
       OrderID: orderId,
       OrderNumber: newOrderNumber,
