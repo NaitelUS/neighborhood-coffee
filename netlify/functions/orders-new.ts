@@ -5,17 +5,20 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID!
 );
 
-const ordersTable = base(process.env.AIRTABLE_TABLE_ORDERS!);
-const orderItemsTable = base(process.env.AIRTABLE_TABLE_ORDERITEMS!);
-
 const handler: Handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method Not Allowed' }),
+    };
+  }
+
   try {
     const data = JSON.parse(event.body || '{}');
-
     console.log('📦 Payload received:', data);
 
-    // ✅ Creamos la orden principal
-    const order = await ordersTable.create({
+    // Crear orden en tabla Orders
+    const order = await base('Orders').create({
       Name: data.customer_name,
       Phone: data.customer_phone,
       Address: data.address,
@@ -30,24 +33,28 @@ const handler: Handler = async (event) => {
     });
 
     const orderId = order.id;
+    console.log('✅ Order created with ID:', orderId);
 
-    // ✅ Creamos cada producto como "OrderItem"
-    for (const item of data.items) {
-      await orderItemsTable.create({
+    // Crear items
+    const items = data.items || [];
+
+    for (const item of items) {
+      await base('OrderItems').create({
         ProductName: item.name,
         Option: item.option,
         Price: item.price,
         AddOns: (item.addons || [])
-          .map((addon: { name: string; price: number }) => `${addon.name} (+$${addon.price})`)
+          .map((a: any) => `${a.name} (+$${a.price})`)
           .join(', '),
         Qty: item.qty ?? 1,
         Order: orderId,
       });
+      console.log('   ➕ Created item:', item.name, 'qty:', item.qty);
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, message: 'Order created!' }),
+      body: JSON.stringify({ orderId }),
     };
   } catch (error) {
     console.error('❌ Error in orders-new.ts:', error);
