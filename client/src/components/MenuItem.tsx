@@ -51,7 +51,7 @@ export default function MenuItem({ product }: MenuItemProps) {
     addToCart({
       id: product.id,
       name: itemName,
-      price: totalPrice,
+      price: product.price, // ✅ solo precio base
       option: selectedOption,
       addons: !isPastry
         ? selectedAddOns.map((a) => ({
