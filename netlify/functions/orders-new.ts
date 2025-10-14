@@ -14,7 +14,10 @@ const handler: Handler = async (event, context) => {
   }
 
   try {
+    console.log("✅ Function invoked");
+
     const data = JSON.parse(event.body || "{}");
+    console.log("📦 Payload received:", JSON.stringify(data));
 
     const { customer, items, total, coupon } = data;
 
@@ -27,12 +30,13 @@ const handler: Handler = async (event, context) => {
       },
     });
 
+    console.log("✅ Order created:", orderRecord.id);
+
     const orderId = orderRecord.id;
 
     await Promise.all(
       items.map(async (item: any) => {
-        // 🐛 Log para ver qué se está enviando
-        console.log("Creating OrderItem with:", item);
+        console.log("🛒 Creating OrderItem with:", JSON.stringify(item));
 
         await base("OrderItems").create({
           fields: {
@@ -44,6 +48,8 @@ const handler: Handler = async (event, context) => {
             price: item.price,
           },
         });
+
+        console.log("✅ OrderItem created for:", item.name);
       })
     );
 
@@ -52,7 +58,7 @@ const handler: Handler = async (event, context) => {
       body: JSON.stringify({ success: true, orderId }),
     };
   } catch (error) {
-    console.error("Error creating order:", error);
+    console.error("❌ Error in orders-new.ts:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Failed to create order" }),
