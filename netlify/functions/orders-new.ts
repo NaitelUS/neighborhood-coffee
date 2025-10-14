@@ -1,28 +1,46 @@
-import { Handler } from '@netlify/functions';
-import Airtable from 'airtable';
+import { Handler } from "@netlify/functions";
+import Airtable from "airtable";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY! }).base(
   process.env.AIRTABLE_BASE_ID!
 );
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
-  }
+const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+const TABLE_ORDER_ITEMS = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
 
+export const handler: Handler = async (event, context) => {
   try {
-    const data = JSON.parse(event.body || '{}');
-    console.log('📦 Payload received:', data);
+    if (event.httpMethod !== "POST") {
+      return {
+        statusCode: 405,
+        body: JSON.stringify({ message: "Method Not Allowed" }),
+      };
+    }
 
-    // Crear orden en tabla Orders
-    const order = await base('Orders').create({
+    const data = JSON.parse(event.body!);
+
+    // Obtener el número de orden más reciente
+    const existingOrders = await base(TABLE_ORDERS)
+      .select({
+        sort: [{ field: "OrderID", direction: "desc" }],
+        maxRecords: 1,
+      })
+      .firstPage();
+
+    let nextOrderId = "TNC-001";
+    if (existingOrders.length > 0) {
+      const lastOrder = existingOrders[0].get("OrderID") as string;
+      const number = parseInt(lastOrder.replace("TNC-", ""), 10) + 1;
+      nextOrderId = `TNC-${String(number).padStart(3, "0")}`;
+    }
+
+    // Crear registro en Orders
+    const orderRecord = await base(TABLE_ORDERS).create({
+      OrderID: nextOrderId,
       Name: data.customer_name,
       Phone: data.customer_phone,
       Address: data.address,
-      OrderType: data.order_type,
+      Type: data.order_type,
       ScheduleDate: data.schedule_date,
       ScheduleTime: data.schedule_time,
       Subtotal: data.subtotal,
@@ -32,37 +50,34 @@ const handler: Handler = async (event) => {
       Notes: data.notes,
     });
 
-    const orderId = order.id;
-    console.log('✅ Order created with ID:', orderId);
+    const orderId = orderRecord.id;
 
-    // Crear items
-    const items = data.items || [];
+    // Crear registros en OrderItems
+    for (const item of data.items) {
+      const itemName = item.name || "";
+      const itemOption = item.option || "";
+      const itemPrice = item.price || 0;
+      const itemQty = item.qty || 1;
 
-    for (const item of items) {
-      await base('OrderItems').create({
-        ProductName: item.name,
-        Option: item.option,
-        Price: item.price,
-        AddOns: (item.addons || [])
-          .map((a: any) => `${a.name} (+$${a.price})`)
-          .join(', '),
-        Qty: item.qty ?? 1,
-        Order: orderId,
+      await base(TABLE_ORDER_ITEMS).create({
+        Product: itemName,
+        Option: itemOption,
+        Price: itemPrice,
+        Qty: itemQty,
+        Order: [orderId],
+        Addons: item.addons?.map((a: any) => a.name).join(", "),
       });
-      console.log('   ➕ Created item:', item.name, 'qty:', item.qty);
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ orderId: nextOrderId }),
     };
-  } catch (error) {
-    console.error('❌ Error in orders-new.ts:', error);
+  } catch (error: any) {
+    console.error("❌ Error in orders-new.ts:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to create order' }),
+      body: JSON.stringify({ message: "Internal Server Error" }),
     };
   }
 };
-
-export { handler };
