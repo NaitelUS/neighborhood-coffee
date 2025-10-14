@@ -50,7 +50,7 @@ const handler: Handler = async (event) => {
         total: order.get("Total"),
         coupon_code: order.get("Coupon"),
         notes: order.get("Notes"),
-        order_id: order.get("OrderID"),
+        orderId: order.get("OrderID"),
         order_number: order.get("OrderNumber"),
         created_at: order.get("CreatedAt"),
         items: formattedItems,
