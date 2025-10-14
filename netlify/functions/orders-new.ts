@@ -45,20 +45,19 @@ const handler: Handler = async (event) => {
     });
 
     const orderAirtableId = order.id;
-    console.log("✅ Order created:", orderAirtableId, orderId);
 
-    // Crear los OrderItems
+    // Crear registros en OrderItems
     const items = data.items || [];
     for (const item of items) {
       await base("OrderItems").create({
         ProductName: item.name,
         Option: item.option,
         Price: item.price,
+        Qty: item.qty || 1,
         AddOns: (item.addons || [])
           .map((a: any) => `${a.name} (+$${a.price})`)
           .join(", "),
-        Qty: item.qty || 1,
-        Order: [orderAirtableId], // referencia vinculada
+        Order: [orderAirtableId], // 👈 clave: debe ser array para vincular
       });
     }
 
