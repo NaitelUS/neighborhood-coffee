@@ -69,8 +69,9 @@ export default function ThankYou() {
 
       <div className="text-center mb-6">
         <p className="text-gray-700 font-mono text-lg mb-1">
-          Order #: {order.order_id || order.id}
+            Order #: {order.order_id}
         </p>
+
         <p className="text-gray-500 text-sm">
           {order.order_type} — {order.schedule_date} {order.schedule_time}
         </p>
