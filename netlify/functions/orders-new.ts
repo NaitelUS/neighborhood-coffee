@@ -17,6 +17,15 @@ const handler: Handler = async (event) => {
     const data = JSON.parse(event.body || "{}");
     console.log("📦 Payload received:", data);
 
+    // Obtener último OrderNumber
+    const records = await base("Orders")
+      .select({ sort: [{ field: "OrderNumber", direction: "desc" }], maxRecords: 1 })
+      .firstPage();
+
+    const lastOrderNumber = records.length > 0 ? records[0].get("OrderNumber") as number : 0;
+    const newOrderNumber = lastOrderNumber + 1;
+    const orderId = `TNC-${String(newOrderNumber).padStart(3, "0")}`;
+
     // Crear registro en Orders
     const order = await base("Orders").create({
       Name: data.customer_name,
@@ -30,11 +39,13 @@ const handler: Handler = async (event) => {
       Total: data.total,
       Coupon: data.coupon_code,
       Notes: data.notes,
-      // OrderID y OrderNumber si los usas, puedes generarlos aquí
+      OrderID: orderId,
+      OrderNumber: newOrderNumber,
+      CreatedAt: new Date().toISOString(),
     });
 
-    const orderId = order.id;
-    console.log("✅ Order created, Airtable ID:", orderId);
+    const orderAirtableId = order.id;
+    console.log("✅ Order created:", orderAirtableId, orderId);
 
     // Crear los OrderItems
     const items = data.items || [];
@@ -47,14 +58,13 @@ const handler: Handler = async (event) => {
           .map((a: any) => `${a.name} (+$${a.price})`)
           .join(", "),
         Qty: item.qty || 1,
-        Order: orderId, // Si tu campo Order está configurado como vínculo, podrías usar [orderId]
+        Order: [orderAirtableId], // referencia vinculada
       });
-      console.log(`   ➕ Created OrderItem: ${item.name}, qty ${item.qty}`);
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ orderId: orderAirtableId }),
     };
   } catch (err) {
     console.error("❌ Error in orders-new.ts:", err);
