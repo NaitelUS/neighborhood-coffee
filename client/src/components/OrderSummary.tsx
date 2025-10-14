@@ -8,6 +8,7 @@ export default function OrderSummary() {
     discount,
     appliedCoupon,
     removeFromCart,
+    updateQty,
     subtotal,
     total,
   } = useContext(CartContext);
@@ -33,14 +34,25 @@ export default function OrderSummary() {
             item.addons?.reduce((sum: number, a: any) => sum + (a.price || 0), 0) || 0;
           const unitTotal = basePrice + addonsTotal;
           const qty = item.qty || 1;
+          const lineTotal = unitTotal * qty;
+
+          const decreaseQty = () => {
+            if (qty <= 1) {
+              removeFromCart(item);
+            } else {
+              updateQty(item, qty - 1);
+            }
+          };
+
+          const increaseQty = () => {
+            updateQty(item, qty + 1);
+          };
 
           return (
             <li key={index} className="py-3">
               <div className="flex justify-between items-start gap-3">
                 <div className="flex-1">
-                  <p className="font-medium text-gray-800">
-                    {item.name} {qty > 1 && `× ${qty}`}
-                  </p>
+                  <p className="font-medium text-gray-800">{item.name}</p>
 
                   {/* ✅ Add-ons debajo del nombre */}
                   {item.addons && item.addons.length > 0 && (
@@ -52,12 +64,29 @@ export default function OrderSummary() {
                       ))}
                     </ul>
                   )}
+
+                  {/* ➕ Selector de cantidad */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={decreaseQty}
+                      className="px-2 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+                    >
+                      −
+                    </button>
+                    <span className="text-sm text-gray-700">{qty}</span>
+                    <button
+                      onClick={increaseQty}
+                      className="px-2 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
 
-                {/* 💵 Precio total unitario (base + addons) */}
+                {/* 💵 Precio total del ítem */}
                 <div className="flex flex-col items-end">
                   <span className="text-gray-700 font-semibold">
-                    ${unitTotal.toFixed(2)}
+                    ${lineTotal.toFixed(2)}
                   </span>
 
                   {/* ❌ Botón de eliminar */}
