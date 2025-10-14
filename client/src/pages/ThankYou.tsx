@@ -11,7 +11,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
-  order_id?: string;
+  OrderID?: string; // <-- corregido
   name: string;
   phone: string;
   order_type: string;
@@ -69,9 +69,8 @@ export default function ThankYou() {
 
       <div className="text-center mb-6">
         <p className="text-gray-700 font-mono text-lg mb-1">
-            Order #: {order.order_id}
+          Order #: {order.OrderID}
         </p>
-
         <p className="text-gray-500 text-sm">
           {order.order_type} — {order.schedule_date} {order.schedule_time}
         </p>
@@ -86,9 +85,7 @@ export default function ThankYou() {
                   <strong>{item.name}</strong>
                   {item.option && ` (${item.option})`} × {item.qty}
                 </span>
-                <span>
-                  ${(item.price * item.qty).toFixed(2)}
-                </span>
+                <span>${(item.price * item.qty).toFixed(2)}</span>
               </div>
               {item.addons && (
                 <p className="text-gray-600 text-xs ml-2">+ {item.addons}</p>
@@ -99,16 +96,32 @@ export default function ThankYou() {
       )}
 
       <div className="text-sm text-gray-700 mb-4 space-y-1">
-        <p><strong>👤 Name:</strong> {order.name}</p>
-        <p><strong>📞 Phone:</strong> {order.phone}</p>
-        {order.address && <p><strong>🏠 Address:</strong> {order.address}</p>}
-        {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
+        <p>
+          <strong>👤 Name:</strong> {order.name}
+        </p>
+        <p>
+          <strong>📞 Phone:</strong> {order.phone}
+        </p>
+        {order.address && (
+          <p>
+            <strong>🏠 Address:</strong> {order.address}
+          </p>
+        )}
+        {order.notes && (
+          <p>
+            <strong>📝 Notes:</strong> {order.notes}
+          </p>
+        )}
       </div>
 
       <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4 space-y-1">
-        <p><strong>Subtotal:</strong> ${order.subtotal?.toFixed(2)}</p>
+        <p>
+          <strong>Subtotal:</strong> ${order.subtotal?.toFixed(2)}
+        </p>
         {order.discount && order.discount > 0 && (
-          <p><strong>Discount:</strong> -${order.discount.toFixed(2)}</p>
+          <p>
+            <strong>Discount:</strong> -${order.discount.toFixed(2)}
+          </p>
         )}
         <p className="text-xl font-bold text-teal-800">
           Total: ${order.total.toFixed(2)}
