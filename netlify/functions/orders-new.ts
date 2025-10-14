@@ -1,67 +1,81 @@
-import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { Handler } from '@netlify/functions';
+import Airtable from 'airtable';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID as string
+  process.env.AIRTABLE_BASE_ID || ''
 );
 
 const handler: Handler = async (event, context) => {
-  if (event.httpMethod !== "POST") {
+  if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      body: "Method Not Allowed",
+      body: JSON.stringify({ error: 'Method Not Allowed' }),
     };
   }
 
   try {
-    console.log("✅ Function invoked");
+    const data = JSON.parse(event.body || '{}');
+    console.info('📦 Payload received:', data);
 
-    const data = JSON.parse(event.body || "{}");
-    console.log("📦 Payload received:", JSON.stringify(data));
+    const {
+      customer_name,
+      customer_phone,
+      address,
+      order_type,
+      schedule_date,
+      schedule_time,
+      subtotal,
+      discount,
+      total,
+      coupon_code,
+      notes,
+      items,
+    } = data;
 
-    const { customer, items, total, coupon } = data;
-
-    const orderRecord = await base("Orders").create({
+    // 1. Crear orden principal
+    const order = await base('Orders').create({
       fields: {
-        customerName: customer.name,
-        customerEmail: customer.email,
+        customer_name,
+        customer_phone,
+        address,
+        order_type,
+        schedule_date,
+        schedule_time,
+        subtotal,
+        discount,
         total,
-        coupon: coupon || "",
+        coupon_code,
+        notes,
       },
     });
 
-    console.log("✅ Order created:", orderRecord.id);
+    const orderId = order.id;
 
-    const orderId = orderRecord.id;
-
-    await Promise.all(
-      items.map(async (item: any) => {
-        console.log("🛒 Creating OrderItem with:", JSON.stringify(item));
-
-        await base("OrderItems").create({
-          fields: {
-            order: [orderId],
-            product: item.name,
-            option: item.option,
-            addons: item.addons?.map((a: any) => a.name).join(", "),
-            qty: item.qty || 1,
-            price: item.price,
-          },
-        });
-
-        console.log("✅ OrderItem created for:", item.name);
-      })
-    );
+    // 2. Crear cada OrderItem
+    for (const item of items) {
+      await base('OrderItems').create({
+        fields: {
+          order: [orderId],
+          product: item.name,
+          option: item.option,
+          addons: Array.isArray(item.addons)
+            ? item.addons.map((a: any) => (typeof a === 'string' ? a : a.name)).join(', ')
+            : '',
+          qty: item.qty || 1,
+          price: item.price,
+        },
+      });
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, orderId }),
+      body: JSON.stringify({ success: true, message: 'Order created successfully.' }),
     };
   } catch (error) {
-    console.error("❌ Error in orders-new.ts:", error);
+    console.error('❌ Error in orders-new.ts:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to create order" }),
+      body: JSON.stringify({ error: 'Failed to create order' }),
     };
   }
 };
