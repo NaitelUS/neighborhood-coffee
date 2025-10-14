@@ -38,24 +38,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 🧮 Calcular subtotal y total con precisión
   useEffect(() => {
     const newSubtotal = cartItems.reduce((sum, item) => {
+      const basePrice = item.basePrice ?? item.price;
+      const qty = item.qty || 1;
+
       const addonsTotal = (item.addons || []).reduce(
-        (s: number, a: any) => s + (a.price || 0),
+        (acc: number, addon: any) => acc + (addon.price || 0),
         0
       );
 
-      // Usa basePrice si está definido
-      const basePrice = item.basePrice ?? item.price;
+      const totalItemPrice = (basePrice + addonsTotal) * qty;
 
-      // Solo suma addons si el producto no los incluye
-      const totalItemPrice =
-        basePrice + (!item.includesAddons ? addonsTotal : 0);
-
-      return sum + totalItemPrice * (item.qty || 1);
+      return sum + totalItemPrice;
     }, 0);
 
     setSubtotal(newSubtotal);
 
-    const newTotal = appliedCoupon ? newSubtotal * (1 - discount) : newSubtotal;
+    const newTotal = appliedCoupon
+      ? newSubtotal * (1 - discount)
+      : newSubtotal;
+
     setTotal(newTotal);
   }, [cartItems, discount, appliedCoupon]);
 
