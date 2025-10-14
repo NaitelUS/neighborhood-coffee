@@ -27,41 +27,51 @@ export default function OrderSummary() {
 
       {/* 🧾 Lista de productos */}
       <ul className="divide-y divide-gray-200 mb-4">
-        {cartItems.map((item, index) => (
-          <li key={index} className="py-3">
-            <div className="flex justify-between items-start gap-3">
-              <div className="flex-1">
-                <p className="font-medium text-gray-800">{item.name}</p>
+        {cartItems.map((item, index) => {
+          const basePrice = item.price || 0;
+          const addonsTotal =
+            item.addons?.reduce((sum: number, a: any) => sum + (a.price || 0), 0) || 0;
+          const unitTotal = basePrice + addonsTotal;
+          const qty = item.qty || 1;
 
-                {/* ✅ Add-ons debajo del nombre */}
-                {item.addons && item.addons.length > 0 && (
-                  <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
-                    {item.addons.map((addon, idx) => (
-                      <li key={idx}>
-                        {addon.name} (+${addon.price.toFixed(2)})
-                      </li>
-                    ))}
-                  </ul>
-                )}
+          return (
+            <li key={index} className="py-3">
+              <div className="flex justify-between items-start gap-3">
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800">
+                    {item.name} {qty > 1 && `× ${qty}`}
+                  </p>
+
+                  {/* ✅ Add-ons debajo del nombre */}
+                  {item.addons && item.addons.length > 0 && (
+                    <ul className="ml-4 mt-1 text-sm text-gray-600 list-disc">
+                      {item.addons.map((addon, idx) => (
+                        <li key={idx}>
+                          {addon.name} (+${addon.price.toFixed(2)})
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* 💵 Precio total unitario (base + addons) */}
+                <div className="flex flex-col items-end">
+                  <span className="text-gray-700 font-semibold">
+                    ${unitTotal.toFixed(2)}
+                  </span>
+
+                  {/* ❌ Botón de eliminar */}
+                  <button
+                    onClick={() => removeFromCart(item)}
+                    className="text-red-500 hover:text-red-700 text-xs mt-1"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-
-              {/* 💵 Precio */}
-              <div className="flex flex-col items-end">
-                <span className="text-gray-700 font-semibold">
-                  ${item.price.toFixed(2)}
-                </span>
-
-                {/* ❌ Botón de eliminar */}
-                <button
-                  onClick={() => removeFromCart(item)}
-                  className="text-red-500 hover:text-red-700 text-xs mt-1"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
 
       {/* 💵 Subtotal */}
