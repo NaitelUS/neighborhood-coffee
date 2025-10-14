@@ -1,17 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
+interface OrderItem {
+  name: string;
+  option?: string;
+  price: number;
+  qty: number;
+  addons?: string;
+}
+
 interface Order {
   id: string;
+  order_id?: string;
   name: string;
   phone: string;
   order_type: string;
   address?: string;
   total: number;
+  subtotal?: number;
+  discount?: number;
   schedule_date?: string;
   schedule_time?: string;
   notes?: string;
-  items?: { product_name: string; option?: string; addons?: string }[];
+  items?: OrderItem[];
 }
 
 export default function ThankYou() {
@@ -58,7 +69,7 @@ export default function ThankYou() {
 
       <div className="text-center mb-6">
         <p className="text-gray-700 font-mono text-lg mb-1">
-          Order #: {order.id}
+          Order #: {order.order_id || order.id}
         </p>
         <p className="text-gray-500 text-sm">
           {order.order_type} — {order.schedule_date} {order.schedule_time}
@@ -66,26 +77,40 @@ export default function ThankYou() {
       </div>
 
       {order.items && order.items.length > 0 && (
-        <div className="border-t border-b py-3 mb-4 text-sm text-gray-800">
+        <div className="border-t border-b py-3 mb-4 text-sm text-gray-800 space-y-2">
           {order.items.map((item, idx) => (
-            <div key={idx} className="mb-2">
-              <strong>{item.product_name}</strong> {item.option && `(${item.option})`}
-              {item.addons && <p className="text-gray-600 text-xs">+ {item.addons}</p>}
+            <div key={idx}>
+              <div className="flex justify-between">
+                <span>
+                  <strong>{item.name}</strong>
+                  {item.option && ` (${item.option})`} × {item.qty}
+                </span>
+                <span>
+                  ${(item.price * item.qty).toFixed(2)}
+                </span>
+              </div>
+              {item.addons && (
+                <p className="text-gray-600 text-xs ml-2">+ {item.addons}</p>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      <div className="text-sm text-gray-700 mb-4">
+      <div className="text-sm text-gray-700 mb-4 space-y-1">
         <p><strong>👤 Name:</strong> {order.name}</p>
         <p><strong>📞 Phone:</strong> {order.phone}</p>
         {order.address && <p><strong>🏠 Address:</strong> {order.address}</p>}
         {order.notes && <p><strong>📝 Notes:</strong> {order.notes}</p>}
       </div>
 
-      <div className="bg-teal-50 p-4 rounded-lg text-center mb-4">
-        <p className="text-xl font-semibold text-teal-800">
-          Total: ${Number(order.total).toFixed(2)}
+      <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4 space-y-1">
+        <p><strong>Subtotal:</strong> ${order.subtotal?.toFixed(2)}</p>
+        {order.discount && order.discount > 0 && (
+          <p><strong>Discount:</strong> -${order.discount.toFixed(2)}</p>
+        )}
+        <p className="text-xl font-bold text-teal-800">
+          Total: ${order.total.toFixed(2)}
         </p>
       </div>
 
