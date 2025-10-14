@@ -1,16 +1,37 @@
-// client/src/pages/OrderPage.tsx
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CartContext } from "@/context/CartContext";
-import OrderSummary from "@/components/OrderSummary";
-import CustomerInfoForm from "@/components/CustomerInfoForm";
+import { CartContext } from "../context/CartContext";
+import OrderSummary from "../components/OrderSummary";
 
-export default function OrderPage() {
-  const { cartItems, subtotal, discount, appliedCoupon, total, clearCart } =
-    useContext(CartContext);
-
-  const navigate = useNavigate();
+const OrderPage = () => {
+  const {
+    cartItems,
+    subtotal,
+    total,
+    discount,
+    clearCart,
+    appliedCoupon,
+  } = useContext(CartContext);
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    method: "Pickup",
+    notes: "",
+    schedule_date: "",
+    schedule_time: "",
+  });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleMethodChange = (method: string) => {
+    setFormData((prev) => ({ ...prev, method }));
+  };
 
   const handleOrderSubmit = async (
     info: any,
@@ -42,6 +63,7 @@ export default function OrderPage() {
           option: item.option || "",
           price: item.price,
           addons: item.addons || [],
+          qty: item.qty || 1, // ✅ Aquí se incluye qty
         })),
       };
 
@@ -52,10 +74,9 @@ export default function OrderPage() {
       });
 
       const result = await res.json();
-      if (!result.success) throw new Error("Order creation failed");
+      if (!res.ok || !result.orderId) throw new Error("Order creation failed");
 
-      const orderId = result.orderId;
-      navigate(`/thank-you?id=${orderId}`);
+      navigate(`/thank-you?id=${result.orderId}`);
       clearCart();
     } catch (err) {
       console.error("❌ Error sending order:", err);
@@ -66,21 +87,100 @@ export default function OrderPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 px-4 mt-6">
-      <div>
-        <OrderSummary />
-      </div>
-      <div>
-        <CustomerInfoForm onSubmit={handleOrderSubmit} />
-      </div>
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#1D9099] mx-auto mb-3"></div>
-            <p className="text-gray-700">Submitting your order...</p>
-          </div>
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      <h1 className="text-2xl font-bold mb-4 text-teal-900">Pickup Details</h1>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleOrderSubmit(formData, formData.schedule_date, formData.schedule_time);
+        }}
+      >
+        <input
+          type="text"
+          name="name"
+          placeholder="Your Name"
+          className="w-full p-2 border rounded"
+          value={formData.name}
+          onChange={handleInputChange}
+          required
+        />
+        <input
+          type="tel"
+          name="phone"
+          placeholder="Phone Number"
+          className="w-full p-2 border rounded"
+          value={formData.phone}
+          onChange={handleInputChange}
+          required
+        />
+        <input
+          type="date"
+          name="schedule_date"
+          className="w-full p-2 border rounded"
+          value={formData.schedule_date}
+          onChange={handleInputChange}
+          required
+        />
+        <input
+          type="time"
+          name="schedule_time"
+          className="w-full p-2 border rounded"
+          value={formData.schedule_time}
+          onChange={handleInputChange}
+          required
+        />
+        <textarea
+          name="notes"
+          placeholder="Notes (optional)"
+          className="w-full p-2 border rounded"
+          value={formData.notes}
+          onChange={handleInputChange}
+        />
+        <div className="flex items-center gap-4">
+          <label>
+            <input
+              type="radio"
+              name="method"
+              checked={formData.method === "Pickup"}
+              onChange={() => handleMethodChange("Pickup")}
+            />
+            <span className="ml-2">Pickup</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="method"
+              checked={formData.method === "Delivery"}
+              onChange={() => handleMethodChange("Delivery")}
+            />
+            <span className="ml-2">Delivery</span>
+          </label>
         </div>
-      )}
+        {formData.method === "Delivery" && (
+          <input
+            type="text"
+            name="address"
+            placeholder="Delivery Address"
+            className="w-full p-2 border rounded"
+            value={formData.address}
+            onChange={handleInputChange}
+            required
+          />
+        )}
+        <button
+          type="submit"
+          className="w-full bg-[#00454E] text-white font-bold py-2 rounded hover:bg-teal-700 transition"
+          disabled={loading}
+        >
+          {loading ? "Submitting..." : "Place Order"}
+        </button>
+      </form>
+
+      <h2 className="text-2xl font-bold my-6 text-teal-900">Review your Order</h2>
+      <OrderSummary />
     </div>
   );
-}
+};
+
+export default OrderPage;
