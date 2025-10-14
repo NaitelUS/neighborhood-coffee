@@ -18,7 +18,6 @@ const handler: Handler = async (event, context) => {
 
     const { customer, items, total, coupon } = data;
 
-    // 1. Crear Order
     const orderRecord = await base("Orders").create({
       fields: {
         customerName: customer.name,
@@ -30,16 +29,18 @@ const handler: Handler = async (event, context) => {
 
     const orderId = orderRecord.id;
 
-    // 2. Crear OrderItems
     await Promise.all(
       items.map(async (item: any) => {
+        // 🐛 Log para ver qué se está enviando
+        console.log("Creating OrderItem with:", item);
+
         await base("OrderItems").create({
           fields: {
             order: [orderId],
             product: item.name,
             option: item.option,
             addons: item.addons?.map((a: any) => a.name).join(", "),
-            qty: item.qty || 1, // ✅ Cantidad enviada correctamente
+            qty: item.qty || 1,
             price: item.price,
           },
         });
