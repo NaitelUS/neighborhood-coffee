@@ -65,7 +65,7 @@ export default function OrderSummary() {
                     </ul>
                   )}
 
-                  {/* ➕ Selector de cantidad */}
+                  {/* 🔢 Selector de cantidad */}
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       onClick={decreaseQty}
@@ -123,19 +123,10 @@ export default function OrderSummary() {
         <span>${total.toFixed(2)}</span>
       </div>
 
-      {/* 🏷️ Campo de cupón (debajo del total) */}
+      {/* 🏷️ Campo de cupón */}
       <div className="mt-4">
         <CouponField />
       </div>
-
-      {/* 🚀 Botón opcional */}
-      {cartItems.length > 0 && (
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
-            Review your items before checkout.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
