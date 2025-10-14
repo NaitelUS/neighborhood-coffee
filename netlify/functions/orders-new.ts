@@ -5,7 +5,7 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_BASE_ID || ''
 );
 
-const handler: Handler = async (event, context) => {
+const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -32,38 +32,34 @@ const handler: Handler = async (event, context) => {
       items,
     } = data;
 
-    // 1. Crear orden principal
+    // Crear orden principal
     const order = await base('Orders').create({
-      fields: {
-        customer_name,
-        customer_phone,
-        address,
-        order_type,
-        schedule_date,
-        schedule_time,
-        subtotal,
-        discount,
-        total,
-        coupon_code,
-        notes,
-      },
+      customer_name,
+      customer_phone,
+      address,
+      order_type,
+      schedule_date,
+      schedule_time,
+      subtotal,
+      discount,
+      total,
+      coupon_code,
+      notes,
     });
 
     const orderId = order.id;
 
-    // 2. Crear cada OrderItem
+    // Crear cada OrderItem
     for (const item of items) {
       await base('OrderItems').create({
-        fields: {
-          order: [orderId],
-          product: item.name,
-          option: item.option,
-          addons: Array.isArray(item.addons)
-            ? item.addons.map((a: any) => (typeof a === 'string' ? a : a.name)).join(', ')
-            : '',
-          qty: item.qty || 1,
-          price: item.price,
-        },
+        order: [orderId],
+        product: item.name,
+        option: item.option,
+        addons: Array.isArray(item.addons)
+          ? item.addons.map((a: any) => (typeof a === 'string' ? a : a.name)).join(', ')
+          : '',
+        qty: item.qty || 1,
+        price: item.price,
       });
     }
 
