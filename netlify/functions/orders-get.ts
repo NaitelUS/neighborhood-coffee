@@ -1,63 +1,61 @@
-import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+// netlify/functions/orders-get.ts
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID as string
-);
-
-const handler: Handler = async (event) => {
-  const id = event.queryStringParameters?.id;
-
-  if (!id) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Missing order ID" }),
-    };
-  }
+export async function handler(event) {
+  const base = getAirtableClient();
+  const { id } = event.queryStringParameters || {};
 
   try {
-    const orderRecord = await base(process.env.AIRTABLE_TABLE_ORDERS as string).find(id);
-    const orderItems = await base(process.env.AIRTABLE_TABLE_ORDERITEMS as string)
+    // Si se pide un id específico
+    if (id) {
+      const record = await base("Orders").find(id);
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          id: record.get("OrderID") || record.id,
+          name: record.get("Name") || "",
+          phone: record.get("Phone") || "",
+          order_type: record.get("OrderType") || "",
+          total: record.get("Total") || 0,
+          status: record.get("Status") || "Received",
+          schedule_date: record.get("ScheduleDate") || "",
+          schedule_time: record.get("ScheduleTime") || "",
+          notes: record.get("Notes") || "",
+          created_at: record.get("CreatedAt") || "",
+        }),
+      };
+    }
+
+    // Si no se pide id → devolver todas las órdenes
+    const records = await base("Orders")
       .select({
-        filterByFormula: `{Order} = '${orderRecord.id}'`,
+        sort: [{ field: "CreatedAt", direction: "desc" }],
       })
       .all();
 
-    const items = orderItems.map((item) => ({
-      name: item.get("Product") as string,
-      option: item.get("Option") as string,
-      price: item.get("Price") as number,
-      qty: item.get("Qty") as number,
-      addons: item.get("AddOns") as string,
+    const formatted = records.map((r) => ({
+      id: r.get("OrderID") || r.id,
+      name: r.get("Name") || "",
+      phone: r.get("Phone") || "",
+      order_type: r.get("OrderType") || "",
+      total: r.get("Total") || 0,
+      status: r.get("Status") || "Received",
+      schedule_date: r.get("ScheduleDate") || "",
+      schedule_time: r.get("ScheduleTime") || "",
+      notes: r.get("Notes") || "",
+      created_at: r.get("CreatedAt") || "",
     }));
-
-    const orderData = {
-      id: orderRecord.id,
-      OrderID: orderRecord.get("OrderID"), // ✅ añadido para ThankYou
-      name: orderRecord.get("Customer Name"),
-      phone: orderRecord.get("Phone"),
-      order_type: orderRecord.get("Order Type"),
-      address: orderRecord.get("Address"),
-      schedule_date: orderRecord.get("Schedule Date"),
-      schedule_time: orderRecord.get("Schedule Time"),
-      notes: orderRecord.get("Notes"),
-      total: orderRecord.get("Total"),
-      subtotal: orderRecord.get("Subtotal"),
-      discount: orderRecord.get("Discount"),
-      items,
-    };
 
     return {
       statusCode: 200,
-      body: JSON.stringify(orderData),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formatted),
     };
   } catch (err) {
-    console.error("❌ Error in orders-get:", err);
+    console.error("Error in orders-get:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to fetch order" }),
+      body: JSON.stringify({ error: err.message }),
     };
   }
-};
-
-export { handler };
+}
