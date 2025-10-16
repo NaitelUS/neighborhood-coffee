@@ -1,57 +1,37 @@
-import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+// netlify/functions/orders-update.ts
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+export async function handler(event) {
+  const base = getAirtableClient();
 
-const TABLE_ORDERS = process.env.AIRTABLE_TABLE_ORDERS || "Orders";
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
 
-export const handler: Handler = async (event) => {
   try {
-    const body = JSON.parse(event.body || "{}");
-    const { id, status } = body;
-
+    const { id, status } = JSON.parse(event.body || "{}");
     if (!id || !status) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing id or status" }),
-      };
+      return { statusCode: 400, body: JSON.stringify({ error: "Missing id or status" }) };
     }
 
-    // Buscar el record por OrderID (TNC-001)
-    const records = await base(TABLE_ORDERS)
-      .select({
-        filterByFormula: `{OrderID} = '${id}'`,
-        maxRecords: 1,
-      })
+    // Buscar registro por OrderID o RecordID
+    const records = await base("Orders")
+      .select({ filterByFormula: `{OrderID} = '${id}'` })
       .firstPage();
 
     if (records.length === 0) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Order not found" }),
-      };
+      return { statusCode: 404, body: JSON.stringify({ error: "Order not found" }) };
     }
 
-    const recordId = records[0].id;
-
-    await base(TABLE_ORDERS).update([
-      {
-        id: recordId,
-        fields: { Status: status },
-      },
-    ]);
+    const record = records[0];
+    await base("Orders").update(record.id, { Status: status });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify({ success: true, id, status }),
     };
   } catch (err) {
-    console.error("❌ Error updating order:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to update order" }),
-    };
+    console.error("Error in orders-update:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
-};
+}
