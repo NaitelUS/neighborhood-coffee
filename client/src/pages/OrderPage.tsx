@@ -72,25 +72,26 @@ const OrderPage = () => {
     setLoading(true);
 
     const payload = {
-      customer_name: form.name,
-      customer_phone: form.phone,
-      address: form.method === "Delivery" ? form.address : "",
-      order_type: form.method,
-      schedule_date: form.schedule_date,
-      schedule_time: form.schedule_time,
-      subtotal,
-      discount,
-      total,
-      coupon_code: appliedCoupon || "",
-      notes: form.notes,
-      items: cartItems.map((item) => ({
-        name: item.name,
-        option: item.option,
-        price: item.price,
-        addons: item.addons,
-        qty: item.qty || 1,
-      })),
-    };
+  name: form.name,
+  phone: form.phone,
+  address: form.method === "Delivery" ? form.address : "",
+  order_type: form.method,
+  schedule_date: form.schedule_date,
+  schedule_time: form.schedule_time,
+  subtotal,
+  discount,
+  total,
+  coupon: appliedCoupon || "",
+  notes: form.notes,
+  items: cartItems.map((item) => ({
+    name: item.name,
+    option: item.option,
+    price: item.price,
+    addons: item.addons,
+    qty: item.qty || 1,
+  })),
+};
+
 
     try {
       const res = await fetch("/.netlify/functions/orders-new", {
