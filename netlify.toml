@@ -1,12 +1,22 @@
 # --- Configuración de funciones ---
 [functions]
-directory = "netlify/functions"
-node_bundler = "esbuild"
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["airtable"]
+  included_files = ["netlify/functions/**"]
+  timeout = 10
 
 # --- Configuración de build ---
 [build]
+  base = ""
   command = "npm install && npm run build"
   publish = "dist"
+
+# --- Variables de entorno para producción ---
+[build.environment]
+  NODE_ENV = "production"
+  AIRTABLE_TIMEOUT = "8000"
+  NETLIFY_USE_YARN = "true"
 
 # --- Redirección global para SPA (React/Vite) ---
 [[redirects]]
