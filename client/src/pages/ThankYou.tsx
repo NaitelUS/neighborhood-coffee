@@ -40,10 +40,14 @@ const ThankYou = () => {
 
   const orderNumber = order.orderID || order.id || "N/A";
   const customerName = order.name || "Valued Customer";
+  const items = order.items || [];
   const subtotal = order.subtotal || 0;
   const discount = order.discount || 0;
   const total = order.total || 0;
   const coupon = order.coupon || "";
+  const orderType = order.order_type || "";
+  const scheduleDate = order.schedule_date || "";
+  const scheduleTime = order.schedule_time || "";
 
   return (
     <div className="text-center mt-16 px-4">
@@ -54,26 +58,70 @@ const ThankYou = () => {
         Your order has been received and is being processed.
       </p>
 
-      <div className="inline-block bg-white shadow rounded-lg p-6 text-left">
+      {/* Recibo */}
+      <div className="inline-block bg-white shadow rounded-lg p-6 text-left w-full max-w-md mx-auto">
         <p>
           <strong>Order #:</strong> {orderNumber}
         </p>
         <p>
-          <strong>Subtotal:</strong> ${subtotal.toFixed(2)}
+          <strong>Type:</strong> {orderType}
         </p>
-        {discount > 0 && (
-          <p>
-            <strong>Discount:</strong> -${discount.toFixed(2)}
-          </p>
-        )}
-        {coupon && (
-          <p>
-            <strong>Coupon:</strong> {coupon}
-          </p>
-        )}
-        <p className="font-semibold mt-2">
-          <strong>Total:</strong> ${total.toFixed(2)}
+        <p>
+          <strong>Date:</strong> {scheduleDate} {scheduleTime && `at ${scheduleTime}`}
         </p>
+
+        <hr className="my-4" />
+
+        {/* Detalle de productos */}
+        <div>
+          {items.length > 0 ? (
+            <ul className="space-y-2">
+              {items.map((item: any, i: number) => (
+                <li key={i} className="flex justify-between text-sm">
+                  <div className="text-left">
+                    <p className="font-medium text-gray-800">{item.name}</p>
+                    {item.option && (
+                      <p className="text-gray-500 text-xs">{item.option}</p>
+                    )}
+                    {item.addons && (
+                      <p className="text-gray-500 text-xs">
+                        Addons: {item.addons}
+                      </p>
+                    )}
+                    <p className="text-gray-600 text-xs">Qty: {item.qty}</p>
+                  </div>
+                  <p className="text-gray-800 font-medium">
+                    ${(item.price * item.qty).toFixed(2)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 text-sm">No items found for this order.</p>
+          )}
+        </div>
+
+        <hr className="my-4" />
+
+        {/* Totales */}
+        <div className="text-sm space-y-1">
+          <p>
+            <strong>Subtotal:</strong> ${subtotal.toFixed(2)}
+          </p>
+          {discount > 0 && (
+            <p>
+              <strong>Discount:</strong> -${discount.toFixed(2)}
+            </p>
+          )}
+          {coupon && (
+            <p>
+              <strong>Coupon:</strong> {coupon}
+            </p>
+          )}
+          <p className="font-semibold mt-2 text-lg">
+            <strong>Total:</strong> ${total.toFixed(2)}
+          </p>
+        </div>
       </div>
 
       <div className="mt-8">
