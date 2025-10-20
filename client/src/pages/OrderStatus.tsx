@@ -154,7 +154,7 @@ export default function OrderStatus() {
         order.items.map((item: any, index: number) => (
           <div key={index} className="mb-3">
             <div className="font-semibold">{item.name}</div>
-            {item.option && (
+            {item.option && !item.name.toLowerCase().includes(item.option.toLowerCase()) && (
               <div className="text-gray-500 text-xs">{item.option}</div>
             )}
             {item.addons && item.addons.length > 0 && (
