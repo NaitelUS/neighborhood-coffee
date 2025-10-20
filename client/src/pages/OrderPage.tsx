@@ -29,18 +29,24 @@ const OrderPage = () => {
 
   // ✅ Bloque agregado — inicializa fecha actual y hora +15 minutos
   useEffect(() => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + 15);
+  // Fecha y hora locales del dispositivo
+  const now = new Date();
 
-    const today = new Date().toISOString().slice(0, 10);
-    const formattedTime = now.toTimeString().slice(0, 5);
+  // Siempre usa la fecha actual (en tu zona horaria)
+  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  const today = localDate.toISOString().slice(0, 10);
 
-    setForm((prev) => ({
-      ...prev,
-      schedule_date: today,
-      schedule_time: formattedTime,
-    }));
-  }, []);
+  // Calcula la hora +15 minutos (local)
+  const plus15 = new Date(now.getTime() + 15 * 60000);
+  const formattedTime = plus15.toTimeString().slice(0, 5);
+
+  setForm((prev) => ({
+    ...prev,
+    schedule_date: today,
+    schedule_time: formattedTime,
+  }));
+}, []);
+
   // ✅ Fin del bloque agregado
 
   const handleChange = (
