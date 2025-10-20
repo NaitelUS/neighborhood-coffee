@@ -35,9 +35,7 @@ export default function ThankYou() {
   const total = subtotal - subtotal * discount;
   const createdAt = order.createdAt || order.Date || order.date;
   const orderType = order.order_type || order.OrderType || "";
-
-  const orderIcon =
-    orderType.toLowerCase() === "delivery" ? "🚗" : "🚶‍♂️";
+  const orderIcon = orderType.toLowerCase() === "delivery" ? "🚗" : "🚶‍♂️";
 
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleString("en-US", {
@@ -61,37 +59,20 @@ export default function ThankYou() {
 
       <hr className="my-3" />
 
-      {/* Lista de ítems */}
+      {/* Listado de ítems sin precios */}
       {order.items && order.items.length > 0 ? (
         order.items.map((item, index) => (
           <div key={index} className="mb-3">
-            <div className="flex justify-between">
-              <div>
-                <strong>{item.name}</strong>{" "}
-                <span className="text-gray-600">({item.option})</span>
-              </div>
-              <div className="text-right">
-                ${(item.price * (item.qty || 1)).toFixed(2)}
-              </div>
-            </div>
+            <div className="font-semibold">{item.name}</div>
+            {item.option && (
+              <div className="text-gray-500 text-xs">{item.option}</div>
+            )}
 
             {item.addons && item.addons.length > 0 && (
               <ul className="ml-4 mt-1 text-xs text-gray-500 list-disc">
                 {Array.isArray(item.addons)
-                  ? item.addons.map((a, i) => (
-                      <li key={i}>
-                        {a.name
-                          ? `${a.name} (+$${a.price?.toFixed(2) || "0.00"})`
-                          : a}
-                      </li>
-                    ))
-                  : (
-                    <li>
-                      {item.addons.name
-                        ? `${item.addons.name} (+$${item.addons.price?.toFixed(2) || "0.00"})`
-                        : item.addons}
-                    </li>
-                  )}
+                  ? item.addons.map((a, i) => <li key={i}>{a}</li>)
+                  : <li>{item.addons}</li>}
               </ul>
             )}
 
@@ -105,13 +86,6 @@ export default function ThankYou() {
       )}
 
       <hr className="my-3" />
-
-      {/* Fecha y tipo */}
-      <div className="flex justify-between text-gray-500 text-xs mb-2">
-        <span>
-          Placed on: {formattedDate} {orderIcon} {orderType.toUpperCase()}
-        </span>
-      </div>
 
       {/* Totales */}
       <div className="flex justify-between text-gray-700">
@@ -140,7 +114,12 @@ export default function ThankYou() {
         <span>${total.toFixed(2)}</span>
       </div>
 
-      <div className="text-center mt-6">
+      {/* Fecha y tipo movido al final */}
+      <div className="text-gray-500 text-xs mt-4 text-center">
+        Placed on: {formattedDate} {orderIcon} {orderType.toUpperCase()}
+      </div>
+
+      <div className="text-center mt-4">
         <button
           onClick={() => navigate(`/order-status?id=${order.orderID}`)}
           className="bg-orange-600 text-white px-5 py-2 rounded hover:bg-orange-700 transition"
