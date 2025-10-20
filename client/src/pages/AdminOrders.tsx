@@ -15,14 +15,13 @@ interface Order {
   Date?: string;
   schedule_date?: string;
   schedule_time?: string;
-  items?: any[];
+  items?: { name: string; qty?: number; addons?: string[] }[];
 }
 
 export default function AdminOrders() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hideCompleted, setHideCompleted] = useState(true);
   const [activeStatuses, setActiveStatuses] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedOrders, setHighlightedOrders] = useState<string[]>([]);
@@ -71,7 +70,7 @@ export default function AdminOrders() {
         items: o.items || [],
       }));
 
-      // 🔔 Sonido y animación para nuevas órdenes
+      // 🔔 nuevas órdenes
       const newReceived = normalized.filter(
         (o) =>
           o.Status === "Received" &&
@@ -81,14 +80,11 @@ export default function AdminOrders() {
       if (newReceived.length > 0) {
         const sound = new Audio("/sounds/new-order.mp3");
         sound.play().catch(() => {});
-        setHighlightedOrders(newReceived.map((o) => o.id));
-
-        // 🪄 Mostrar toast
         const firstNew = newReceived[0];
         showToast(
           `🆕 New order received! ${firstNew.orderID || ""} — ${firstNew.name} (${firstNew.OrderType})`
         );
-
+        setHighlightedOrders(newReceived.map((o) => o.id));
         setTimeout(() => setHighlightedOrders([]), 4000);
       }
 
@@ -153,14 +149,6 @@ export default function AdminOrders() {
     );
   };
 
-  const filterOrders = (order: Order) => {
-    if (hideCompleted && ["Completed", "Cancelled"].includes(order.Status))
-      return false;
-    if (activeStatuses.length > 0 && !activeStatuses.includes(order.Status))
-      return false;
-    return true;
-  };
-
   const orderStatusOrder = [
     "Received",
     "In Process",
@@ -170,7 +158,12 @@ export default function AdminOrders() {
     "Cancelled",
   ];
 
-  const filteredOrders = orders.filter(filterOrders);
+  const filteredOrders = orders.filter(
+    (o) =>
+      (activeStatuses.length === 0 ||
+        activeStatuses.includes(o.Status)) &&
+      !["Cancelled"].includes(o.Status)
+  );
 
   const timeSince = (order: Order) => {
     const dateStr = order.Date || order.schedule_date;
@@ -182,13 +175,39 @@ export default function AdminOrders() {
     return mins < 1 ? "just now" : `${mins} min ago`;
   };
 
+  const currentDateTime = new Date().toLocaleString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
   if (loading) return <p className="text-center mt-10">Loading orders...</p>;
 
   return (
     <div className="relative p-4 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-center text-gray-700">
-        ☕ Orders Dashboard
-      </h1>
+      {/* 🗓️ Header superior */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={fetchOrders}
+          disabled={isRefreshing}
+          title="Refresh now"
+          className={`text-2xl ${
+            isRefreshing
+              ? "text-gray-400 animate-spin"
+              : "text-[#00454E] hover:text-[#02636d]"
+          }`}
+        >
+          ♻️
+        </button>
+        <h1 className="text-lg font-medium text-gray-700 text-center flex-1">
+          Today is:{" "}
+          <span className="font-semibold text-[#00454E]">{currentDateTime}</span>
+        </h1>
+      </div>
 
       {/* 🔘 Filtros tipo pill */}
       <div className="flex flex-wrap justify-center gap-2 mb-4">
@@ -205,30 +224,6 @@ export default function AdminOrders() {
             {status}
           </button>
         ))}
-      </div>
-
-      {/* 🔄 Botones de control */}
-      <div className="flex justify-center gap-3 mb-4">
-        <button
-          onClick={fetchOrders}
-          disabled={isRefreshing}
-          className={`px-4 py-2 rounded text-sm font-semibold ${
-            isRefreshing
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700 text-white"
-          }`}
-        >
-          {isRefreshing ? "Refreshing..." : "🔄 Refresh now"}
-        </button>
-
-        <button
-          onClick={() => setHideCompleted((prev) => !prev)}
-          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm font-medium"
-        >
-          {hideCompleted
-            ? "Show Completed / Cancelled"
-            : "Hide Completed / Cancelled"}
-        </button>
       </div>
 
       {/* 🧾 Órdenes */}
@@ -264,7 +259,12 @@ export default function AdminOrders() {
                 </span>
               </div>
 
-              <p className="font-semibold text-lg text-green-700">{o.name}</p>
+              <p className="text-xs text-gray-500 mb-1">
+                <b>Order #:</b> {o.orderID || "N/A"}
+              </p>
+              <p className="font-semibold text-lg text-[#00454E]">
+                {o.name}
+              </p>
               {o.phone && (
                 <p className="text-gray-500 text-sm mb-2">📞 {o.phone}</p>
               )}
@@ -273,13 +273,16 @@ export default function AdminOrders() {
                 🕒 Placed {timeSince(o)}
               </p>
 
+              {/* 🧺 Lista detallada */}
               {o.items && o.items.length > 0 && (
-                <div className="text-sm mb-2">
+                <div className="text-base mb-3">
                   {o.items.map((item, idx) => (
-                    <div key={idx}>
-                      {item.name}
+                    <div key={idx} className="mb-1 font-medium">
+                      {item.qty && item.qty > 1
+                        ? `${item.qty} × ${item.name}`
+                        : item.name}
                       {item.addons && item.addons.length > 0 && (
-                        <ul className="ml-4 text-xs list-disc text-gray-500">
+                        <ul className="ml-4 text-sm list-disc text-gray-500">
                           {item.addons.map((a: string, i: number) => (
                             <li key={i}>{a}</li>
                           ))}
@@ -291,7 +294,7 @@ export default function AdminOrders() {
               )}
 
               <hr className="my-2" />
-              <div className="text-gray-700 text-sm">
+              <div className="text-gray-700 text-sm mb-2">
                 <p>Subtotal: ${o.subtotal?.toFixed(2) || "0.00"}</p>
                 {o.discount && o.discount > 0 && (
                   <p>Discount: {(o.discount * 100).toFixed(0)}%</p>
@@ -304,7 +307,8 @@ export default function AdminOrders() {
               {next && (
                 <button
                   onClick={() => updateStatus(o.id, next)}
-                  className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white rounded py-2 text-sm font-semibold"
+                  className="mt-3 w-full text-white rounded py-2 text-sm font-semibold"
+                  style={{ backgroundColor: "#00454E" }}
                 >
                   {next === "In Process" && "Set In Process"}
                   {next === "Ready" && "Mark Ready"}
@@ -317,9 +321,9 @@ export default function AdminOrders() {
         })}
       </div>
 
-      {/* 🍞 Toast notification */}
+      {/* 🍞 Toast */}
       {toast.visible && (
-        <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out">
+        <div className="fixed bottom-4 right-4 bg-[#00454E] text-white px-4 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out">
           {toast.message}
         </div>
       )}
