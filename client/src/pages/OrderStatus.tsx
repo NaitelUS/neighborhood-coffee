@@ -4,14 +4,14 @@ import { useSearchParams } from "react-router-dom";
 export default function OrderStatus() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
-  const [order, setOrder] = useState(null);
+  const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchOrder() {
       try {
         const res = await fetch(
-          `/.netlify/functions/orders-get?id=${encodeURIComponent(id)}`
+          `/.netlify/functions/orders-get?id=${encodeURIComponent(id!)}`
         );
         const data = await res.json();
         setOrder(data);
@@ -36,9 +36,6 @@ export default function OrderStatus() {
   const orderType = order.order_type || order.OrderType || "";
   const orderStatus = order.Status || "Received";
 
-  const orderIcon =
-    orderType.toLowerCase() === "delivery" ? "🚗" : "🚶‍♂️";
-
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleString("en-US", {
         dateStyle: "medium",
@@ -49,35 +46,19 @@ export default function OrderStatus() {
         timeStyle: "short",
       });
 
-  // 🎨 Badge color según estado
-  const getStatusColor = (status: string) => {
+  // 🎨 Badge color y estilo
+  const getStatusStyle = (status: string) => {
     switch (status.toLowerCase()) {
       case "received":
-        return "bg-gray-200 text-gray-800";
+        return "bg-green-600";
       case "in process":
-        return "bg-yellow-200 text-yellow-800";
+        return "bg-yellow-500";
       case "ready":
-        return "bg-green-200 text-green-800";
+        return "bg-blue-600";
       case "completed":
-        return "bg-blue-200 text-blue-800";
+        return "bg-gray-600";
       default:
-        return "bg-gray-200 text-gray-800";
-    }
-  };
-
-  // 🎨 Color del total según estado
-  const getTotalColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "received":
-        return "text-gray-700";
-      case "in process":
-        return "text-yellow-700";
-      case "ready":
-        return "text-green-700";
-      case "completed":
-        return "text-blue-700";
-      default:
-        return "text-gray-700";
+        return "bg-gray-400";
     }
   };
 
@@ -119,25 +100,46 @@ export default function OrderStatus() {
     return "";
   };
 
+  // 🚀 Íconos dinámicos
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "received":
+        return "✅";
+      case "in process":
+        return "☕";
+      case "ready":
+        return "🚀";
+      case "completed":
+        return "🏁";
+      default:
+        return "ℹ️";
+    }
+  };
+
+  const orderIcon =
+    orderType.toLowerCase() === "delivery" ? "📦" : "🚶‍♂️";
+
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg mt-8 text-sm font-mono">
-      <h1 className="text-2xl font-bold text-center text-green-700 mb-2">
+      <h1 className="text-2xl font-bold text-center text-green-700 mb-4">
         Order Status
       </h1>
 
-      {/* Badge con color de estado */}
-      <div className="text-center mb-2">
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${getStatusColor(
+      {/* 🟢 Badge con íconos y color */}
+      <div className="flex justify-center mb-4">
+        <div
+          className={`inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-lg shadow-md text-white ${getStatusStyle(
             orderStatus
           )}`}
         >
-          {orderStatus}
-        </span>
+          <span>{getStatusIcon(orderStatus)}</span>
+          <span>{orderStatus.toUpperCase()}</span>
+          <span>{orderIcon}</span>
+        </div>
       </div>
 
-      {/* Mensaje humano */}
-      <p className="text-center text-gray-600 mb-4">
+      {/* Mensaje contextual */}
+      <p className="text-center text-gray-700 mb-4">
         {getStatusMessage(orderType, orderStatus)}
       </p>
 
@@ -147,15 +149,14 @@ export default function OrderStatus() {
 
       <hr className="my-3" />
 
-      {/* Lista de ítems */}
+      {/* 🧾 Lista de ítems */}
       {order.items && order.items.length > 0 ? (
-        order.items.map((item, index) => (
+        order.items.map((item: any, index: number) => (
           <div key={index} className="mb-3">
             <div className="font-semibold">{item.name}</div>
             {item.option && (
               <div className="text-gray-500 text-xs">{item.option}</div>
             )}
-
             {item.addons && item.addons.length > 0 && (
               <ul className="ml-4 mt-1 text-xs text-gray-500 list-disc">
                 {Array.isArray(item.addons)
@@ -163,7 +164,6 @@ export default function OrderStatus() {
                   : <li>{item.addons}</li>}
               </ul>
             )}
-
             <div className="text-xs text-gray-500 mt-1">
               Qty: {item.qty || 1}
             </div>
@@ -197,12 +197,7 @@ export default function OrderStatus() {
 
       <hr className="my-3" />
 
-      {/* Total dinámico */}
-      <div
-        className={`flex justify-between text-lg font-bold ${getTotalColor(
-          orderStatus
-        )}`}
-      >
+      <div className="flex justify-between text-lg font-bold text-green-700">
         <span>Total</span>
         <span>${total.toFixed(2)}</span>
       </div>
