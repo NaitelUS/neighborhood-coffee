@@ -4,7 +4,9 @@
   node_bundler = "esbuild"
   external_node_modules = ["airtable"]
   included_files = ["netlify/functions/**"]
-  timeout = 10
+
+  [functions.timeout]
+    duration = 10
 
 # --- Configuración de build ---
 [build]
