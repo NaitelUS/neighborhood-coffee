@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function ThankYou() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const id = searchParams.get("id");
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,11 +36,9 @@ export default function ThankYou() {
   const createdAt = order.createdAt || order.Date || order.date;
   const orderType = order.order_type || order.OrderType || "";
 
-  // Elegir ícono según tipo de orden
   const orderIcon =
     orderType.toLowerCase() === "delivery" ? "🚗" : "🚶‍♂️";
 
-  // Formatear fecha/hora
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleString("en-US", {
         dateStyle: "medium",
@@ -51,8 +50,8 @@ export default function ThankYou() {
       });
 
   return (
-    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg mt-8">
-      <h1 className="text-2xl font-bold text-center text-green-700">
+    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg mt-8 text-sm font-mono">
+      <h1 className="text-2xl font-bold text-center text-green-700 mb-2">
         Thank You!
       </h1>
       <p className="text-center text-gray-600 mb-4">
@@ -60,72 +59,95 @@ export default function ThankYou() {
         received.
       </p>
 
-      <div className="border-t border-b py-4 text-sm font-mono">
-        {order.items && order.items.length > 0 ? (
-          order.items.map((item, index) => (
-            <div key={index} className="flex justify-between mb-1">
-              <span>
-                {item.name}{" "}
-                {item.addons && (
-                  <span className="text-xs text-gray-500">
-                    ({item.addons})
-                  </span>
-                )}
-              </span>
-              <span>
-                {item.qty} × ${item.price.toFixed(2)}
-              </span>
+      <hr className="my-3" />
+
+      {/* Lista de ítems */}
+      {order.items && order.items.length > 0 ? (
+        order.items.map((item, index) => (
+          <div key={index} className="mb-3">
+            <div className="flex justify-between">
+              <div>
+                <strong>{item.name}</strong>{" "}
+                <span className="text-gray-600">({item.option})</span>
+              </div>
+              <div className="text-right">
+                ${(item.price * (item.qty || 1)).toFixed(2)}
+              </div>
             </div>
-          ))
-        ) : (
-          <p className="text-gray-500">No items found.</p>
-        )}
-      </div>
 
-      {/* Totales estilo recibo */}
-      <div className="border-t pt-4 mt-4 text-sm font-mono">
-        {/* Fecha y tipo de orden con ícono */}
-        <div className="flex justify-between text-gray-500 text-xs mb-2">
-          <span>
-            Placed on: {formattedDate}
-            {orderType && (
-              <span className="ml-2">
-                {orderIcon} {orderType.toUpperCase()}
-              </span>
+            {item.addons && item.addons.length > 0 && (
+              <ul className="ml-4 mt-1 text-xs text-gray-500 list-disc">
+                {Array.isArray(item.addons)
+                  ? item.addons.map((a, i) => (
+                      <li key={i}>
+                        {a.name
+                          ? `${a.name} (+$${a.price?.toFixed(2) || "0.00"})`
+                          : a}
+                      </li>
+                    ))
+                  : (
+                    <li>
+                      {item.addons.name
+                        ? `${item.addons.name} (+$${item.addons.price?.toFixed(2) || "0.00"})`
+                        : item.addons}
+                    </li>
+                  )}
+              </ul>
             )}
-          </span>
-        </div>
 
-        <div className="flex justify-between text-gray-700">
-          <span>Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
-        </div>
-
-        {discount > 0 && (
-          <div className="flex justify-between text-red-600">
-            <span>Discount ({(discount * 100).toFixed(0)}%)</span>
-            <span>-${(subtotal * discount).toFixed(2)}</span>
+            <div className="text-xs text-gray-500 mt-1">
+              Qty: {item.qty || 1}
+            </div>
           </div>
-        )}
+        ))
+      ) : (
+        <p className="text-gray-500">No items found.</p>
+      )}
 
-        {coupon && (
-          <div className="flex justify-between text-gray-600">
-            <span>Coupon</span>
-            <span>{coupon}</span>
-          </div>
-        )}
+      <hr className="my-3" />
 
-        <div className="h-px bg-gray-300 my-2"></div>
-
-        <div className="flex justify-between text-green-700 text-lg font-bold">
-          <span>Total</span>
-          <span>${total.toFixed(2)}</span>
-        </div>
+      {/* Fecha y tipo */}
+      <div className="flex justify-between text-gray-500 text-xs mb-2">
+        <span>
+          Placed on: {formattedDate} {orderIcon} {orderType.toUpperCase()}
+        </span>
       </div>
 
-      <p className="text-center text-gray-500 text-xs mt-6">
-        We’ll notify you when your order is ready for pickup.
-      </p>
+      {/* Totales */}
+      <div className="flex justify-between text-gray-700">
+        <span>Subtotal</span>
+        <span>${subtotal.toFixed(2)}</span>
+      </div>
+
+      {discount > 0 && (
+        <div className="flex justify-between text-red-600">
+          <span>Discount ({(discount * 100).toFixed(0)}%)</span>
+          <span>-${(subtotal * discount).toFixed(2)}</span>
+        </div>
+      )}
+
+      {coupon && (
+        <div className="flex justify-between text-gray-600">
+          <span>Coupon</span>
+          <span>{coupon}</span>
+        </div>
+      )}
+
+      <hr className="my-3" />
+
+      <div className="flex justify-between text-green-700 text-lg font-bold">
+        <span>Total</span>
+        <span>${total.toFixed(2)}</span>
+      </div>
+
+      <div className="text-center mt-6">
+        <button
+          onClick={() => navigate(`/order-status?id=${order.orderID}`)}
+          className="bg-orange-600 text-white px-5 py-2 rounded hover:bg-orange-700 transition"
+        >
+          Track My Order
+        </button>
+      </div>
     </div>
   );
 }
