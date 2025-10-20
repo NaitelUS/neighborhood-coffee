@@ -100,7 +100,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         message: "Order created successfully",
-        orderID: newOrderID,
+        orderId: newOrderID,
       }),
     };
   } catch (error) {
