@@ -1,139 +1,131 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
-const ThankYou = () => {
-  const [order, setOrder] = useState<any>(null);
+export default function ThankYou() {
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get("id");
+  const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const query = new URLSearchParams(location.search);
-  const orderId = query.get("id");
 
   useEffect(() => {
     async function fetchOrder() {
       try {
-        const res = await fetch(`/.netlify/functions/orders-get?id=${orderId}`);
+        const res = await fetch(
+          `/.netlify/functions/orders-get?id=${encodeURIComponent(id)}`
+        );
         const data = await res.json();
         setOrder(data);
-      } catch (err) {
-        console.error("Error fetching order:", err);
+      } catch (error) {
+        console.error("Error loading order:", error);
       } finally {
         setLoading(false);
       }
     }
-    fetchOrder();
-  }, [orderId]);
 
-  if (loading) {
-    return (
-      <div className="text-center mt-20 text-gray-600">Loading order...</div>
-    );
-  }
+    if (id) fetchOrder();
+  }, [id]);
 
-  if (!order) {
-    return (
-      <div className="text-center mt-20 text-red-600">
-        Order not found or could not be loaded.
-      </div>
-    );
-  }
+  if (loading) return <p className="p-6 text-center">Loading...</p>;
+  if (!order) return <p className="p-6 text-center">Order not found.</p>;
 
-  const orderNumber = order.orderID || order.id || "N/A";
-  const customerName = order.name || "Valued Customer";
-  const items = order.items || [];
   const subtotal = order.subtotal || 0;
   const discount = order.discount || 0;
-  const total = order.total || 0;
   const coupon = order.coupon || "";
-  const orderType = order.order_type || "";
-  const scheduleDate = order.schedule_date || "";
-  const scheduleTime = order.schedule_time || "";
+  const total = subtotal - subtotal * discount;
+  const createdAt = order.createdAt || order.Date || order.date;
+  const orderType = order.order_type || order.OrderType || "";
+
+  // Elegir ícono según tipo de orden
+  const orderIcon =
+    orderType.toLowerCase() === "delivery" ? "🚗" : "🚶‍♂️";
+
+  // Formatear fecha/hora
+  const formattedDate = createdAt
+    ? new Date(createdAt).toLocaleString("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : new Date().toLocaleString("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
 
   return (
-    <div className="text-center mt-16 px-4">
-      <h1 className="text-3xl font-bold text-amber-700 mb-4">
-        Thank You, {customerName}!
+    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg mt-8">
+      <h1 className="text-2xl font-bold text-center text-green-700">
+        Thank You!
       </h1>
-      <p className="text-gray-600 mb-6">
-        Your order has been received and is being processed.
+      <p className="text-center text-gray-600 mb-4">
+        Your order <strong>{order.orderID || order.orderId}</strong> has been
+        received.
       </p>
 
-      {/* Recibo */}
-      <div className="inline-block bg-white shadow rounded-lg p-6 text-left w-full max-w-md mx-auto">
-        <p>
-          <strong>Order #:</strong> {orderNumber}
-        </p>
-        <p>
-          <strong>Type:</strong> {orderType}
-        </p>
-        <p>
-          <strong>Date:</strong> {scheduleDate} {scheduleTime && `at ${scheduleTime}`}
-        </p>
+      <div className="border-t border-b py-4 text-sm font-mono">
+        {order.items && order.items.length > 0 ? (
+          order.items.map((item, index) => (
+            <div key={index} className="flex justify-between mb-1">
+              <span>
+                {item.name}{" "}
+                {item.addons && (
+                  <span className="text-xs text-gray-500">
+                    ({item.addons})
+                  </span>
+                )}
+              </span>
+              <span>
+                {item.qty} × ${item.price.toFixed(2)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500">No items found.</p>
+        )}
+      </div>
 
-        <hr className="my-4" />
-
-        {/* Detalle de productos */}
-        <div>
-          {items.length > 0 ? (
-            <ul className="space-y-2">
-              {items.map((item: any, i: number) => (
-                <li key={i} className="flex justify-between text-sm">
-                  <div className="text-left">
-                    <p className="font-medium text-gray-800">{item.name}</p>
-                    {item.option && (
-                      <p className="text-gray-500 text-xs">{item.option}</p>
-                    )}
-                    {item.addons && (
-                      <p className="text-gray-500 text-xs">
-                        Addons: {item.addons}
-                      </p>
-                    )}
-                    <p className="text-gray-600 text-xs">Qty: {item.qty}</p>
-                  </div>
-                  <p className="text-gray-800 font-medium">
-                    ${(item.price * item.qty).toFixed(2)}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500 text-sm">No items found for this order.</p>
-          )}
+      {/* Totales estilo recibo */}
+      <div className="border-t pt-4 mt-4 text-sm font-mono">
+        {/* Fecha y tipo de orden con ícono */}
+        <div className="flex justify-between text-gray-500 text-xs mb-2">
+          <span>
+            Placed on: {formattedDate}
+            {orderType && (
+              <span className="ml-2">
+                {orderIcon} {orderType.toUpperCase()}
+              </span>
+            )}
+          </span>
         </div>
 
-        <hr className="my-4" />
+        <div className="flex justify-between text-gray-700">
+          <span>Subtotal</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
 
-        {/* Totales */}
-        <div className="text-sm space-y-1">
-          <p>
-            <strong>Subtotal:</strong> ${subtotal.toFixed(2)}
-          </p>
-          {discount > 0 && (
-            <p>
-              <strong>Discount:</strong> -${discount.toFixed(2)}
-            </p>
-          )}
-          {coupon && (
-            <p>
-              <strong>Coupon:</strong> {coupon}
-            </p>
-          )}
-          <p className="font-semibold mt-2 text-lg">
-            <strong>Total:</strong> ${total.toFixed(2)}
-          </p>
+        {discount > 0 && (
+          <div className="flex justify-between text-red-600">
+            <span>Discount ({(discount * 100).toFixed(0)}%)</span>
+            <span>-${(subtotal * discount).toFixed(2)}</span>
+          </div>
+        )}
+
+        {coupon && (
+          <div className="flex justify-between text-gray-600">
+            <span>Coupon</span>
+            <span>{coupon}</span>
+          </div>
+        )}
+
+        <div className="h-px bg-gray-300 my-2"></div>
+
+        <div className="flex justify-between text-green-700 text-lg font-bold">
+          <span>Total</span>
+          <span>${total.toFixed(2)}</span>
         </div>
       </div>
 
-      <div className="mt-8">
-        <button
-          onClick={() => navigate(`/status?id=${orderNumber}`)}
-          className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700"
-        >
-          Track Order
-        </button>
-      </div>
+      <p className="text-center text-gray-500 text-xs mt-6">
+        We’ll notify you when your order is ready for pickup.
+      </p>
     </div>
   );
-};
-
-export default ThankYou;
+}
