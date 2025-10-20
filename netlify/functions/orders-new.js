@@ -75,7 +75,7 @@ exports.handler = async (event) => {
               Option: it.option || "",
               Price: Number(it.price) || 0,
               Qty: Number(it.qty) || 1,
-              AddOns: it.addons || "",
+              AddOns: Array.isArray(it.addons) ? it.addons.join(", ") : (it.addons || ""),
               OrderID: newOrderID, // vínculo por texto
             },
           },
