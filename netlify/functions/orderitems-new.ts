@@ -1,68 +1,56 @@
-import type { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "Method Not Allowed" };
+  }
 
-const TABLE = process.env.AIRTABLE_TABLE_ORDERITEMS || "OrderItems";
-
-export const handler: Handler = async (event) => {
   try {
-    if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: "Method not allowed" };
-    }
+    const body = JSON.parse(event.body);
 
-    const body = JSON.parse(event.body || "{}");
-    const { orderId, items } = body;
+    const { orderID, items } = body;
 
-    if (!orderId || !Array.isArray(items) || items.length === 0) {
+    if (!orderID || !items || !Array.isArray(items) || items.length === 0) {
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: "Missing orderId or items array.",
+          error: "Missing or invalid orderID or items array",
         }),
       };
     }
 
-    // Limitar a 10 ítems por batch para Airtable API
-    const batches = [];
-    for (let i = 0; i < items.length; i += 10) {
-      batches.push(items.slice(i, i + 10));
-    }
+    const base = getAirtableClient();
+    const table = base("OrderItems");
 
-    const results: any[] = [];
+    // 🔹 Crear los registros para cada producto
+    const createdRecords = await Promise.all(
+      items.map(async (item) => {
+        const fields: any = {
+          ProductName: item.name || "",
+          Option: item.option || "",
+          Price: Number(item.price) || 0,
+          Qty: Number(item.qty) || 1,
+          AddOns: item.addons || "",
+          OrderID: orderID, // 👈 GUARDA el TNC-### aquí
+        };
 
-    for (const batch of batches) {
-      const created = await base(TABLE).create(
-        batch.map((item) => ({
-          fields: {
-            Order: [orderId],
-            ProductName: item.name,
-            Quantity: Number(item.qty || 1),
-            UnitPrice: Number(item.price || 0),
-            AddOns: (item.addons || []).join(", "),
-            Option: item.option || "",
-            Subtotal: Number(item.subtotal || item.price || 0),
-          },
-        }))
-      );
-      results.push(...created.map((r) => ({ id: r.id, ...r.fields })));
-    }
+        const record = await table.create([{ fields }]);
+        return record[0];
+      })
+    );
 
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-      body: JSON.stringify({ created: results }),
+      body: JSON.stringify({
+        message: "Order items created successfully",
+        count: createdRecords.length,
+      }),
     };
-  } catch (err: any) {
-    console.error("Error creating order items:", err);
+  } catch (error) {
+    console.error("Error creating order items:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({ error: "Server error", details: error.message }),
     };
   }
 };
