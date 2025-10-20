@@ -121,7 +121,7 @@ export default function ThankYou() {
 
       <div className="text-center mt-4">
         <button
-          onClick={() => navigate(`/order-status?id=${order.orderID}`)}
+          onClick={() => navigate(`/status?id=${order.orderID}`)}
           className="bg-orange-600 text-white px-5 py-2 rounded hover:bg-orange-700 transition"
         >
           Track My Order
