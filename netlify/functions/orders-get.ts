@@ -4,11 +4,13 @@ exports.handler = async (event) => {
   try {
     const { id } = event.queryStringParameters || {};
     const base = getAirtableClient();
-    const table = base("Orders");
 
-    // 🔍 Si se busca una orden específica (por ID o por OrderID)
+    const ordersTable = base("Orders");
+    const itemsTable = base("OrderItems");
+
     if (id) {
-      const records = await table
+      // Buscar la orden por ID o por OrderID
+      const records = await ordersTable
         .select({
           filterByFormula: `OR(RECORD_ID() = '${id}', {OrderID} = '${id}')`,
           maxRecords: 1,
@@ -24,25 +26,37 @@ exports.handler = async (event) => {
 
       const record = records[0];
       const fields = record.fields || {};
+      const orderID = fields.OrderID || "";
 
-      // ✅ Normaliza todos los campos principales
+      // 🔍 Buscar los items asociados a este OrderID
+      const itemRecords = await itemsTable
+        .select({
+          filterByFormula: `{Order} = '${orderID}'`,
+        })
+        .firstPage();
+
+      const orderItems = itemRecords.map((r) => ({
+        name: r.fields.ProductName || "",
+        option: r.fields.Option || "",
+        qty: r.fields.Qty || 1,
+        price: Number(r.fields.Price) || 0,
+        addons: r.fields.AddOns || "",
+      }));
+
+      // ✅ Armar el JSON final
       const normalized = {
         id: record.id,
-        orderID: fields.OrderID || "",
-        orderNumber: fields.OrderNumber || "",
+        orderID: orderID,
         name: fields.Name || "",
-        phone: fields.Phone || "",
-        address: fields.Address || "",
-        order_type: fields.OrderType || "",
-        schedule_date: fields.ScheduleDate || "",
-        schedule_time: fields.ScheduleTime || "",
         subtotal: Number(fields.Subtotal) || 0,
         discount: Number(fields.Discount) || 0,
         total: Number(fields.Total) || 0,
-        coupon: fields.Coupon || "", // ✅ cupón usado
+        coupon: fields.Coupon || "",
         status: fields.Status || "",
-        notes: fields.Notes || "",
-        createdAt: fields.CreatedAt || fields.Date || "",
+        schedule_date: fields.ScheduleDate || "",
+        schedule_time: fields.ScheduleTime || "",
+        order_type: fields.OrderType || "",
+        items: orderItems, // 👈 recibo completo
       };
 
       return {
@@ -51,25 +65,22 @@ exports.handler = async (event) => {
       };
     }
 
-    // 🔁 Si no hay ID, devuelve todas las órdenes (para /admin/orders)
-    const records = await table
+    // Si no hay id → listado general
+    const records = await ordersTable
       .select({ sort: [{ field: "CreatedAt", direction: "desc" }] })
       .firstPage();
 
-    const allOrders = records.map((record) => {
-      const fields = record.fields || {};
-      return {
-        id: record.id,
-        orderID: fields.OrderID || "",
-        name: fields.Name || "",
-        total: Number(fields.Total) || 0,
-        status: fields.Status || "",
-        schedule_date: fields.ScheduleDate || "",
-        schedule_time: fields.ScheduleTime || "",
-        order_type: fields.OrderType || "",
-        coupon: fields.Coupon || "", // ✅ cupón mostrado también en panel admin
-      };
-    });
+    const allOrders = records.map((record) => ({
+      id: record.id,
+      orderID: record.fields.OrderID || "",
+      name: record.fields.Name || "",
+      total: Number(record.fields.Total) || 0,
+      status: record.fields.Status || "",
+      schedule_date: record.fields.ScheduleDate || "",
+      schedule_time: record.fields.ScheduleTime || "",
+      order_type: record.fields.OrderType || "",
+      coupon: record.fields.Coupon || "",
+    }));
 
     return {
       statusCode: 200,
