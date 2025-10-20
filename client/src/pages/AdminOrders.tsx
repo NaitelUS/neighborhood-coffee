@@ -273,25 +273,43 @@ export default function AdminOrders() {
                 🕒 Placed {timeSince(o)}
               </p>
 
-              {/* 🧺 Lista detallada */}
-              {o.items && o.items.length > 0 && (
-                <div className="text-base mb-3">
-                  {o.items.map((item, idx) => (
-                    <div key={idx} className="mb-1 font-medium">
-                      {item.qty && item.qty > 1
-                        ? `${item.qty} × ${item.name}`
-                        : item.name}
-                      {item.addons && item.addons.length > 0 && (
-                        <ul className="ml-4 text-sm list-disc text-gray-500">
-                          {item.addons.map((a: string, i: number) => (
-                            <li key={i}>{a}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* 🧺 Detalle completo de la orden */}
+{o.items && o.items.length > 0 && (
+  <div className="text-left mb-3 mt-2">
+    {o.items.map((item, idx) => (
+      <div key={idx} className="mb-3">
+        <p className="font-semibold text-[16px] text-[#00454E] leading-tight">
+          {item.qty && item.qty > 1
+            ? `${item.qty} × ${item.name}`
+            : item.name}
+        </p>
+        {item.addons && item.addons.length > 0 && (
+          <ul className="ml-6 mt-1 text-[14px] text-gray-600 list-disc">
+            {item.addons.map((a: string, i: number) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    ))}
+    <hr className="my-3" />
+    <div className="text-[14px] text-gray-700 space-y-1">
+      <p>
+        <span className="font-semibold">Subtotal:</span>{" "}
+        ${o.subtotal?.toFixed(2) || "0.00"}
+      </p>
+      {o.discount && o.discount > 0 && (
+        <p>
+          <span className="font-semibold">Discount:</span>{" "}
+          {(o.discount * 100).toFixed(0)}%
+        </p>
+      )}
+      <p className="font-bold text-[15px] text-[#00454E]">
+        Total: ${o.total?.toFixed(2) || "0.00"}
+      </p>
+    </div>
+  </div>
+)}
 
               <hr className="my-2" />
               <div className="text-gray-700 text-sm mb-2">
