@@ -31,11 +31,13 @@ export default function AdminOrders() {
   });
   const lastOrderIds = useRef<string[]>([]);
 
+  // 🚪 Protección admin
   useEffect(() => {
     const auth = localStorage.getItem("adminAuth");
     if (auth !== "true") navigate("/admin");
   }, [navigate]);
 
+  // 🔄 Auto-refresh
   useEffect(() => {
     fetchOrders();
     const interval = setInterval(fetchOrders, 10000);
@@ -70,11 +72,9 @@ export default function AdminOrders() {
         items: o.items || [],
       }));
 
-      // 🔔 nuevas órdenes
+      // 🔔 Nuevas órdenes
       const newReceived = normalized.filter(
-        (o) =>
-          o.Status === "Received" &&
-          !lastOrderIds.current.includes(o.id)
+        (o) => o.Status === "Received" && !lastOrderIds.current.includes(o.id)
       );
 
       if (newReceived.length > 0) {
@@ -84,8 +84,10 @@ export default function AdminOrders() {
         showToast(
           `🆕 New order received! ${firstNew.orderID || ""} — ${firstNew.name} (${firstNew.OrderType})`
         );
+
+        // 💚 Animación de parpadeo verde
         setHighlightedOrders(newReceived.map((o) => o.id));
-        setTimeout(() => setHighlightedOrders([]), 4000);
+        setTimeout(() => setHighlightedOrders([]), 3000);
       }
 
       lastOrderIds.current = normalized.map((o) => o.id);
@@ -160,20 +162,9 @@ export default function AdminOrders() {
 
   const filteredOrders = orders.filter(
     (o) =>
-      (activeStatuses.length === 0 ||
-        activeStatuses.includes(o.Status)) &&
+      (activeStatuses.length === 0 || activeStatuses.includes(o.Status)) &&
       !["Cancelled"].includes(o.Status)
   );
-
-  const timeSince = (order: Order) => {
-    const dateStr = order.Date || order.schedule_date;
-    const timeStr = order.schedule_time || "";
-    if (!dateStr) return "";
-    const orderDate = new Date(`${dateStr} ${timeStr}`);
-    const diffMs = Date.now() - orderDate.getTime();
-    const mins = Math.floor(diffMs / 60000);
-    return mins < 1 ? "just now" : `${mins} min ago`;
-  };
 
   const currentDateTime = new Date().toLocaleString("en-US", {
     weekday: "long",
@@ -226,7 +217,7 @@ export default function AdminOrders() {
         ))}
       </div>
 
-      {/* 🧾 Órdenes */}
+      {/* 🧾 Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredOrders.length === 0 && (
           <p className="text-center text-gray-500 col-span-full">
@@ -235,23 +226,22 @@ export default function AdminOrders() {
         )}
 
         {filteredOrders.map((o) => {
-          const icon = o.OrderType === "Pickup" ? "🚶‍♂️" : "📦";
           const next = nextStatus(o);
           const isHighlighted = highlightedOrders.includes(o.id);
 
           return (
             <div
               key={o.id}
-              className={`p-4 bg-white rounded-lg shadow border border-gray-200 transition-all duration-500 ${
-                isHighlighted ? "animate-pulse ring-2 ring-green-400" : ""
+              className={`bg-white shadow-md rounded-xl p-5 border border-gray-200 flex flex-col justify-between transition-all duration-500 ${
+                isHighlighted ? "animate-flash-green" : ""
               }`}
             >
-              <div className="flex justify-between mb-2">
-                <span className="font-bold text-gray-800">
-                  {icon} {o.OrderType}
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#00454E] text-white shadow-sm">
+                  {o.orderID}
                 </span>
                 <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${getBadgeColor(
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${getBadgeColor(
                     o.Status
                   )}`}
                 >
@@ -259,74 +249,57 @@ export default function AdminOrders() {
                 </span>
               </div>
 
-              <p className="text-xs text-gray-500 mb-1">
-                <b>Order #:</b> {o.orderID || "N/A"}
-              </p>
-              <p className="font-semibold text-lg text-[#00454E]">
-                {o.name}
-              </p>
-              {o.phone && (
-                <p className="text-gray-500 text-sm mb-2">📞 {o.phone}</p>
-              )}
-
-              <p className="text-xs text-gray-400 italic mb-2">
-                🕒 Placed {timeSince(o)}
-              </p>
-
-              {/* 🧺 Detalle completo de la orden */}
-{o.items && o.items.length > 0 && (
-  <div className="text-left mb-3 mt-2">
-    {o.items.map((item, idx) => (
-      <div key={idx} className="mb-3">
-        <p className="font-semibold text-[16px] text-[#00454E] leading-tight">
-          {item.qty && item.qty > 1
-            ? `${item.qty} × ${item.name}`
-            : item.name}
-        </p>
-        {item.addons && item.addons.length > 0 && (
-          <ul className="ml-6 mt-1 text-[14px] text-gray-600 list-disc">
-            {item.addons.map((a: string, i: number) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-    ))}
-    <hr className="my-3" />
-    <div className="text-[14px] text-gray-700 space-y-1">
-      <p>
-        <span className="font-semibold">Subtotal:</span>{" "}
-        ${o.subtotal?.toFixed(2) || "0.00"}
-      </p>
-      {o.discount && o.discount > 0 && (
-        <p>
-          <span className="font-semibold">Discount:</span>{" "}
-          {(o.discount * 100).toFixed(0)}%
-        </p>
-      )}
-      <p className="font-bold text-[15px] text-[#00454E]">
-        Total: ${o.total?.toFixed(2) || "0.00"}
-      </p>
-    </div>
-  </div>
-)}
-
-              <hr className="my-2" />
-              <div className="text-gray-700 text-sm mb-2">
-                <p>Subtotal: ${o.subtotal?.toFixed(2) || "0.00"}</p>
-                {o.discount && o.discount > 0 && (
-                  <p>Discount: {(o.discount * 100).toFixed(0)}%</p>
-                )}
-                <p className="font-bold">
-                  Total: ${o.total?.toFixed(2) || "0.00"}
-                </p>
+              <div className="flex items-center mb-2 text-[#00454E]">
+                <span className="text-lg mr-2">👤</span>
+                <p className="font-semibold text-lg leading-tight">{o.name}</p>
               </div>
+
+              <p className="text-sm text-gray-500 mb-2">
+                {o.OrderType === "Delivery" ? "🚚 Delivery" : "🏠 Pickup"}
+              </p>
+
+              {/* 🧺 Detalle */}
+              {o.items && o.items.length > 0 && (
+                <div className="text-left mb-3 mt-2">
+                  {o.items.map((item, idx) => (
+                    <div key={idx} className="mb-3">
+                      <p className="font-semibold text-[16px] text-[#00454E] leading-tight">
+                        {item.qty && item.qty > 1
+                          ? `${item.qty} × ${item.name}`
+                          : item.name}
+                      </p>
+                      {item.addons && item.addons.length > 0 && (
+                        <ul className="ml-6 mt-1 text-[14px] text-gray-600 list-disc">
+                          {item.addons.map((a: string, i: number) => (
+                            <li key={i}>{a}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                  <hr className="my-3" />
+                  <div className="text-[14px] text-gray-700 space-y-1">
+                    <p>
+                      <span className="font-semibold">Subtotal:</span>{" "}
+                      ${o.subtotal?.toFixed(2) || "0.00"}
+                    </p>
+                    {o.discount && o.discount > 0 && (
+                      <p>
+                        <span className="font-semibold">Discount:</span>{" "}
+                        {(o.discount * 100).toFixed(0)}%
+                      </p>
+                    )}
+                    <p className="font-bold text-[15px] text-[#00454E]">
+                      Total: ${o.total?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {next && (
                 <button
                   onClick={() => updateStatus(o.id, next)}
-                  className="mt-3 w-full text-white rounded py-2 text-sm font-semibold"
-                  style={{ backgroundColor: "#00454E" }}
+                  className="w-full py-2 mt-2 rounded-lg font-semibold text-white bg-[#00454E] hover:bg-[#00666F] transition-all"
                 >
                   {next === "In Process" && "Set In Process"}
                   {next === "Ready" && "Mark Ready"}
@@ -341,20 +314,30 @@ export default function AdminOrders() {
 
       {/* 🍞 Toast */}
       {toast.visible && (
-        <div className="fixed bottom-4 right-4 bg-[#00454E] text-white px-4 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out">
+        <div className="fixed bottom-6 right-6 px-5 py-3 bg-[#00454E] text-white rounded-lg shadow-lg border border-green-300 text-sm animate-toast-glow">
           {toast.message}
         </div>
       )}
 
+      {/* ✨ Animaciones */}
       <style>
         {`
-          @keyframes fade-in-out {
-            0% { opacity: 0; transform: translateY(10px); }
-            10%, 90% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(10px); }
+          @keyframes flash-green {
+            0%, 100% { background-color: white; }
+            25%, 75% { background-color: #c7f9cc; }
+            50% { background-color: #a8e6a1; }
           }
-          .animate-fade-in-out {
-            animation: fade-in-out 4s ease-in-out;
+          .animate-flash-green {
+            animation: flash-green 3s ease-in-out;
+          }
+
+          @keyframes toast-glow {
+            0% { opacity: 0; box-shadow: 0 0 0px #6ee7b7; transform: translateY(10px); }
+            10%, 90% { opacity: 1; box-shadow: 0 0 20px #6ee7b7; transform: translateY(0); }
+            100% { opacity: 0; box-shadow: 0 0 0px #6ee7b7; transform: translateY(10px); }
+          }
+          .animate-toast-glow {
+            animation: toast-glow 4s ease-in-out;
           }
         `}
       </style>
