@@ -1,147 +1,86 @@
 import React, { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-interface OrderItem {
-  name: string;
-  option?: string;
-  price: number;
-  qty: number;
-  addons?: string;
-}
-
-interface Order {
-  id: string;
-  OrderID?: string; // <-- corregido
-  name: string;
-  phone: string;
-  order_type: string;
-  address?: string;
-  total: number;
-  subtotal?: number;
-  discount?: number;
-  schedule_date?: string;
-  schedule_time?: string;
-  notes?: string;
-  items?: OrderItem[];
-}
-
-export default function ThankYou() {
-  const [order, setOrder] = useState<Order | null>(null);
+const ThankYou = () => {
+  const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const orderId = searchParams.get("id");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const query = new URLSearchParams(location.search);
+  const orderId = query.get("id");
 
   useEffect(() => {
-    if (!orderId) return;
-    fetch(`/.netlify/functions/orders-get?id=${orderId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.id) setOrder(data);
-      })
-      .catch((err) => console.error("Error fetching order:", err))
-      .finally(() => setLoading(false));
+    async function fetchOrder() {
+      try {
+        const res = await fetch(`/.netlify/functions/orders-get?id=${orderId}`);
+        const data = await res.json();
+        setOrder(data);
+      } catch (err) {
+        console.error("Error fetching order:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchOrder();
   }, [orderId]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="text-center py-20 text-gray-600">
-        Loading your order...
-      </div>
+      <div className="text-center mt-20 text-gray-600">Loading order...</div>
     );
+  }
 
-  if (!order)
+  if (!order) {
     return (
-      <div className="text-center py-20">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Order not found. Please check your link.
-        </h1>
-        <Link to="/" className="text-teal-600 underline font-medium">
-          Return to Menu
-        </Link>
+      <div className="text-center mt-20 text-red-600">
+        Order not found or could not be loaded.
       </div>
     );
+  }
+
+  // Usa los campos que vienen de Airtable
+  const orderNumber = order.fields?.OrderID || order.id || "N/A";
+  const customerName = order.fields?.customer_name || "Valued Customer";
+  const subtotal = order.fields?.subtotal || 0;
+  const discount = order.fields?.discount || 0;
+  const total = order.fields?.total || 0;
 
   return (
-    <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 mt-10">
-      <h1 className="text-3xl font-bold text-center text-teal-700 mb-4">
-        🎉 Your order has been received!
+    <div className="text-center mt-16 px-4">
+      <h1 className="text-3xl font-bold text-amber-700 mb-4">
+        Thank You, {customerName}!
       </h1>
+      <p className="text-gray-600 mb-6">
+        Your order has been received and is being processed.
+      </p>
 
-      <div className="text-center mb-6">
-        <p className="text-gray-700 font-mono text-lg mb-1">
-          Order #: {order.OrderID}
+      <div className="inline-block bg-white shadow rounded-lg p-6 text-left">
+        <p>
+          <strong>Order #:</strong> {orderNumber}
         </p>
-        <p className="text-gray-500 text-sm">
-          {order.order_type} — {order.schedule_date} {order.schedule_time}
+        <p>
+          <strong>Subtotal:</strong> ${subtotal.toFixed(2)}
+        </p>
+        {discount > 0 && (
+          <p>
+            <strong>Discount:</strong> -${discount.toFixed(2)}
+          </p>
+        )}
+        <p className="font-semibold mt-2">
+          <strong>Total:</strong> ${total.toFixed(2)}
         </p>
       </div>
 
-      {order.items && order.items.length > 0 && (
-        <div className="border-t border-b py-3 mb-4 text-sm text-gray-800 space-y-2">
-          {order.items.map((item, idx) => (
-            <div key={idx}>
-              <div className="flex justify-between">
-                <span>
-                  <strong>{item.name}</strong>
-                  {item.option && ` (${item.option})`} × {item.qty}
-                </span>
-                <span>${(item.price * item.qty).toFixed(2)}</span>
-              </div>
-              {item.addons && (
-                <p className="text-gray-600 text-xs ml-2">+ {item.addons}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="text-sm text-gray-700 mb-4 space-y-1">
-        <p>
-          <strong>👤 Name:</strong> {order.name}
-        </p>
-        <p>
-          <strong>📞 Phone:</strong> {order.phone}
-        </p>
-        {order.address && (
-          <p>
-            <strong>🏠 Address:</strong> {order.address}
-          </p>
-        )}
-        {order.notes && (
-          <p>
-            <strong>📝 Notes:</strong> {order.notes}
-          </p>
-        )}
-      </div>
-
-      <div className="bg-teal-50 p-4 rounded-lg text-sm mb-4 space-y-1">
-        <p>
-          <strong>Subtotal:</strong> ${order.subtotal?.toFixed(2)}
-        </p>
-        {order.discount && order.discount > 0 && (
-          <p>
-            <strong>Discount:</strong> -${order.discount.toFixed(2)}
-          </p>
-        )}
-        <p className="text-xl font-bold text-teal-800">
-          Total: ${order.total.toFixed(2)}
-        </p>
-      </div>
-
-      <div className="text-center space-y-3">
-        <Link
-          to={`/status?id=${order.id}`}
-          className="block w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-700"
+      <div className="mt-8">
+        <button
+          onClick={() => navigate(`/status?id=${orderNumber}`)}
+          className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700"
         >
-          Check Order Status
-        </Link>
-        <Link
-          to="/"
-          className="block w-full border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-100"
-        >
-          Back to Menu
-        </Link>
+          Track Order
+        </button>
       </div>
     </div>
   );
-}
+};
+
+export default ThankYou;
