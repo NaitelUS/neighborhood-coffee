@@ -1,78 +1,56 @@
-import { Handler } from "@netlify/functions";
-import Airtable from "airtable";
+import { getAirtableClient } from "../lib/airtableClient";
 
-const base = new Airtable({
-  apiKey: process.env.AIRTABLE_API_KEY!,
-}).base(process.env.AIRTABLE_BASE_ID!);
-
-const handler: Handler = async (event) => {
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: "Method Not Allowed" }),
-    };
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   try {
-    const data = JSON.parse(event.body || "{}");
-    console.log("📦 Payload received:", data);
+    const body = JSON.parse(event.body);
 
-    // Obtener último OrderNumber
-    const records = await base("Orders")
-      .select({ sort: [{ field: "OrderNumber", direction: "desc" }], maxRecords: 1 })
-      .firstPage();
+    const { orderID, items } = body;
 
-    const lastOrderNumber = records.length > 0 ? records[0].get("OrderNumber") as number : 0;
-    const newOrderNumber = lastOrderNumber + 1;
-    const orderId = `TNC-${String(newOrderNumber).padStart(3, "0")}`;
-
-    // Crear registro en Orders
-    const order = await base("Orders").create({
-      Name: data.customer_name,
-      Phone: data.customer_phone,
-      Address: data.address,
-      OrderType: data.order_type,
-      ScheduleDate: data.schedule_date,
-      ScheduleTime: data.schedule_time,
-      Subtotal: data.subtotal,
-      Discount: data.discount,
-      Total: data.total,
-      Coupon: data.coupon_code,
-      Status: "Received",
-      Notes: data.notes,
-      OrderID: orderId,
-      OrderNumber: newOrderNumber,
-      CreatedAt: new Date().toISOString(),
-    });
-
-    const orderAirtableId = order.id;
-
-    // Crear registros en OrderItems
-    const items = data.items || [];
-    for (const item of items) {
-      await base("OrderItems").create({
-        ProductName: item.name,
-        Option: item.option,
-        Price: item.price,
-        Qty: item.qty || 1,
-        AddOns: (item.addons || [])
-          .map((a: any) => `${a.name} (+$${a.price})`)
-          .join(", "),
-        Order: [orderAirtableId], // 👈 clave: debe ser array para vincular
-      });
+    if (!orderID || !items || !Array.isArray(items) || items.length === 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: "Missing or invalid orderID or items array",
+        }),
+      };
     }
+
+    const base = getAirtableClient();
+    const table = base("OrderItems");
+
+    // 🔹 Crear los registros para cada producto
+    const createdRecords = await Promise.all(
+      items.map(async (item) => {
+        const fields: any = {
+          ProductName: item.name || "",
+          Option: item.option || "",
+          Price: Number(item.price) || 0,
+          Qty: Number(item.qty) || 1,
+          AddOns: item.addons || "",
+          OrderID: orderID, // 👈 GUARDA el TNC-### aquí
+        };
+
+        const record = await table.create([{ fields }]);
+        return record[0];
+      })
+    );
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ orderId: orderAirtableId }),
+      body: JSON.stringify({
+        message: "Order items created successfully",
+        count: createdRecords.length,
+      }),
     };
-  } catch (err) {
-    console.error("❌ Error in orders-new.ts:", err);
+  } catch (error) {
+    console.error("Error creating order items:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to create order" }),
+      body: JSON.stringify({ error: "Server error", details: error.message }),
     };
   }
 };
-
-export { handler };
