@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import OrderSummary from "../components/OrderSummary";
@@ -25,10 +25,27 @@ const OrderPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // ✅ Bloque agregado — inicializa fecha actual y hora +15 minutos
+  useEffect(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 15);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const formattedTime = now.toTimeString().slice(0, 5);
+
+    setForm((prev) => ({
+      ...prev,
+      schedule_date: today,
+      schedule_time: formattedTime,
+    }));
+  }, []);
+  // ✅ Fin del bloque agregado
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -121,6 +138,7 @@ const OrderPage = () => {
           onChange={handleChange}
           className="w-full p-2 border rounded"
           required
+          min={new Date().toISOString().slice(0, 10)}
         />
         <input
           type="time"
