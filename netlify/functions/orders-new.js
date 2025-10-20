@@ -2,10 +2,15 @@ const { getAirtableClient } = require("../lib/airtableClient");
 
 exports.handler = async (event) => {
   try {
+    // Permitir solo POST
     if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+      return {
+        statusCode: 405,
+        body: JSON.stringify({ error: "Method not allowed" }),
+      };
     }
 
+    // Parsear body del request
     const body = JSON.parse(event.body || "{}");
     const {
       name,
@@ -22,6 +27,7 @@ exports.handler = async (event) => {
       items,
     } = body;
 
+    // Validar campos obligatorios
     if (!name || !order_type || subtotal == null || total == null) {
       return {
         statusCode: 400,
@@ -33,17 +39,21 @@ exports.handler = async (event) => {
     const ordersTable = base("Orders");
     const orderItemsTable = base("OrderItems");
 
-    // Obtiene último OrderNumber para consecutivo robusto
+    // Obtener el último OrderNumber para crear un consecutivo
     const last = await ordersTable
-      .select({ fields: ["OrderNumber"], sort: [{ field: "OrderNumber", direction: "desc" }], maxRecords: 1 })
+      .select({
+        fields: ["OrderNumber"],
+        sort: [{ field: "OrderNumber", direction: "desc" }],
+        maxRecords: 1,
+      })
       .firstPage();
 
     const lastNumber = last.length ? Number(last[0].fields.OrderNumber || 0) : 0;
     const newOrderNumber = lastNumber + 1;
     const newOrderID = `TNC-${String(newOrderNumber).padStart(3, "0")}`;
 
-    // Crea la orden principal
-    await ordersTable.create([
+    // Crear la orden principal
+    const orderRecord = await ordersTable.create([
       {
         fields: {
           Name: name,
@@ -60,29 +70,31 @@ exports.handler = async (event) => {
           Status: "Received",
           OrderNumber: newOrderNumber,
           OrderID: newOrderID,
-          CreatedAt: new Date().toISOString(),
+          Date: new Date().toISOString(),
         },
       },
     ]);
 
-    // Crea los ítems asociados (OrderItems) con OrderID como texto
+    // Crear los ítems asociados (OrderItems)
     if (Array.isArray(items) && items.length > 0) {
-      for (const it of items) {
-        await orderItemsTable.create([
-          {
-            fields: {
-              ProductName: it.name || "",
-              Option: it.option || "",
-              Price: Number(it.price) || 0,
-              Qty: Number(it.qty) || 1,
-              AddOns: Array.isArray(it.addons) ? it.addons.join(", ") : (it.addons || ""),
-              OrderID: newOrderID, // vínculo por texto
-            },
-          },
-        ]);
-      }
+      const orderItems = items.map((it) => ({
+        fields: {
+          ProductName: it.name || "",
+          Option: it.option || "",
+          Price: Number(it.price) || 0,
+          Qty: Number(it.qty) || 1,
+          AddOns: Array.isArray(it.addons)
+            ? it.addons.join(", ")
+            : (it.addons || ""),
+          OrderID: newOrderID,
+        },
+      }));
+
+      // 🔥 Crear todos los ítems en lote
+      await orderItemsTable.create(orderItems);
     }
 
+    // ✅ Respuesta correcta al frontend
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -92,7 +104,13 @@ exports.handler = async (event) => {
       }),
     };
   } catch (error) {
-    console.error("orders-new error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: "Internal Server Error", details: error.message }) };
+    console.error("❌ orders-new error:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: "Internal Server Error",
+        details: error.message,
+      }),
+    };
   }
 };
