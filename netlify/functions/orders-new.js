@@ -83,9 +83,9 @@ exports.handler = async (event) => {
           Option: it.option || "",
           Price: Number(it.price) || 0,
           Qty: Number(it.qty) || 1,
-          AddOns: Array.isArray(it.addons)
-            ? it.addons.join(", ")
-            : (it.addons || ""),
+         AddOns: Array.isArray(it.addons)
+          ? it.addons.map(a => (typeof a === "object" ? a.name || JSON.stringify(a) : a)).join(", ")
+          : (it.addons || ""),
           OrderID: newOrderID,
         },
       }));
