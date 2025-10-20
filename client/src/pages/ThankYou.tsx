@@ -38,12 +38,12 @@ const ThankYou = () => {
     );
   }
 
-  // Usa los campos que vienen de Airtable
-  const orderNumber = order.fields?.OrderID || order.id || "N/A";
-  const customerName = order.fields?.customer_name || "Valued Customer";
-  const subtotal = order.fields?.subtotal || 0;
-  const discount = order.fields?.discount || 0;
-  const total = order.fields?.total || 0;
+  const orderNumber = order.orderID || order.id || "N/A";
+  const customerName = order.name || "Valued Customer";
+  const subtotal = order.subtotal || 0;
+  const discount = order.discount || 0;
+  const total = order.total || 0;
+  const coupon = order.coupon || "";
 
   return (
     <div className="text-center mt-16 px-4">
@@ -64,6 +64,11 @@ const ThankYou = () => {
         {discount > 0 && (
           <p>
             <strong>Discount:</strong> -${discount.toFixed(2)}
+          </p>
+        )}
+        {coupon && (
+          <p>
+            <strong>Coupon:</strong> {coupon}
           </p>
         )}
         <p className="font-semibold mt-2">
