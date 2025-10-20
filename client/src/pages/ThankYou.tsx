@@ -64,8 +64,8 @@ export default function ThankYou() {
         order.items.map((item, index) => (
           <div key={index} className="mb-3">
             <div className="font-semibold">{item.name}</div>
-            {item.option && (
-              <div className="text-gray-500 text-xs">{item.option}</div>
+            {item.option && !item.name.toLowerCase().includes(item.option.toLowerCase()) && (
+            <div className="text-gray-500 text-xs">{item.option}</div>
             )}
 
             {item.addons && item.addons.length > 0 && (
