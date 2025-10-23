@@ -10,43 +10,59 @@ import OrderStatus from "./pages/OrderStatus";
 import AdminPanel from "./pages/AdminPanel";
 import AdminOrders from "./pages/AdminOrders";
 import DeliveryPage from "./pages/DeliveryPage";
-import FloatingCart from "./components/FloatingCart"; // 🛒 Nuevo carrito flotante
+import FloatingCart from "./components/FloatingCart";
+import WhatsAppButton from "./components/WhatsAppButton";
+import Footer from "./components/Footer";
 
 // 🧠 Contexto global del carrito
 import { CartProvider } from "./context/CartContext";
+
+// 📜 Páginas legales
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 export default function App() {
   return (
     <Router>
       <CartProvider>
         {/* 🏠 Estructura principal */}
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
           {/* 🌐 Header visible en todas las páginas */}
           <Header />
 
-          {/* 🛒 Carrito flotante (solo en /, /menu, /order) */}
+          {/* 🛒 y 💬 botones flotantes */}
           <FloatingCart />
+          <WhatsAppButton />
 
           {/* 🔀 Rutas principales */}
-          <Routes>
-            <Route path="/" element={<Menu />} />
-            <Route path="/order" element={<OrderPage />} />
-            <Route path="/thank-you" element={<ThankYou />} />
-            <Route path="/status" element={<OrderStatus />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
-            <Route path="/delivery" element={<DeliveryPage />} />
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={<Menu />} />
+              <Route path="/order" element={<OrderPage />} />
+              <Route path="/thank-you" element={<ThankYou />} />
+              <Route path="/status" element={<OrderStatus />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin/orders" element={<AdminOrders />} />
+              <Route path="/delivery" element={<DeliveryPage />} />
 
-            {/* ⚠️ Página no encontrada */}
-            <Route
-              path="*"
-              element={
-                <div className="text-center mt-20 text-gray-600 text-lg">
-                  Page not found
-                </div>
-              }
-            />
-          </Routes>
+              {/* ⚖️ Legal pages */}
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+
+              {/* ⚠️ Página no encontrada */}
+              <Route
+                path="*"
+                element={
+                  <div className="text-center mt-20 text-gray-600 text-lg">
+                    Page not found
+                  </div>
+                }
+              />
+            </Routes>
+          </main>
+
+          {/* ☕️ Footer */}
+          <Footer />
         </div>
       </CartProvider>
     </Router>
