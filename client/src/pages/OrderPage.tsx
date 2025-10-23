@@ -5,8 +5,14 @@ import OrderSummary from "../components/OrderSummary";
 import QuickContact from "../components/QuickContact";
 
 const OrderPage = () => {
-  const { cartItems, subtotal, total, discount, appliedCoupon, clearCart } =
-    useContext(CartContext);
+  const {
+    cartItems,
+    subtotal,
+    total,
+    discount,
+    appliedCoupon,
+    clearCart,
+  } = useContext(CartContext);
 
   const [form, setForm] = useState({
     name: "",
@@ -22,6 +28,7 @@ const OrderPage = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Inicializa fecha/hora
   useEffect(() => {
     const now = new Date();
     const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
@@ -60,7 +67,7 @@ const OrderPage = () => {
     const payload = {
       name: form.name,
       phone: form.phone,
-      address: form.method === "Delivery" ? form.address : "",
+      address: form.address,
       order_type: form.method,
       schedule_date: form.schedule_date,
       schedule_time: form.schedule_time,
@@ -100,100 +107,121 @@ const OrderPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      <OrderSummary />
-      <h2 className="text-xl font-semibold mt-6 mb-3 text-gray-800">
+      {/* 🧾 Review your order */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+          Review Your Order
+        </h2>
+        <OrderSummary />
+      </div>
+
+      {/* 👤 Customer Information */}
+      <h2 className="text-xl font-semibold mb-3 text-gray-800">
         Customer Information
       </h2>
 
-      {/* Pickup / Delivery */}
+      {/* 🚚 Pickup / Delivery */}
       <div className="flex gap-4 mb-4">
-        <label className="flex items-center gap-2">
-          <input
-            type="radio"
-            name="method"
-            value="Pickup"
-            checked={form.method === "Pickup"}
-            onChange={() => handleMethodChange("Pickup")}
-          />
+        <button
+          type="button"
+          onClick={() => handleMethodChange("Pickup")}
+          className={`px-4 py-2 rounded-lg border font-medium transition-all ${
+            form.method === "Pickup"
+              ? "bg-[#00454E] text-white border-[#00454E]"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+          }`}
+        >
           Pickup
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="radio"
-            name="method"
-            value="Delivery"
-            checked={form.method === "Delivery"}
-            onChange={() => handleMethodChange("Delivery")}
-          />
+        </button>
+        <button
+          type="button"
+          onClick={() => handleMethodChange("Delivery")}
+          className={`px-4 py-2 rounded-lg border font-medium transition-all ${
+            form.method === "Delivery"
+              ? "bg-[#00454E] text-white border-[#00454E]"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+          }`}
+        >
           Delivery
-        </label>
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      {/* 📞📍 Quick Contact — justo junto a los botones de método */}
+      <QuickContact />
+
+      {/* 📝 Formulario */}
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           name="name"
-          placeholder="Name"
+          placeholder="Your Name"
           value={form.name}
           onChange={handleChange}
-          className="w-full border rounded-lg px-3 py-2"
+          className="w-full p-2 border rounded"
+          required
         />
         <input
           type="tel"
           name="phone"
-          placeholder="Phone"
+          placeholder="Phone Number"
           value={form.phone}
           onChange={handleChange}
-          className="w-full border rounded-lg px-3 py-2"
+          className="w-full p-2 border rounded"
+          required
         />
+
+        {/* 📍 Address siempre visible pero solo editable si es Delivery */}
         <input
           type="text"
           name="address"
-          placeholder="Address"
+          placeholder="Delivery Address"
           value={form.address}
           onChange={handleChange}
-          className={`w-full border rounded-lg px-3 py-2 ${
-            form.method === "Delivery" ? "opacity-100" : "opacity-50"
-          }`}
           disabled={form.method !== "Delivery"}
+          className={`w-full p-2 border rounded ${
+            form.method !== "Delivery"
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-white"
+          }`}
         />
-        <div className="flex gap-3">
+
+        <div className="flex gap-4">
           <input
             type="date"
             name="schedule_date"
             value={form.schedule_date}
             onChange={handleChange}
-            className="border rounded-lg px-3 py-2 w-1/2"
+            className="w-1/2 p-2 border rounded"
+            required
           />
           <input
             type="time"
             name="schedule_time"
             value={form.schedule_time}
             onChange={handleChange}
-            className="border rounded-lg px-3 py-2 w-1/2"
+            className="w-1/2 p-2 border rounded"
+            required
           />
         </div>
+
         <textarea
           name="notes"
           placeholder="Notes (optional)"
           value={form.notes}
           onChange={handleChange}
-          className="w-full border rounded-lg px-3 py-2"
+          className="w-full p-2 border rounded"
         />
 
         {error && <p className="text-red-600 text-sm">{error}</p>}
 
         <button
           type="submit"
+          className="w-full bg-[#00454E] text-white py-2 font-semibold rounded hover:opacity-90"
           disabled={loading}
-          className="w-full bg-[#00454E] text-white py-2 rounded-lg hover:opacity-90 transition"
         >
           {loading ? "Submitting..." : "Place Order"}
         </button>
       </form>
-
-      {/* 📞📍 Quick Contact */}
-      <QuickContact />
     </div>
   );
 };
