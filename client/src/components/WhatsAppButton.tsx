@@ -25,12 +25,12 @@ export default function WhatsAppButton() {
         href="https://wa.me/19154015547?text=Hi!%20I'd%20like%20to%20place%20an%20order%20at%20The%20Neighborhood%20Coffee"
         target="_blank"
         rel="noopener noreferrer"
-        className="bg-[#25D366] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-200"
+        className="bg-[#25D366] p-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-200"
       >
         <img
           src="/attached_assets/whatsapp-icon.png"
           alt="WhatsApp"
-          className="w-6 h-6"
+          className="w-7 h-7 object-contain"
         />
       </a>
     </div>
