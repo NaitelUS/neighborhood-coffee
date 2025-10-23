@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
 export const CartContext = createContext<any>(null);
 
@@ -42,52 +42,3 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   // 🔄 Actualizar cantidad
   const updateQty = (item: any, newQty: number) => {
-    setCartItems((prev) =>
-      prev.map((p) =>
-        p.name === item.name &&
-        p.option === item.option &&
-        JSON.stringify(p.addons) === JSON.stringify(item.addons)
-          ? { ...p, qty: newQty }
-          : p
-      )
-    );
-  };
-
-  // 🧮 Calcular subtotal y total
-  const subtotal = cartItems.reduce((sum, item) => {
-    const base = item.price || 0;
-    const addons =
-      item.addons?.reduce((a: number, b: any) => a + (b.price || 0), 0) || 0;
-    const qty = item.qty || 1;
-    return sum + (base + addons) * qty;
-  }, 0);
-
-  const total = subtotal - subtotal * discount;
-
-  // 🧼 Reset después de ordenar
-  const clearCart = () => {
-    setCartItems([]);
-    setDiscount(0);
-    setAppliedCoupon("");
-  };
-
-  return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeFromCart,
-        updateQty,
-        clearCart,
-        subtotal,
-        total,
-        discount,
-        setDiscount,
-        appliedCoupon,
-        setAppliedCoupon,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
-};
