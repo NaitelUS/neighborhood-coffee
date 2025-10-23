@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="bg-[#00454E] text-white text-sm py-6 mt-10">
       <div className="max-w-6xl mx-auto px-4 text-center space-y-2">
-        <p className="font-semibold text-base">The Neighborhood Coffee</p>
+        <p className="font-semibold text-base">The Neighborhood Coffee ❤️ Crafted in El Paso</p>
 
         <p>
           <a href="tel:+19154015547" className="hover:underline">
