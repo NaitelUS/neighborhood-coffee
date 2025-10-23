@@ -5,8 +5,7 @@ export default function Header() {
   const navigate = useNavigate();
 
   return (
-    {/* <header className="bg-white shadow-sm w-full border-b border-gray-200"> */}
-        <header className="shadow-sm w-full border-b border-gray-200">
+    <header className="bg-white shadow-sm w-full border-b border-gray-200"> 
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 py-3">
         {/* 🏠 Logo */}
         <div
