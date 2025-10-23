@@ -14,8 +14,11 @@ body {
   scroll-behavior: smooth;
 }
 
-/* 🪟 iPhone & Safari bounce prevention */
+/* 📱 iPhone notch / safe area fix */
 body {
+  background-color: #ffffff;
+  color-scheme: light;
+  padding-top: env(safe-area-inset-top);
   overscroll-behavior-x: none;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
