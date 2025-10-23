@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import QuickContact from "../components/QuickContact";
 
 export default function ThankYou() {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,6 @@ export default function ThankYou() {
         setLoading(false);
       }
     }
-
     if (id) fetchOrder();
   }, [id]);
 
@@ -59,15 +59,13 @@ export default function ThankYou() {
 
       <hr className="my-3" />
 
-      {/* Listado de ítems sin precios */}
       {order.items && order.items.length > 0 ? (
         order.items.map((item, index) => (
           <div key={index} className="mb-3">
             <div className="font-semibold">{item.name}</div>
             {item.option && !item.name.toLowerCase().includes(item.option.toLowerCase()) && (
-            <div className="text-gray-500 text-xs">{item.option}</div>
+              <div className="text-gray-500 text-xs">{item.option}</div>
             )}
-
             {item.addons && item.addons.length > 0 && (
               <ul className="ml-4 mt-1 text-xs text-gray-500 list-disc">
                 {Array.isArray(item.addons)
@@ -75,7 +73,6 @@ export default function ThankYou() {
                   : <li>{item.addons}</li>}
               </ul>
             )}
-
             <div className="text-xs text-gray-500 mt-1">
               Qty: {item.qty || 1}
             </div>
@@ -87,7 +84,6 @@ export default function ThankYou() {
 
       <hr className="my-3" />
 
-      {/* Totales */}
       <div className="flex justify-between text-gray-700">
         <span>Subtotal</span>
         <span>${subtotal.toFixed(2)}</span>
@@ -114,7 +110,6 @@ export default function ThankYou() {
         <span>${total.toFixed(2)}</span>
       </div>
 
-      {/* Fecha y tipo movido al final */}
       <div className="text-gray-500 text-xs mt-4 text-center">
         Placed on: {formattedDate} {orderIcon} {orderType.toUpperCase()}
       </div>
@@ -127,6 +122,9 @@ export default function ThankYou() {
           Track My Order
         </button>
       </div>
+
+      {/* 📞📍 Quick Contact */}
+      <QuickContact />
     </div>
   );
 }
