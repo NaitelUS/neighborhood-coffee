@@ -18,7 +18,7 @@ import Footer from "./components/Footer";
 import { CartProvider } from "./context/CartContext";
 
 // 📜 Páginas legales
-import TermsOfService from "./pages/TermsOfService";
+import TermsOfService from "./pages/TermsofService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 export default function App() {
