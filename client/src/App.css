@@ -2,33 +2,25 @@
    🌎 GLOBAL STYLE BASE — The Neighborhood Coffee
    ========================================= */
 
-/* 🧭 Layout reset + seguridad visual */
-html,
-body {
-  margin: 0;
-  padding: 0;
+/* 🔳 Forzar fondo blanco incluso en notch-area */
+html {
+  background-color: #ffffff !important;
+  color-scheme: light;
+  height: 100%;
   width: 100%;
-  min-height: 100%;
-  background-color: #ffffff; /* igual que header */
-  overflow-x: hidden; /* bloquea scroll lateral */
-  scroll-behavior: smooth;
 }
 
-/* 📱 iPhone notch / safe area fix */
+/* 🧭 Layout reset + seguridad visual */
 body {
-  background-color: #ffffff;
-  color-scheme: light;
-  padding-top: env(safe-area-inset-top);
+  margin: 0;
+  padding: env(safe-area-inset-top) 0 0 0;
+  background-color: #ffffff !important;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
   overscroll-behavior-x: none;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-}
-
-/* ✍️ Fuente global (limpia y moderna) */
-body,
-input,
-button,
-textarea {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
   color: #222;
