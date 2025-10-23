@@ -86,3 +86,93 @@ export default function OrderStatus() {
         <p className="text-gray-600 text-sm mb-4">
           {order.OrderType || "Pickup"}
         </p>
+
+        <div className="flex justify-center items-center mb-4">
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+              order.Status === "Ready"
+                ? "bg-blue-600 text-white"
+                : order.Status === "Completed"
+                ? "bg-gray-600 text-white"
+                : order.Status === "In Process"
+                ? "bg-yellow-500 text-white"
+                : order.Status === "Out for Delivery"
+                ? "bg-indigo-500 text-white"
+                : "bg-green-600 text-white"
+            }`}
+          >
+            {order.Status || "Received"}
+          </span>
+        </div>
+
+        {order.items && order.items.length > 0 && (
+          <div className="text-left text-gray-700 text-sm mb-3">
+            <ul className="space-y-1">
+              {order.items.map((item: any, i: number) => (
+                <li key={i} className="font-medium">
+                  {item.qty && item.qty > 1
+                    ? `${item.qty} × ${item.name}`
+                    : item.name}
+                  {item.addons && item.addons.length > 0 && (
+                    <ul className="ml-6 text-xs list-disc text-gray-500">
+                      {item.addons.map((a: string, j: number) => (
+                        <li key={j}>{a}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="mt-6">
+          <div className="flex justify-between mb-2 text-xs font-semibold text-gray-600">
+            {flow.map((step, i) => (
+              <span key={i}>{step}</span>
+            ))}
+          </div>
+          <div className="flex justify-between items-center relative">
+            {flow.map((step, i) => (
+              <React.Fragment key={i}>
+                <div
+                  className={`w-4 h-4 rounded-full ${
+                    step === order.Status
+                      ? "bg-[#007b87] ring-4 ring-[#9ed1d4]"
+                      : getStepColor(step, order.Status)
+                  }`}
+                ></div>
+                {i < flow.length - 1 && (
+                  <div
+                    className={`flex-1 h-1 ${
+                      stepsPickup.indexOf(step) <
+                      stepsPickup.indexOf(order.Status)
+                        ? "bg-[#00454E]"
+                        : "bg-gray-300"
+                    }`}
+                  ></div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <hr className="my-4" />
+        <p className="font-bold text-lg text-[#00454E]">
+          {order.Status === "Completed"
+            ? "✅ Your order is ready!"
+            : order.Status === "Out for Delivery"
+            ? "🚚 On its way to you!"
+            : order.Status === "Ready"
+            ? "☕ Ready for pickup!"
+            : order.Status === "In Process"
+            ? "🧑‍🍳 Barista is preparing your order..."
+            : "🕒 Order received"}
+        </p>
+      </div>
+
+      {/* 📞📍 Quick Contact */}
+      <QuickContact />
+    </div>
+  );
+}
