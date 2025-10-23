@@ -8,9 +8,9 @@ export default function TermsOfService() {
     <div className="max-w-3xl mx-auto px-5 py-8 text-gray-700 leading-relaxed relative">
       {/* 🔙 Botón flotante */}
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/menu")}
         className="fixed top-20 left-4 bg-[#00454E] text-white rounded-full p-2 shadow-md hover:opacity-90 z-40"
-        title="Back"
+        title="Back to Menu"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
