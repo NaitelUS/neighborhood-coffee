@@ -2,16 +2,11 @@ import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import OrderSummary from "../components/OrderSummary";
+import QuickContact from "../components/QuickContact";
 
 const OrderPage = () => {
-  const {
-    cartItems,
-    subtotal,
-    total,
-    discount,
-    appliedCoupon,
-    clearCart,
-  } = useContext(CartContext);
+  const { cartItems, subtotal, total, discount, appliedCoupon, clearCart } =
+    useContext(CartContext);
 
   const [form, setForm] = useState({
     name: "",
@@ -104,115 +99,101 @@ const OrderPage = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
-      {/* 🧾 Review first */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Review Your Order</h2>
-        <OrderSummary />
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      <OrderSummary />
+      <h2 className="text-xl font-semibold mt-6 mb-3 text-gray-800">
+        Customer Information
+      </h2>
 
-        {/* 🛍️ Want more items button */}
-        <button
-          type="button"
-          onClick={() => navigate("/menu")}
-          className="w-full border border-[#00454E] text-[#00454E] py-2 mt-4 rounded font-medium hover:bg-[#00454E] hover:text-white transition"
-        >
-          Want more items?
-        </button>
+      {/* Pickup / Delivery */}
+      <div className="flex gap-4 mb-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="method"
+            value="Pickup"
+            checked={form.method === "Pickup"}
+            onChange={() => handleMethodChange("Pickup")}
+          />
+          Pickup
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="method"
+            value="Delivery"
+            checked={form.method === "Delivery"}
+            onChange={() => handleMethodChange("Delivery")}
+          />
+          Delivery
+        </label>
       </div>
 
-      {/* 👤 Customer Info */}
-      <div>
-        <h1 className="text-2xl font-bold mb-4">Customer Information</h1>
-
-        {/* 🚚 Pickup / Delivery toggle */}
-        <div className="flex gap-3 mb-4">
-          {["Pickup", "Delivery"].map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => handleMethodChange(option)}
-              className={`px-4 py-2 rounded-md border font-medium transition-all ${
-                form.method === option
-                  ? "bg-[#00454E] text-white border-[#00454E]"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          type="text"
+          name="name"
+          placeholder="Name"
+          value={form.name}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-3 py-2"
+        />
+        <input
+          type="tel"
+          name="phone"
+          placeholder="Phone"
+          value={form.phone}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-3 py-2"
+        />
+        <input
+          type="text"
+          name="address"
+          placeholder="Address"
+          value={form.address}
+          onChange={handleChange}
+          className={`w-full border rounded-lg px-3 py-2 ${
+            form.method === "Delivery" ? "opacity-100" : "opacity-50"
+          }`}
+          disabled={form.method !== "Delivery"}
+        />
+        <div className="flex gap-3">
+          <input
+            type="date"
+            name="schedule_date"
+            value={form.schedule_date}
+            onChange={handleChange}
+            className="border rounded-lg px-3 py-2 w-1/2"
+          />
+          <input
+            type="time"
+            name="schedule_time"
+            value={form.schedule_time}
+            onChange={handleChange}
+            className="border rounded-lg px-3 py-2 w-1/2"
+          />
         </div>
+        <textarea
+          name="notes"
+          placeholder="Notes (optional)"
+          value={form.notes}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-3 py-2"
+        />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Your Name"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
-          <input
-            type="tel"
-            name="phone"
-            placeholder="Phone Number"
-            value={form.phone}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          />
+        {error && <p className="text-red-600 text-sm">{error}</p>}
 
-          {form.method === "Delivery" && (
-            <input
-              type="text"
-              name="address"
-              placeholder="Delivery Address"
-              value={form.address}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required
-            />
-          )}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#00454E] text-white py-2 rounded-lg hover:opacity-90 transition"
+        >
+          {loading ? "Submitting..." : "Place Order"}
+        </button>
+      </form>
 
-          <div className="flex gap-4">
-            <input
-              type="date"
-              name="schedule_date"
-              value={form.schedule_date}
-              onChange={handleChange}
-              className="w-1/2 p-2 border rounded"
-              min={new Date().toISOString().slice(0, 10)}
-              required
-            />
-            <input
-              type="time"
-              name="schedule_time"
-              value={form.schedule_time}
-              onChange={handleChange}
-              className="w-1/2 p-2 border rounded"
-              required
-            />
-          </div>
-
-          <textarea
-            name="notes"
-            placeholder="Notes (optional)"
-            value={form.notes}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-
-          <button
-            type="submit"
-            className="w-full bg-[#00454E] text-white py-2 font-semibold rounded hover:opacity-90"
-            disabled={loading}
-          >
-            {loading ? "Submitting..." : "Place Order"}
-          </button>
-
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-        </form>
-      </div>
+      {/* 📞📍 Quick Contact */}
+      <QuickContact />
     </div>
   );
 };
