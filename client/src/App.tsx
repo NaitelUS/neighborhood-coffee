@@ -26,8 +26,8 @@ export default function App() {
     <Router>
       <CartProvider>
         {/* 🏠 Estructura principal */}
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
-          {/* 🌐 Header visible en todas las páginas */}
+        <div className="min-h-screen bg-white flex flex-col justify-between">
+          {/* 🌐 Header fijo */}
           <Header />
 
           {/* 🛒 y 💬 botones flotantes */}
@@ -35,7 +35,7 @@ export default function App() {
           <WhatsAppButton />
 
           {/* 🔀 Rutas principales */}
-          <main className="flex-grow">
+          <main className="flex-grow pt-[64px]">
             <Routes>
               <Route path="/" element={<Menu />} />
               <Route path="/order" element={<OrderPage />} />
