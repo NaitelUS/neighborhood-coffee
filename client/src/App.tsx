@@ -10,7 +10,7 @@ import OrderStatus from "./pages/OrderStatus";
 import AdminPanel from "./pages/AdminPanel";
 import AdminOrders from "./pages/AdminOrders";
 import DeliveryPage from "./pages/DeliveryPage";
-import SplashScreen from "./components/SplashScreen"; // ✅ Import del splash
+import FloatingCart from "./components/FloatingCart"; // 🛒 Nuevo carrito flotante
 
 // 🧠 Contexto global del carrito
 import { CartProvider } from "./context/CartContext";
@@ -19,31 +19,22 @@ export default function App() {
   return (
     <Router>
       <CartProvider>
-        {/* 🌟 Splash simple de bienvenida */}
-        <SplashScreen />
-
+        {/* 🏠 Estructura principal */}
         <div className="min-h-screen bg-gray-50">
           {/* 🌐 Header visible en todas las páginas */}
           <Header />
 
+          {/* 🛒 Carrito flotante (solo en /, /menu, /order) */}
+          <FloatingCart />
+
+          {/* 🔀 Rutas principales */}
           <Routes>
-            {/* 🏠 Menú principal */}
             <Route path="/" element={<Menu />} />
-
-            {/* 🛒 Página de orden */}
             <Route path="/order" element={<OrderPage />} />
-
-            {/* ✅ Confirmación de orden */}
             <Route path="/thank-you" element={<ThankYou />} />
-
-            {/* 🔍 Estado de orden */}
             <Route path="/status" element={<OrderStatus />} />
-
-            {/* 🧑‍🍳 Panel de administración */}
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
-
-            {/* 🚚 Página del repartidor */}
             <Route path="/delivery" element={<DeliveryPage />} />
 
             {/* ⚠️ Página no encontrada */}
