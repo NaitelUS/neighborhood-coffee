@@ -1,66 +1,90 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function PrivacyPolicy() {
+  const navigate = useNavigate();
+
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10 text-gray-800">
-      <div className="flex justify-center mb-6">
-        <img
-          src="/attached_assets/tnclogo.png"
-          alt="The Neighborhood Coffee"
-          className="h-16 w-auto"
-        />
-      </div>
-      <h1 className="text-3xl font-bold mb-4 text-[#00454E]">
+    <div className="max-w-3xl mx-auto px-5 py-8 text-gray-700 leading-relaxed relative">
+      {/* 🔙 Botón flotante */}
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-20 left-4 bg-[#00454E] text-white rounded-full p-2 shadow-md hover:opacity-90 z-40"
+        title="Back"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+          className="w-5 h-5"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <h1 className="text-3xl font-semibold text-[#00454E] mb-4">
         Privacy Policy
       </h1>
-      <p className="mb-4 text-sm text-gray-500">Last updated: October 2025</p>
 
-      <p className="mb-4">
-        The Neighborhood Coffee (“we”, “our”, “us”) values your privacy. This
-        Privacy Policy explains how we collect, use, and protect your
-        information when you interact with our website and mobile app.
+      <p className="mb-3">
+        The Neighborhood Coffee ("we", "our", or "us") respects your privacy and
+        is committed to protecting your personal information. This Privacy
+        Policy describes how we collect, use, and share information when you use
+        our website, app, or services.
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">1. Information We Collect</h2>
-      <p className="mb-4">
-        We collect personal details such as your name, phone number, delivery
-        address, and order preferences when you place an order or contact us.
-        Payment information is securely processed through third-party providers
-        like Stripe or Cash App; we do not store payment card details.
+      <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
+        1. Information We Collect
+      </h2>
+      <p className="mb-3">
+        We may collect your name, phone number, and address when you place an
+        order. This information is used solely for order processing and
+        communication related to your purchase.
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">2. How We Use Your Information</h2>
-      <p className="mb-4">
-        We use your data to process orders, communicate with you, and improve
-        our services. Occasionally, we may send you promotional offers or updates
-        if you’ve opted in.
+      <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
+        2. How We Use Your Information
+      </h2>
+      <p className="mb-3">
+        Your information helps us provide better service and improve our
+        offerings. We do not sell or rent your data to third parties.
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">3. Data Protection</h2>
-      <p className="mb-4">
-        We implement technical and organizational measures to keep your data safe.
-        We never sell or share your information with third parties for marketing
-        purposes.
+      <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
+        3. Data Security
+      </h2>
+      <p className="mb-3">
+        We implement reasonable security measures to protect your personal data
+        from unauthorized access or disclosure.
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">4. Cookies</h2>
-      <p className="mb-4">
-        Our site uses cookies to enhance user experience and track performance
-        analytics. You can disable cookies in your browser settings.
+      <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
+        4. Cookies
+      </h2>
+      <p className="mb-3">
+        Our website may use cookies to enhance your browsing experience. You can
+        disable cookies in your browser settings if you prefer.
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">5. Your Rights</h2>
-      <p className="mb-4">
-        You may request access, correction, or deletion of your data at any time
-        by contacting us at <span className="font-semibold">info@theneighborhoodcoffee.com</span>.
+      <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
+        5. Changes to This Policy
+      </h2>
+      <p className="mb-3">
+        We may update this Privacy Policy periodically. Any changes will be
+        posted on this page with an updated revision date.
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">6. Contact</h2>
+      <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
+        6. Contact Us
+      </h2>
       <p>
-        For questions about this Privacy Policy, please contact us at: <br />
-        <strong>The Neighborhood Coffee</strong> <br />
-        12821 Little Misty Ln, El Paso, TX 79938 <br />
-        +1 (915) 401-5547
+        If you have any questions about this Privacy Policy, please contact us
+        at{" "}
+        <a href="mailto:support@theneighborhoodcoffee.com" className="text-[#1D9099] underline">
+          support@theneighborhoodcoffee.com
+        </a>.
       </p>
     </div>
   );
