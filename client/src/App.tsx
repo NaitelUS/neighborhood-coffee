@@ -35,7 +35,7 @@ export default function App() {
           <WhatsAppButton />
 
           {/* 🔀 Rutas principales */}
-          <main className="flex-grow pt-[64px]">
+           <main className="flex-grow">   {/* antes tenía pt-[64px] */}
             <Routes>
               <Route path="/" element={<Menu />} />
               <Route path="/order" element={<OrderPage />} />
