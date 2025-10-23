@@ -2,7 +2,7 @@ import { useLocation, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 
 export default function FloatingCart() {
-  const { items } = useCart();
+  const { cartItems } = useCart();
   const loc = useLocation();
 
   // ✅ Mostrar solo en home, menú y order
@@ -10,7 +10,7 @@ export default function FloatingCart() {
   if (!show) return null;
 
   // 🔢 Total de ítems en el carrito
-  const count = items.reduce((acc, it) => acc + (it.qty || 1), 0);
+  const count = cartItems.reduce((acc, it) => acc + (it.qty || 1), 0);
 
   return (
     <Link
