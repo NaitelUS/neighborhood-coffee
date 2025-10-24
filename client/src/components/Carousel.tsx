@@ -12,7 +12,7 @@ export default function Carousel() {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  // 🔁 Autoplay controlado
+  // ⏱ Autoplay
   useEffect(() => {
     if (paused) return;
     const timer = setInterval(() => {
@@ -31,24 +31,26 @@ export default function Carousel() {
   const handleTouchEnd = () => {
     const distance = touchStartX.current - touchEndX.current;
     const threshold = 50;
-    if (distance > threshold) setIndex((prev) => (prev + 1) % images.length);
-    else if (distance < -threshold)
+    if (distance > threshold) {
+      setIndex((prev) => (prev + 1) % images.length);
+    } else if (distance < -threshold) {
       setIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
   };
 
   return (
     <section
-      className="relative w-full overflow-hidden bg-white select-none"
+      className="carousel-container relative w-full overflow-hidden bg-white select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onMouseDown={() => setPaused(true)}
-      onMouseUp={() => setPaused(false)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
       onTouchStartCapture={() => setPaused(true)}
       onTouchEndCapture={() => setPaused(false)}
     >
       <div
-        className="flex transition-transform duration-700 ease-in-out"
+        className="carousel-slide flex transition-transform duration-700 ease-in-out"
         style={{
           transform: `translateX(-${index * 100}%)`,
           width: `${images.length * 100}%`,
@@ -59,7 +61,7 @@ export default function Carousel() {
             key={i}
             src={src}
             alt={`Slide ${i + 1}`}
-            className="w-full h-[45vh] md:h-[55vh] object-cover flex-shrink-0"
+            className="w-full max-w-full object-cover h-[45vh] md:h-[55vh]"
             draggable={false}
           />
         ))}
