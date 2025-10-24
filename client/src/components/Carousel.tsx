@@ -12,7 +12,7 @@ export default function Carousel() {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  // Autoplay
+  // 🔁 Autoplay controlado
   useEffect(() => {
     if (paused) return;
     const timer = setInterval(() => {
@@ -21,25 +21,19 @@ export default function Carousel() {
     return () => clearInterval(timer);
   }, [paused]);
 
-  // Swipe detection
+  // 👆 Swipe lateral
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
-
   const handleTouchMove = (e: React.TouchEvent) => {
     touchEndX.current = e.touches[0].clientX;
   };
-
   const handleTouchEnd = () => {
     const distance = touchStartX.current - touchEndX.current;
     const threshold = 50;
-    if (distance > threshold) {
-      // siguiente
-      setIndex((prev) => (prev + 1) % images.length);
-    } else if (distance < -threshold) {
-      // anterior
+    if (distance > threshold) setIndex((prev) => (prev + 1) % images.length);
+    else if (distance < -threshold)
       setIndex((prev) => (prev - 1 + images.length) % images.length);
-    }
   };
 
   return (
