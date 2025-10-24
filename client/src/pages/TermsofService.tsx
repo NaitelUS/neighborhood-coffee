@@ -5,12 +5,12 @@ export default function TermsOfService() {
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-3xl mx-auto px-5 py-8 text-gray-700 leading-relaxed relative">
-      {/* 🔙 Botón flotante */}
+    <div className="max-w-3xl mx-auto px-6 py-8 text-gray-700 leading-relaxed bg-white min-h-screen relative">
+      {/* 🔙 Botón Back flotante */}
       <button
-        onClick={() => navigate("/menu")}
+        onClick={() => navigate("/")}
         className="fixed top-20 left-4 bg-[#00454E] text-white rounded-full p-2 shadow-md hover:opacity-90 z-40"
-        title="Back to Menu"
+        title="Back to Home"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -24,14 +24,13 @@ export default function TermsOfService() {
         </svg>
       </button>
 
-      <h1 className="text-3xl font-semibold text-[#00454E] mb-4">
+      <h1 className="text-3xl font-semibold text-[#00454E] mb-6">
         Terms of Service
       </h1>
 
-      <p className="mb-3">
-        Welcome to The Neighborhood Coffee. By accessing or using our website,
-        mobile application, or any related services, you agree to be bound by
-        these Terms of Service.
+      <p className="mb-4">
+        Welcome to The Neighborhood Coffee. By accessing or using our website or
+        app, you agree to be bound by these Terms of Service.
       </p>
 
       <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
@@ -46,9 +45,9 @@ export default function TermsOfService() {
         2. Orders and Payments
       </h2>
       <p className="mb-3">
-        All orders placed through our app or website are subject to acceptance
-        and availability. We reserve the right to refuse or cancel any order if
-        we suspect fraudulent activity or violation of these terms.
+        All orders placed through our app are subject to acceptance and
+        availability. We reserve the right to refuse or cancel any order if we
+        suspect fraudulent activity.
       </p>
 
       <h2 className="text-xl font-semibold text-[#1D9099] mt-6 mb-2">
@@ -71,7 +70,7 @@ export default function TermsOfService() {
         5. Contact Us
       </h2>
       <p>
-        If you have any questions about these Terms, please contact us at{" "}
+        For questions about these Terms, please contact us at{" "}
         <a href="mailto:support@theneighborhoodcoffee.com" className="text-[#1D9099] underline">
           support@theneighborhoodcoffee.com
         </a>.
