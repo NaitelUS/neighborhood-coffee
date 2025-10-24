@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const images = [
   "/attached_assets/Carrousel_1.png",
@@ -8,41 +8,65 @@ const images = [
 
 export default function Carousel() {
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
+  // Autoplay
   useEffect(() => {
+    if (paused) return;
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % images.length);
-    }, 4500);
+    }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [paused]);
+
+  // Swipe detection
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const distance = touchStartX.current - touchEndX.current;
+    const threshold = 50;
+    if (distance > threshold) {
+      // siguiente
+      setIndex((prev) => (prev + 1) % images.length);
+    } else if (distance < -threshold) {
+      // anterior
+      setIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+  };
 
   return (
-    <section className="relative w-full overflow-hidden bg-white select-none">
-      {/* 🖼 Contenedor principal */}
-      <div className="relative max-w-6xl mx-auto">
-        {images.map((img, i) => (
+    <section
+      className="relative w-full overflow-hidden bg-white select-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={() => setPaused(true)}
+      onMouseUp={() => setPaused(false)}
+      onTouchStartCapture={() => setPaused(true)}
+      onTouchEndCapture={() => setPaused(false)}
+    >
+      <div
+        className="flex transition-transform duration-700 ease-in-out"
+        style={{
+          transform: `translateX(-${index * 100}%)`,
+          width: `${images.length * 100}%`,
+        }}
+      >
+        {images.map((src, i) => (
           <img
-            key={img}
-            src={img}
-            alt={`Slide ${i + 1}`}
-            className={`absolute top-0 left-0 w-full h-[40vh] md:h-[50vh] object-contain transition-opacity duration-1000 ease-in-out ${
-              i === index ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
-            draggable={false}
-          />
-        ))}
-      </div>
-
-      {/* ⚫ Indicadores */}
-      <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-2">
-        {images.map((_, i) => (
-          <span
             key={i}
-            className={`w-2.5 h-2.5 rounded-full transition-all ${
-              i === index
-                ? "bg-[#00454E] scale-110"
-                : "bg-gray-300 hover:bg-[#1D9099]"
-            }`}
+            src={src}
+            alt={`Slide ${i + 1}`}
+            className="w-full h-[45vh] md:h-[55vh] object-cover flex-shrink-0"
+            draggable={false}
           />
         ))}
       </div>
