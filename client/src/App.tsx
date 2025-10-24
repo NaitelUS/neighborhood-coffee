@@ -21,12 +21,18 @@ import { CartProvider } from "./context/CartContext";
 import TermsOfService from "./pages/TermsofService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 
-// 🏠 Nueva página principal
+// 🏠 Página principal
 import Home from "./pages/Home";
+
+// 🔝 Nuevo componente para forzar scroll al inicio
+import ScrollToTop from "./components/ScrollToTop";
 
 export default function App() {
   return (
     <Router>
+      {/* 🔝 Esto asegura que cada cambio de ruta inicie arriba */}
+      <ScrollToTop />
+
       <CartProvider>
         {/* 🏠 Estructura principal */}
         <div className="min-h-screen bg-white flex flex-col justify-between">
