@@ -1,9 +1,9 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
+
 // 🧩 Componentes principales
 import Header from "./components/Header";
-import Menu from "./components/Menu";
 import OrderPage from "./pages/OrderPage";
 import ThankYou from "./pages/ThankYou";
 import OrderStatus from "./pages/OrderStatus";
@@ -21,13 +21,16 @@ import { CartProvider } from "./context/CartContext";
 import TermsOfService from "./pages/TermsofService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 
+// 🏠 Nueva página principal
+import Home from "./pages/Home";
+
 export default function App() {
   return (
     <Router>
       <CartProvider>
         {/* 🏠 Estructura principal */}
         <div className="min-h-screen bg-white flex flex-col justify-between">
-          {/* 🌐 Header fijo */}
+          {/* 🌐 Header fluido */}
           <Header />
 
           {/* 🛒 y 💬 botones flotantes */}
@@ -35,9 +38,9 @@ export default function App() {
           <WhatsAppButton />
 
           {/* 🔀 Rutas principales */}
-           <main className="flex-grow">   {/* antes tenía pt-[64px] */}
+          <main className="flex-grow">
             <Routes>
-              <Route path="/" element={<Menu />} />
+              <Route path="/" element={<Home />} />
               <Route path="/order" element={<OrderPage />} />
               <Route path="/thank-you" element={<ThankYou />} />
               <Route path="/status" element={<OrderStatus />} />
