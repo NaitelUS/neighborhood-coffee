@@ -1,38 +1,28 @@
-import { useLocation } from "react-router-dom";
-import { useState } from "react";
+import React from "react";
 
 export default function WhatsAppButton() {
-  const loc = useLocation();
-  const show = ["/", "/menu", "/order"].includes(loc.pathname);
-  const [hover, setHover] = useState(false);
-  if (!show) return null;
+  const phone = "+19154015547"; // ☕ tu número real
+  const message = encodeURIComponent("Hi! I'd like to place an order ☕");
+  const whatsappURL = `https://wa.me/${phone}?text=${message}`;
 
   return (
-    <div
-      className="fixed left-4 bottom-4 z-50 flex items-center space-x-2"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      onTouchStart={() => setHover(true)}
-      onTouchEnd={() => setTimeout(() => setHover(false), 2000)}
+    <a
+      href={whatsappURL}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Chat on WhatsApp"
+      className="fixed bottom-6 right-5 z-50 flex items-center justify-center w-14 h-14 bg-[#1D9099] rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out"
     >
-      {hover && (
-        <div className="bg-[#00454E] text-white text-xs rounded-lg px-3 py-1 shadow-md mr-2 animate-fadeIn">
-          Chat with us
-        </div>
-      )}
-
-      <a
-        href="https://wa.me/19154015547?text=Hi!%20I'd%20like%20to%20place%20an%20order%20at%20The%20Neighborhood%20Coffee"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bg-[#25D366] p-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-200"
+      {/* 🟢 SVG vectorial limpio (sin fondo, color blanco puro) */}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 32 32"
+        fill="white"
+        width="26"
+        height="26"
       >
-        <img
-          src="/attached_assets/whatsapp-icon.png"
-          alt="WhatsApp"
-          className="w-7 h-7 object-contain"
-        />
-      </a>
-    </div>
+        <path d="M16 .5C7.4.5.5 7.4.5 16c0 2.8.7 5.5 2.1 7.8L.6 31.3l7.7-1.9C10.6 31 13.2 31.5 16 31.5c8.6 0 15.5-6.9 15.5-15.5S24.6.5 16 .5zm0 28.2c-2.5 0-4.9-.6-7-1.8l-.5-.3-4.5 1.1 1.2-4.4-.3-.5c-1.3-2.1-2-4.6-2-7.1C3 8.2 8.9 2.3 16 2.3s13 5.9 13 13c0 7.1-5.9 13-13 13zm7.4-9.6c-.4-.2-2.3-1.1-2.6-1.2-.3-.1-.5-.2-.7.2s-.8 1.2-1 1.4-.4.3-.8.1c-.4-.2-1.5-.6-2.8-1.8-1-.9-1.8-2-2-2.4s0-.5.2-.7c.2-.2.4-.4.6-.6.2-.2.3-.4.5-.7.2-.3.1-.5 0-.7s-.7-1.8-1-2.5c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.7.1-1.1.5s-1.4 1.3-1.4 3.2 1.5 3.8 1.7 4c.2.3 2.9 4.5 7.1 6.3.9.4 1.6.6 2.2.8.9.3 1.7.3 2.3.2.7-.1 2.3-.9 2.7-1.8s.4-1.7.3-1.8c-.2-.1-.4-.2-.8-.4z" />
+      </svg>
+    </a>
   );
 }
