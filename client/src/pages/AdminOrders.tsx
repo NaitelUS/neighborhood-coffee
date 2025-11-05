@@ -1,221 +1,175 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 
-interface Order {
-  id: string;
-  orderID: string;
-  name: string;
-  total: number;
-  status: string;
-  order_type: string;
-  schedule_date?: string;
-  schedule_time?: string;
-  coupon?: string;
-}
-
-const statusColors: Record<string, string> = {
-  Received: "bg-green-600",
-  "In Process": "bg-yellow-500",
-  Ready: "bg-blue-600",
-  "Out for Delivery": "bg-purple-600",
-  Completed: "bg-gray-700",
-  Cancelled: "bg-red-600",
-};
-
 export default function AdminOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const soundRef = useRef<HTMLAudioElement | null>(null);
 
+  // 🎨 Paleta de estados coherente con TNC
+  const statusColors: Record<string, string> = {
+    Received: "bg-[#1D9099]",
+    "In Process": "bg-yellow-500",
+    Ready: "bg-[#00454E]",
+    "Out for Delivery": "bg-purple-600",
+    Completed: "bg-gray-500",
+    Cancelled: "bg-red-600",
+  };
+
+  // ⏰ Fecha/hora local
+  const [now, setNow] = useState(dayjs().format("MMM D, YYYY h:mm A"));
+  useEffect(() => {
+    const timer = setInterval(
+      () => setNow(dayjs().format("MMM D, YYYY h:mm A")),
+      60000
+    );
+    return () => clearInterval(timer);
+  }, []);
+
+  // 🔁 Fetch de órdenes cada 10 s
+  useEffect(() => {
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ✅ Función segura y tolerante
   const fetchOrders = async () => {
     try {
-      const response = await fetch("/.netlify/functions/orders-get");
-      const data = await response.json();
+      setLoading(true);
+      const res = await fetch("/.netlify/functions/orders-get");
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
 
-      // Normaliza estructura según el nuevo backend
-      const normalized = data.map((o: any) => ({
-        id: o.id,
-        orderID: o.orderID || "",
-        name: o.name || "Unknown",
-        total: o.total || 0,
-        status: o.status || "Received",
-        order_type: o.order_type || "Pickup",
-        schedule_date: o.schedule_date || "",
-        schedule_time: o.schedule_time || "",
-        coupon: o.coupon || "",
-      }));
+      const ordersArray = Array.isArray(data)
+        ? data
+        : Array.isArray(data.records)
+        ? data.records
+        : [];
 
-      // Detecta nuevas órdenes (Received)
-      if (orders.length > 0) {
-        const newOnes = normalized.filter(
-          (n: Order) =>
-            n.status === "Received" &&
-            !orders.some((o) => o.id === n.id)
-        );
-        if (newOnes.length > 0 && soundRef.current) {
-          soundRef.current.play().catch(() => {});
-        }
+      // 🔔 Detectar nuevas órdenes
+      if (orders.length && ordersArray.length > orders.length) {
+        soundRef.current?.play();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
-      setOrders(normalized);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
+      setOrders(ordersArray);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-    const interval = setInterval(fetchOrders, 10000); // auto-refresh cada 10s
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleUpdateStatus = async (order: Order) => {
+  // 🛠️ Cambiar estado de orden
+  const updateOrderStatus = async (order: any, next: string) => {
     try {
-      const next =
-        order.status === "Received"
-          ? "In Process"
-          : order.status === "In Process"
-          ? order.order_type === "Pickup"
-            ? "Ready"
-            : "Out for Delivery"
-          : order.status === "Ready" || order.status === "Out for Delivery"
-          ? "Completed"
-          : "Completed";
-
-      await fetch("/.netlify/functions/orders-update", {
+      const res = await fetch("/.netlify/functions/orders-update", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: order.id, status: next }),
       });
-      fetchOrders();
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === order.id ? { ...o, Status: next } : o))
+        );
+      }
     } catch (err) {
       console.error("Error updating order:", err);
     }
   };
 
-  const filteredOrders = selectedStatus
-    ? orders.filter((o) => o.status === selectedStatus)
-    : orders;
-
-  const sortedOrders = filteredOrders.sort((a, b) => {
-    const order = [
-      "Received",
-      "In Process",
-      "Ready",
-      "Out for Delivery",
-      "Completed",
-      "Cancelled",
-    ];
-    return order.indexOf(a.status) - order.indexOf(b.status);
-  });
-
-  const now = dayjs().format("dddd, MMMM D, YYYY [at] hh:mm A");
-
   return (
-    <div className="max-w-5xl mx-auto px-4 mt-6">
+    <div className="min-h-screen bg-gray-50 pt-20">
+      {/* 🔈 Sonido para nuevas órdenes */}
       <audio ref={soundRef} src="/sounds/new-order.mp3" preload="auto" />
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={fetchOrders}
-          className="text-teal-700 text-xl hover:text-teal-900"
-          title="Refresh"
-        >
-          🔄
-        </button>
-        <p className="text-gray-600 font-medium">
-          Today is:{" "}
-          <span className="font-semibold text-teal-700">{now}</span>
+
+      <div className="max-w-5xl mx-auto px-4 mt-6 pb-24 overflow-y-auto">
+        <h1 className="text-3xl font-bold text-[#00454E] mb-2">
+          Orders Dashboard
+        </h1>
+        <p className="text-gray-600 font-medium mb-6">
+          {now} •{" "}
+          <span className="font-semibold text-[#00454E]">{orders.length}</span>{" "}
+          total orders
         </p>
-      </div>
 
-      <div className="flex flex-wrap justify-center gap-2 mb-6">
-        {[
-          "Received",
-          "In Process",
-          "Ready",
-          "Out for Delivery",
-          "Completed",
-          "Cancelled",
-        ].map((status) => (
-          <button
-            key={status}
-            onClick={() =>
-              setSelectedStatus(selectedStatus === status ? null : status)
-            }
-            className={`px-4 py-2 rounded-full text-white font-semibold text-sm ${
-              selectedStatus === status
-                ? statusColors[status]
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <p className="text-center text-gray-500">Loading orders...</p>
-      ) : sortedOrders.length === 0 ? (
-        <p className="text-center text-gray-500">
-          No orders match selected filters.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {sortedOrders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white shadow-md rounded-xl p-4 border border-gray-100"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-mono bg-teal-800 text-white px-3 py-1 rounded-full">
-                  {order.orderID}
-                </span>
-                <span
-                  className={`text-xs text-white px-3 py-1 rounded-full ${statusColors[order.status]}`}
-                >
-                  {order.status}
-                </span>
-              </div>
-
-              <h2 className="text-lg font-semibold text-gray-800">
-                {order.name}
-              </h2>
-              <p className="text-sm text-gray-600 mb-2">
-                {order.order_type === "Pickup" ? "🏠 Pickup" : "🚚 Delivery"}{" "}
-                • {order.schedule_time || "ASAP"}
-              </p>
-
-              <div className="text-sm text-gray-700 font-medium">
-                <p>Total: ${order.total.toFixed(2)}</p>
-                {order.coupon && (
-                  <p className="text-xs text-gray-500">
-                    Coupon: {order.coupon}
-                  </p>
-                )}
-              </div>
-
-              <button
-                onClick={() => handleUpdateStatus(order)}
-                className="mt-4 w-full py-2 text-white font-semibold rounded-lg"
-                style={{ backgroundColor: "#00454E" }}
+        {loading ? (
+          <p className="text-gray-500 text-center mt-10">Loading orders...</p>
+        ) : orders.length === 0 ? (
+          <p className="text-center text-gray-500 mt-10">
+            No orders found.
+          </p>
+        ) : (
+          <div className="space-y-6">
+            {orders.map((order: any) => (
+              <div
+                key={order.id}
+                className={`p-5 rounded-xl shadow-md bg-white border-l-8 transition-all duration-300 ${statusColors[order.Status] || "border-gray-300"}`}
               >
-                {order.status === "Received"
-                  ? "Set In Process"
-                  : order.status === "In Process"
-                  ? order.order_type === "Pickup"
-                    ? "Mark as Ready"
-                    : "Out for Delivery"
-                  : order.status === "Ready" ||
-                    order.status === "Out for Delivery"
-                  ? "Mark Completed"
-                  : "Completed"}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-[#00454E]">
+                    {order.Customer || order.fields?.Customer || "Unnamed"}
+                  </h2>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm text-white ${
+                      statusColors[order.Status] || "bg-gray-400"
+                    }`}
+                  >
+                    {order.Status || order.fields?.Status || "Received"}
+                  </span>
+                </div>
+
+                <p className="text-gray-700 mt-2">
+                  {order.Items || order.fields?.Items || "No details"}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {order.Timestamp ||
+                    order.fields?.Timestamp ||
+                    dayjs(order.createdTime).format("MMM D, h:mm A")}
+                </p>
+
+                <div className="flex justify-between items-center mt-4">
+                  <p className="text-lg font-bold text-[#00454E]">
+                    ${order.Total || order.fields?.Total || "—"}
+                  </p>
+
+                  <div className="flex gap-2">
+                    {order.Status === "Received" && (
+                      <button
+                        onClick={() =>
+                          updateOrderStatus(order, "In Process")
+                        }
+                        className="bg-yellow-500 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
+                      >
+                        Start
+                      </button>
+                    )}
+                    {order.Status === "In Process" && (
+                      <button
+                        onClick={() => updateOrderStatus(order, "Ready")}
+                        className="bg-[#1D9099] text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
+                      >
+                        Ready
+                      </button>
+                    )}
+                    {order.Status === "Ready" && (
+                      <button
+                        onClick={() =>
+                          updateOrderStatus(order, "Completed")
+                        }
+                        className="bg-[#00454E] text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
+                      >
+                        Complete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
