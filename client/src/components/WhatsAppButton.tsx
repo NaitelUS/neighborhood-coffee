@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function WhatsAppButton() {
-  const phone = "+19154015547"; // ☕ tu número real
+  const phone = "+19154015547"; // ☕ tu número TNC
   const message = encodeURIComponent("Hi! I'd like to place an order ☕");
   const whatsappURL = `https://wa.me/${phone}?text=${message}`;
 
@@ -11,9 +11,9 @@ export default function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"
-      className="fixed bottom-6 right-5 z-50 flex items-center justify-center w-14 h-14 bg-[#1D9099] rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out"
+      className="fixed bottom-6 left-5 z-40 flex items-center justify-center w-14 h-14 bg-[#1D9099] rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out"
     >
-      {/* 🟢 SVG vectorial limpio (sin fondo, color blanco puro) */}
+      {/* 🟢 Vector limpio, sin fondo ni bordes */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 32 32"
