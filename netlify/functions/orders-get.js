@@ -1,85 +1,35 @@
-const { getAirtableClient } = require("../lib/airtableClient");
+import Airtable from "airtable";
 
-exports.handler = async (event) => {
+const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ORDERS } = process.env;
+const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
+const ordersTable = base(AIRTABLE_TABLE_ORDERS);
+
+export const handler = async (event) => {
   try {
-    const base = getAirtableClient();
-    const ordersTable = base("Orders");
-    const itemsTable = base("OrderItems");
-    const qs = event.queryStringParameters || {};
-    const id = qs.id;
-
-    // Si piden una sola orden (por record id o por OrderID)
+    // Si viene ID, devolver solo esa orden
+    const id = event.queryStringParameters?.id;
     if (id) {
-      const records = await ordersTable
-        .select({
-          filterByFormula: `OR(RECORD_ID() = '${id}', {OrderID} = '${id}')`,
-          maxRecords: 1,
-        })
-        .firstPage();
+      const record = await ordersTable.find(id);
+      const f = record.fields || {};
 
-      if (!records || records.length === 0) {
-        return { statusCode: 404, body: JSON.stringify({ error: "Order not found" }) };
-      }
-
-      const rec = records[0];
-      const f = rec.fields || {};
-      const orderID = f.OrderID || "";
-
-      // Trae items por OrderID (texto)
-      const itemRecords = await itemsTable
-        .select({ filterByFormula: `{OrderID} = '${orderID}'` })
-        .firstPage();
-
-      const items = itemRecords.map((ir) => {
-        const product = ir.fields.ProductName || "";
-        const option = ir.fields.Option || "";
-
-        // Evita duplicar cuando ProductName ya contiene Option (ej. Americano (Hot))
-        const displayName =
-          option &&
-          product.toLowerCase().includes(option.toLowerCase())
-            ? product
-            : option
-            ? `${product} (${option})`
-            : product;
-
-        return {
-          name: displayName.trim(),
-          option,
-          qty: Number(ir.fields.Qty) || 1,
-          price: Number(ir.fields.Price) || 0,
-          addons: Array.isArray(ir.fields.AddOns)
-            ? ir.fields.AddOns
-            : ir.fields.AddOns
-            ? [ir.fields.AddOns]
-            : [],
-        };
-      });
-
-      const normalized = {
-        id: rec.id,
-        orderID,
-        orderNumber: f.OrderNumber || "",
-        name: f.Name || "",
-        phone: f.Phone || "",
-        address: f.Address || "",
-        order_type: f.OrderType || "",
-        schedule_date: f.ScheduleDate || "",
-        schedule_time: f.ScheduleTime || "",
-        subtotal: Number(f.Subtotal) || 0,
-        discount: Number(f.Discount) || 0,
-        total: Number(f.Total) || 0,
-        coupon: f.Coupon || "",
-        status: f.Status || "",
-        notes: f.Notes || "",
-        createdAt: f.CreatedAt || f.Date || "",
-        items,
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          id: record.id,
+          Customer: f.Name || "",
+          OrderID: f.OrderID || "",
+          Total: Number(f.Total) || 0,
+          Status: f.Status || "Received",
+          ScheduleDate: f.ScheduleDate || "",
+          ScheduleTime: f.ScheduleTime || "",
+          OrderType: f.OrderType || "",
+          Coupon: f.Coupon || "",
+          Timestamp: f.CreatedAt || f.Date || record._rawJson.createdTime || "",
+        }),
       };
-
-      return { statusCode: 200, body: JSON.stringify(normalized) };
     }
 
-    // Si no hay id, lista general para /admin/orders
+    // Si no hay ID, devolver la lista completa (para /admin/orders)
     const list = await ordersTable
       .select({ sort: [{ field: "CreatedAt", direction: "desc" }] })
       .firstPage();
@@ -88,26 +38,24 @@ exports.handler = async (event) => {
       const f = rec.fields || {};
       return {
         id: rec.id,
-        orderID: f.OrderID || "",
-        name: f.Name || "",
-        total: Number(f.Total) || 0,
-        status: f.Status || "",
-        schedule_date: f.ScheduleDate || "",
-        schedule_time: f.ScheduleTime || "",
-        order_type: f.OrderType || "",
-        coupon: f.Coupon || "",
+        Customer: f.Name || "",
+        OrderID: f.OrderID || "",
+        Total: Number(f.Total) || 0,
+        Status: f.Status || "Received",
+        ScheduleDate: f.ScheduleDate || "",
+        ScheduleTime: f.ScheduleTime || "",
+        OrderType: f.OrderType || "",
+        Coupon: f.Coupon || "",
+        Timestamp: f.CreatedAt || f.Date || rec._rawJson.createdTime || "",
       };
     });
 
     return { statusCode: 200, body: JSON.stringify(all) };
-  } catch (error) {
-    console.error("orders-get error:", error);
+  } catch (err) {
+    console.error("Error in orders-get.js:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: "Internal Server Error",
-        details: error.message,
-      }),
+      body: JSON.stringify({ error: "Failed to fetch orders" }),
     };
   }
 };
